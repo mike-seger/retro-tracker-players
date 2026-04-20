@@ -4,8 +4,15 @@
 # Format: { "base": "https://...", "formats": [...], "entries": [[fmtIdx, "Artist/file.ext"], ...] }
 # The full path is: formats[fmtIdx] + "/" + entry[1]
 
-INPUT="remote-mods.txt.gz"
+cd $(dirname "$0")/..
+
+INPUT="tmp/remote-mods.txt.gz"
 OUTPUT="remote-index.json"
+
+wget -O tmp/allmods.zip https://modland.com/allmods.zip && \
+unzip -p tmp/allmods.zip | grep -iE "\.(ahx|mod|xm|it|s3m|sid)$" | sort | gzip \
+    >$INPUT && \
+rm tmp/allmods.zip
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
