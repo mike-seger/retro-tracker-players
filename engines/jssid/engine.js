@@ -3,6 +3,7 @@ const BASE = 'engines/jssid/';
 let player = null;
 let _onEnd = null;
 let _compressor = null;
+let _connected = false;
 
 function loadScript(src) {
   return new Promise((resolve, reject) => {
@@ -29,17 +30,38 @@ export async function init() {
     _compressor.attack.value = 0.003;
     _compressor.release.value = 0.15;
     _compressor.connect(ctx.destination);
-    // Override playcont/pause to route through compressor
+    // Preserve original behavior and only add routing through compressor.
     const origPlay = player.playcont.bind(player);
     const origPause = player.pause.bind(player);
-    player.playcont = () => { node.connect(_compressor); };
-    player.pause = () => { try { node.disconnect(_compressor); } catch (_) {} };
+    player.playcont = () => {
+      if (!_connected) {
+        node.connect(_compressor);
+        _connected = true;
+      }
+      origPlay();
+    };
+    player.pause = () => {
+      origPause();
+      if (_connected) {
+        try { node.disconnect(_compressor); } catch (_) {}
+        _connected = false;
+      }
+    };
   }
 }
 
+async function resumeContext() {
+  try {
+    const ctx = player?.getAudioContext?.();
+    if (ctx?.state === 'suspended') await ctx.resume();
+  } catch (_) {}
+}
+
 export async function load(url) {
+  await resumeContext();
   return new Promise((resolve) => {
     player.setloadcallback(() => {
+      player.playcont();
       resolve({
         fields: [
           { label: 'Title',    value: player.gettitle().replace(/\0/g, '') },
@@ -56,7 +78,7 @@ export async function load(url) {
 }
 
 export function pause()  { if (player) player.pause(); }
-export function resume() { if (player) player.playcont(); }
+export async function resume() { if (player) { await resumeContext(); player.playcont(); } }
 export function seekTo(s) { if (player) player.seekTo(s); }
 export function getTime() { return player ? player.getplaytime() : 0; }
 export function setVolume(v) { if (player) player.setvolume(v); }

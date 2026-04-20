@@ -351,7 +351,7 @@ async function loadAndPlay(idx) {
   elDur.textContent = '—';
 
   try {
-    const playUrl = await cacheFetch(url);
+    const playUrl = entry.playerId === 'mod' ? url : await cacheFetch(url);
     const tFetch = performance.now();
     const result = await engine.load(playUrl);
     const tLoad = performance.now();
@@ -866,6 +866,82 @@ document.addEventListener('keydown', (e) => {
 // ── debug log (toggle with double-click or long-press on transport) ─
 const debugLog = document.getElementById('debug-log');
 const elTransport = document.getElementById('transport');
+
+async function copyText(text) {
+  if (!text) return false;
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch (_) {}
+
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.top = '0';
+    ta.style.left = '0';
+    ta.style.width = '1px';
+    ta.style.height = '1px';
+    ta.style.padding = '0';
+    ta.style.border = '0';
+    ta.style.outline = '0';
+    ta.style.boxShadow = 'none';
+    ta.style.background = 'transparent';
+    ta.style.opacity = '0';
+    ta.style.fontSize = '16px';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    ta.setSelectionRange(0, ta.value.length);
+    const ok = document.execCommand('copy');
+    ta.remove();
+    return ok;
+  } catch (_) {
+    return false;
+  }
+}
+
+async function shareText(text) {
+  if (!text || !navigator.share) return false;
+  try {
+    await navigator.share({ text });
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+async function shareLogFile(text) {
+  if (!text || !navigator.share || typeof File === 'undefined') return false;
+  try {
+    const file = new File([text], `retro-debug-${Date.now()}.log`, { type: 'text/plain' });
+    if (navigator.canShare && !navigator.canShare({ files: [file] })) return false;
+    await navigator.share({ files: [file], title: 'Retro tracker debug log' });
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+function downloadLogFile(text) {
+  if (!text) return false;
+  try {
+    const blob = new Blob([text], { type: 'text/plain' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `retro-debug-${Date.now()}.log`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
 elTransport.addEventListener('dblclick', (e) => {
   if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
   debugLog.hidden = !debugLog.hidden;
@@ -880,6 +956,47 @@ elTransport.addEventListener('touchstart', (e) => {
 }, { passive: true });
 elTransport.addEventListener('touchend', () => { clearTimeout(_dbgLongPress); }, { passive: true });
 elTransport.addEventListener('touchmove', () => { clearTimeout(_dbgLongPress); }, { passive: true });
+
+let _dbgCopyTouchStart = 0;
+let _dbgCopyTouchMoved = false;
+debugLog.addEventListener('touchstart', (e) => {
+  if (debugLog.hidden) return;
+  _dbgCopyTouchStart = Date.now();
+  _dbgCopyTouchMoved = false;
+}, { passive: true });
+debugLog.addEventListener('touchend', async () => {
+  const held = _dbgCopyTouchStart ? (Date.now() - _dbgCopyTouchStart) : 0;
+  _dbgCopyTouchStart = 0;
+  if (_dbgCopyTouchMoved || held < 700 || debugLog.hidden) return;
+  const text = debugLog.textContent.trim();
+  const copied = await copyText(text);
+  if (copied) {
+    dbg('[I] debug log copied');
+    return;
+  }
+  const sharedFile = await shareLogFile(text);
+  if (sharedFile) {
+    dbg('[I] debug log shared as file');
+    return;
+  }
+  const shared = await shareText(text);
+  if (shared) {
+    dbg('[I] debug log shared');
+    return;
+  }
+  const downloaded = downloadLogFile(text);
+  if (downloaded) {
+    dbg('[I] debug log downloaded');
+    return;
+  }
+  dbg('[W] failed to copy debug log');
+}, { passive: true });
+debugLog.addEventListener('touchmove', () => { _dbgCopyTouchMoved = true; }, { passive: true });
+debugLog.addEventListener('touchcancel', () => {
+  _dbgCopyTouchStart = 0;
+  _dbgCopyTouchMoved = true;
+}, { passive: true });
+
 function dbg(msg) {
   debugLog.textContent += msg + '\n';
   debugLog.scrollTop = debugLog.scrollHeight;
@@ -917,11 +1034,6 @@ function loadModlandTracks() {
   modlandFiles = [];
   const seen = new Set();
 
-  // From urllist.json (loaded at startup)
-  for (const t of _urllistTracks) {
-    if (!seen.has(t.url)) { seen.add(t.url); modlandFiles.push(t); }
-  }
-
   // From localStorage (user-added via search)
   try {
     const saved = JSON.parse(localStorage.getItem('remote-urls'));
@@ -937,9 +1049,7 @@ function loadModlandTracks() {
 }
 
 function saveModlandUrls() {
-  const urls = modlandFiles
-    .filter(t => !_urllistSet.has(t.url))
-    .map(t => t.url);
+  const urls = modlandFiles.map(t => t.url);
   localStorage.setItem('remote-urls', JSON.stringify(urls));
 }
 
@@ -1041,27 +1151,11 @@ function switchMode(mode) {
   updateSelCount();
 }
 
-let _urllistTracks = [];
-let _urllistSet = new Set();
 let _localUrllistTracks = [];  // from per-engine urllists.json, shown in local mode
 
 (async function init() {
   const resp = await fetch('players.json');
   players = await resp.json();
-
-  // Load urllist.json (for modland mode)
-  _urllistTracks = [];
-  try {
-    const urlResp = await fetch('urllist.json');
-    const urls = await urlResp.json();
-    for (const url of urls) {
-      const t = urlToTrack(url);
-      if (t) _urllistTracks.push(t);
-    }
-  } catch (e) {
-    console.warn('Failed to load urllist.json', e);
-  }
-  _urllistSet = new Set(_urllistTracks.map(t => t.url));
   loadModlandTracks();
 
   loadEnabledPlayers();
@@ -1694,6 +1788,9 @@ function doRandomBrowse(skip) {
 // ── pinch-to-zoom playlist font ─────────────────────
 let pinchStartDist = 0;
 let pinchStartSize = 0;
+let swipeStartX = 0;
+let swipeStartY = 0;
+let swipeTracking = false;
 const MIN_FONT = 8;
 const MAX_FONT = 24;
 
@@ -1708,11 +1805,23 @@ function getPlaylistFontSize() {
 
 elList.addEventListener('touchstart', (e) => {
   if (e.touches.length === 2) {
+    swipeTracking = false;
     pinchStartDist = Math.hypot(
       e.touches[1].clientX - e.touches[0].clientX,
       e.touches[1].clientY - e.touches[0].clientY
     );
     pinchStartSize = getPlaylistFontSize();
+    return;
+  }
+  if (e.touches.length === 1) {
+    const target = e.target;
+    if (target instanceof Element && target.closest('input, button, select, a')) {
+      swipeTracking = false;
+      return;
+    }
+    swipeStartX = e.touches[0].clientX;
+    swipeStartY = e.touches[0].clientY;
+    swipeTracking = true;
   }
 }, { passive: true });
 
@@ -1729,6 +1838,19 @@ elList.addEventListener('touchmove', (e) => {
   }
 }, { passive: false });
 
-elList.addEventListener('touchend', () => {
+elList.addEventListener('touchend', (e) => {
+  if (swipeTracking && pinchStartDist === 0 && e.changedTouches.length === 1) {
+    const dx = e.changedTouches[0].clientX - swipeStartX;
+    const dy = e.changedTouches[0].clientY - swipeStartY;
+    if (Math.abs(dx) >= 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      playPrevNext(dx < 0 ? 1 : -1);
+    }
+  }
+  swipeTracking = false;
+  pinchStartDist = 0;
+}, { passive: true });
+
+elList.addEventListener('touchcancel', () => {
+  swipeTracking = false;
   pinchStartDist = 0;
 }, { passive: true });
