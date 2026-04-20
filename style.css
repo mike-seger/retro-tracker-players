@@ -277,6 +277,13 @@ body.mode-modland {
 .confirm-msg {
   color: #ddd; font-size: 14px; margin-bottom: 16px;
 }
+.confirm-detail {
+  display: inline-block;
+  margin-top: 6px;
+  color: var(--info-val);
+  max-width: min(70vw, 520px);
+  overflow-wrap: anywhere;
+}
 .confirm-btns { display: flex; gap: 12px; justify-content: center; }
 .confirm-yes {
   background: #622; color: #faa; border: 1px solid #844; border-radius: 3px;

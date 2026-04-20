@@ -79,6 +79,83 @@ function extOf(name) {
   return dot >= 0 ? name.substring(dot + 1).toUpperCase() : '';
 }
 
+function toAbsoluteUrl(url) {
+  try {
+    return new URL(url, window.location.href).href;
+  } catch (_) {
+    return url;
+  }
+}
+
+function deepLinkTarget() {
+  try {
+    const value = new URLSearchParams(window.location.search).get('play');
+    return value ? toAbsoluteUrl(value) : '';
+  } catch (_) {
+    return '';
+  }
+}
+
+function findLocalEntryByUrl(targetUrl) {
+  for (const p of players) {
+    const files = fileLists[p.id] || [];
+    for (let origIdx = 0; origIdx < files.length; origIdx++) {
+      const name = files[origIdx];
+      const entry = { name, ext: extOf(name), playerId: p.id, origIdx };
+      if (toAbsoluteUrl(trackUrl(entry)) === targetUrl) return entry;
+    }
+  }
+
+  for (const entry of _localUrllistTracks) {
+    if (toAbsoluteUrl(trackUrl(entry)) === targetUrl) return entry;
+  }
+
+  return null;
+}
+
+async function loadDeepLinkedTrack() {
+  const targetUrl = deepLinkTarget();
+  if (!targetUrl) return false;
+
+  const localEntry = findLocalEntryByUrl(targetUrl);
+  if (localEntry) {
+    if (!enabledPlayers[localEntry.playerId]) {
+      enabledPlayers[localEntry.playerId] = true;
+      saveEnabledPlayers();
+      rebuildMergedFiles();
+    }
+
+    switchMode('local');
+    const idx = mergedFiles.findIndex((entry) => toAbsoluteUrl(trackUrl(entry)) === targetUrl);
+    if (idx >= 0) {
+      currentIdx = idx;
+      highlightCurrent();
+      setFocus(idx);
+      updateTrackPos();
+      const entry = mergedFiles[idx];
+      const label = decodeURIComponent(entry.name).split('/').pop() || entry.name;
+      showDeepLinkPrompt(label, () => { loadAndPlay(idx); });
+      return true;
+    }
+  }
+
+  const remoteIdx = modlandFiles.findIndex((entry) => toAbsoluteUrl(entry.url) === targetUrl);
+  if (remoteIdx >= 0) {
+    switchMode('modland');
+    currentIdx = remoteIdx;
+    highlightCurrent();
+    setFocus(remoteIdx);
+    updateTrackPos();
+    const entry = modlandFiles[remoteIdx];
+    const label = decodeURIComponent(entry.name).split('/').pop() || entry.name;
+    showDeepLinkPrompt(label, () => { loadAndPlay(remoteIdx); });
+    return true;
+  }
+
+  console.warn('Deep link track not found:', targetUrl);
+  return false;
+}
+
 // ── engine management ───────────────────────────────
 async function getEngine(playerId) {
   if (!engines[playerId]) {
@@ -1128,6 +1205,25 @@ function showDeleteConfirm(count, onConfirm) {
   overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
 }
 
+function showDeepLinkPrompt(trackName, onConfirm) {
+  const overlay = document.createElement('div');
+  overlay.className = 'confirm-overlay';
+  overlay.innerHTML =
+    `<div class="confirm-box">` +
+    `<div class="confirm-msg">Start linked track?<br><span class="confirm-detail">${esc(trackName)}</span></div>` +
+    `<div class="confirm-btns">` +
+    `<button class="confirm-yes">Play</button>` +
+    `<button class="confirm-no">Cancel</button>` +
+    `</div></div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('.confirm-yes').addEventListener('click', () => {
+    overlay.remove();
+    onConfirm();
+  });
+  overlay.querySelector('.confirm-no').addEventListener('click', () => overlay.remove());
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+}
+
 function switchMode(mode) {
   searchMode = mode;
   elSearchMode.value = mode;
@@ -1212,25 +1308,29 @@ let _localUrllistTracks = [];  // from per-engine urllists.json, shown in local 
   buildPlaylist();
   restoreSelection();
 
-  try {
-    const saved = JSON.parse(localStorage.getItem('current-track'));
-    if (saved) {
-      if (saved.mode === 'modland') {
-        switchMode('modland');
-        currentIdx = modlandFiles.findIndex(
-          f => f.playerId === saved.playerId && f.name === saved.name
-        );
-      } else {
-        currentIdx = mergedFiles.findIndex(
-          f => f.playerId === saved.playerId && f.name === saved.name
-        );
+  const deepLinked = await loadDeepLinkedTrack();
+
+  if (!deepLinked) {
+    try {
+      const saved = JSON.parse(localStorage.getItem('current-track'));
+      if (saved) {
+        if (saved.mode === 'modland') {
+          switchMode('modland');
+          currentIdx = modlandFiles.findIndex(
+            f => f.playerId === saved.playerId && f.name === saved.name
+          );
+        } else {
+          currentIdx = mergedFiles.findIndex(
+            f => f.playerId === saved.playerId && f.name === saved.name
+          );
+        }
+        if (currentIdx >= 0) {
+          highlightCurrent();
+          setFocus(currentIdx);
+        }
       }
-      if (currentIdx >= 0) {
-        highlightCurrent();
-        setFocus(currentIdx);
-      }
-    }
-  } catch (_) {}
+    } catch (_) {}
+  }
 
   // Restore persisted font size
   const savedSize = parseFloat(localStorage.getItem('playlist-font-size'));
