@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#111">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="manifest" href="manifest.json">
+<title>Retro Tracker Players</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/jszip@3/dist/jszip.min.js"></script>
+</head>
+<body>
+
+<div id="player">
+  <div id="info"></div>
+
+  <div id="filter-row">
+    <span id="filter-wrap">
+      <input type="text" id="filter" placeholder="Filter tracks…">
+      <button id="filter-clear" type="button" aria-label="Clear">&times;</button>
+    </span>
+    <select id="search-mode">
+      <option value="local">local</option>
+      <option value="modland">modland</option>
+    </select>
+    <span id="filter-count"></span>
+  </div>
+
+  <div id="refine-row">
+    <select id="refine-folder" title="Filter by folder"><option value="">Folder</option></select>
+    <select id="refine-artist" title="Filter by artist"><option value="">Artist</option></select>
+    <select id="refine-range" title="Result page"><option value="">Range</option></select>
+    <select id="refine-format" title="Filter by format"><option value="">Format</option></select>
+  </div>
+
+  <div id="sel-row">
+    <span id="sel-bulk" title="Toggle all, none, or restore previous selection">
+      <input type="checkbox" id="sel-bulk-cb" aria-label="Toggle all, none, or restore selection">
+    </span>
+    <button id="btn-copy" title="Copy selected filenames to clipboard">C</button>
+    <span id="sel-count"></span>
+    <button id="btn-zip" title="Download selected tracks as ZIP">Z</button>
+    <button id="ml-add-all" class="ml-btn" style="display:none" title="Add all search results">Add all</button>
+    <button id="ml-del-all" class="ml-btn" style="display:none" title="Delete all modland tracks">Del all</button>
+    <button id="ml-random" class="ml-btn" style="display:none" title="Browse random tracks">Random</button>
+    <span id="track-pos"></span>
+  </div>
+
+  <ul id="playlist"></ul>
+
+  <div id="transport">
+    <button id="btn-play" title="Play / Pause">&#9654;</button>
+    <span class="time" id="time">0:00</span>
+    <input type="range" id="seek" min="0" max="300" value="0" step="1">
+    <span class="time" id="duration">—</span>
+  </div>
+  <pre id="debug-log" hidden></pre>
+</div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

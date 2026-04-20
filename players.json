@@ -1,0 +1,5 @@
+[
+  { "id": "ahx",   "label": "AHX" },
+  { "id": "jssid", "label": "SID" },
+  { "id": "mod",   "label": "MOD" }
+]
