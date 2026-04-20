@@ -516,6 +516,7 @@ function applyFilter() {
   const raw = elFilter.value.trim();
   const folderVal = elRefineFolder.value.toLowerCase();
   const artistVal = elRefineArtist.value.toLowerCase();
+  const formatVal = elRefineFormat.value;
   const terms = raw.toLowerCase().split(/\s+/).filter(Boolean);
   let visible = 0;
   const files = activeFiles();
@@ -541,12 +542,15 @@ function applyFilter() {
         nameMatch = artist === artistVal;
       }
     }
+    if (nameMatch && formatVal) {
+      nameMatch = entry && entry.ext === formatVal;
+    }
     const typeMatch = !entry || !entry.playerId || enabledPlayers[entry.playerId] !== false;
     const show = nameMatch && typeMatch;
     items[i].classList.toggle('hidden', !show);
     if (show) visible++;
   }
-  elFilterCnt.textContent = (terms.length || folderVal || artistVal) ? `${visible} / ${files.length}` : '';
+  elFilterCnt.textContent = (terms.length || folderVal || artistVal || formatVal) ? `${visible} / ${files.length}` : '';
 }
 
 // ── highlight + focus ───────────────────────────────
@@ -1019,6 +1023,7 @@ function switchMode(mode) {
   if (mode === 'local') {
     populateLocalArtistDropdown();
     populateFolderDropdown();
+    populateLocalFormatDropdown();
     elSelBulk.style.display = '';
   } else {
     elRefineFolder.innerHTML = '<option value="">Folder</option>';
@@ -1098,6 +1103,7 @@ let _localUrllistTracks = [];  // from per-engine urllists.json, shown in local 
   rebuildMergedFiles();
   populateLocalArtistDropdown();
   populateFolderDropdown();
+  populateLocalFormatDropdown();
   updateRefineVisibility();
   buildPlaylist();
   restoreSelection();
@@ -1231,6 +1237,22 @@ function populateLocalArtistDropdown() {
   }
 }
 
+function populateLocalFormatDropdown() {
+  const prev = elRefineFormat.value;
+  elRefineFormat.innerHTML = '<option value="">Format</option>';
+  const exts = new Set();
+  for (const f of mergedFiles) {
+    if (!enabledPlayers[f.playerId]) continue;
+    if (f.ext) exts.add(f.ext);
+  }
+  for (const e of [...exts].sort()) {
+    elRefineFormat.appendChild(new Option(e, e));
+  }
+  if (prev && [...elRefineFormat.options].some(o => o.value === prev)) {
+    elRefineFormat.value = prev;
+  }
+}
+
 function populateRangeDropdown(total) {
   const prev = elRefineRange.value;
   elRefineRange.innerHTML = '<option value="">Range</option>';
@@ -1249,7 +1271,7 @@ function updateRefineVisibility() {
   elRefineArtist.style.display = isLocal ? '' : 'none';
   elRefineFolder.style.display = '';  // always visible
   elRefineRange.style.display = isLocal ? 'none' : '';
-  elRefineFormat.style.display = isLocal ? 'none' : '';
+  elRefineFormat.style.display = '';
 }
 
 elRefineFolder.addEventListener('change', () => {
@@ -1275,7 +1297,10 @@ elRefineRange.addEventListener('change', () => {
 });
 
 elRefineFormat.addEventListener('change', () => {
-  if (_randomBrowsing) {
+  if (searchMode === 'local') {
+    populateLocalArtistDropdown();
+    applyFilter();
+  } else if (_randomBrowsing) {
     const skip = parseInt(elRefineRange.value, 10) || 0;
     doRandomBrowse(skip);
   } else {
