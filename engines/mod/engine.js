@@ -9,7 +9,6 @@ const CHIPTUNE2_BASES = [
   'https://cdn.jsdelivr.net/gh/deskjet/chiptune2.js@master/',
   'https://raw.githubusercontent.com/deskjet/chiptune2.js/master/',
 ];
-const MOD_BUILD_TAG = 'mod-build-2026-04-20-01';
 
 let player = null;
 let audioCtx = null;
@@ -58,11 +57,9 @@ function loadScript(src) {
       return;
     }
 
-    console.warn('[mod] loading script', src);
     const s = existing || document.createElement('script');
     const done = () => {
       s.dataset.loaded = '1';
-      console.warn('[mod] loaded script', src);
       resolve();
     };
 
@@ -126,7 +123,6 @@ async function unlockV2Audio() {
   try {
     if (player.touchLocked && typeof player.unlock === 'function') {
       player.unlock();
-      console.warn('[mod] V2 unlocked audio');
     }
   } catch (_) {}
 }
@@ -138,7 +134,6 @@ function ensureV2OutputChain() {
     _gainNode.gain.value = _volume;
     const comp = ensureCompressor();
     _gainNode.connect(comp || audioCtx.destination);
-    console.warn('[mod] V2 output chain ready');
   }
   return _gainNode;
 }
@@ -150,7 +145,6 @@ function routeV2NodeToOutput() {
   try { node.disconnect(); } catch (_) {}
   try {
     node.connect(out);
-    console.warn('[mod] V2 node routed to output');
     return true;
   } catch (e) {
     console.error('[mod] V2 route failed', e);
@@ -173,7 +167,6 @@ function installUnlockHooks() {
 
 /* ── chiptune3 (AudioWorklet) init ──────────────── */
 async function initV3() {
-  console.warn('[mod] initV3 start');
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   await resumeContext();
 
@@ -208,13 +201,11 @@ async function initV3() {
     const comp = ensureCompressor();
     player.gain.connect(comp || audioCtx.destination);
   }
-  console.warn('[mod] initV3 ready');
 }
 
 /* ── chiptune2 (ScriptProcessorNode) init ───────── */
 async function initV2() {
   let lastError = null;
-  console.warn('[mod] initV2 start', MOD_BUILD_TAG);
 
   // Create and resume the context before any async loader work starts so
   // the initial tap/click can unlock audio on mobile browsers.
@@ -223,33 +214,17 @@ async function initV2() {
 
   for (const base of CHIPTUNE2_BASES) {
     try {
-      console.warn('[mod] trying V2 base', base);
       resetV2Globals();
-
-      const memUrl = base + 'libopenmpt.js.mem';
-      try {
-        const memRes = await fetch(memUrl, { cache: 'no-store' });
-        console.warn('[mod] preflight mem', memUrl, 'status=', memRes.status);
-        if (!memRes.ok) throw new Error('mem fetch failed: HTTP ' + memRes.status);
-        await memRes.arrayBuffer();
-      } catch (e) {
-        console.error('[mod] preflight mem failed', memUrl, e);
-      }
 
       let runtimeReady = false;
 
       // Pre-configure emscripten Module so it locates .mem file correctly.
       window.Module = {
-        locateFile: (path) => {
-          const resolved = base + path;
-          console.warn('[mod] locateFile', path, '->', resolved);
-          return resolved;
-        },
+        locateFile: (path) => base + path,
         onAbort: (reason) => console.error('[mod] emscripten abort:', reason),
         printErr: (...args) => console.error('[mod] libopenmpt:', ...args),
         onRuntimeInitialized: () => {
           runtimeReady = true;
-          console.warn('[mod] runtime initialized from', base);
         },
       };
 
@@ -262,7 +237,6 @@ async function initV2() {
           const apiReady = typeof libopenmpt !== 'undefined' && typeof libopenmpt._malloc === 'function';
           const calledRun = !!window.Module?.calledRun;
           if (runtimeReady || apiReady || calledRun) {
-            console.warn('[mod] libopenmpt ready from', base);
             resolve();
           } else if (++attempts > 200) {
             reject(new Error('libopenmpt init timeout (runtimeReady=' + runtimeReady + ', apiReady=' + apiReady + ', calledRun=' + calledRun + ')'));
@@ -283,7 +257,6 @@ async function initV2() {
       player = new ChiptuneJsPlayer(new ChiptuneJsConfig(0, 100, 8, audioCtx));
       installLibopenmptGlobalShim();
       installUnlockHooks();
-      console.warn('[mod] chiptune2 player created');
 
       player.onError((e) => {
         stopPoll();
@@ -305,7 +278,6 @@ async function initV2() {
         _onEnd?.();
       });
 
-      console.warn('[mod] initV2 ready');
       return;
     } catch (e) {
       console.error('[mod] initV2 base failed', base, e);
@@ -329,27 +301,12 @@ function stopPoll() {
   if (_pollTimer) { clearInterval(_pollTimer); _pollTimer = null; }
 }
 
-function scheduleV2Watchdog(url) {
-  setTimeout(() => {
-    if (!_useV2 || !player?.currentPlayingNode?.modulePtr) return;
-    try {
-      const time = player.getCurrentTime?.() || 0;
-      const order = player.getCurrentOrder?.();
-      const row = player.getCurrentRow?.();
-      console.warn('[mod] V2 watchdog', url, 'time=', time, 'order=', order, 'row=', row, 'ctx=', audioCtx?.state);
-    } catch (e) {
-      console.error('[mod] V2 watchdog failed', e);
-    }
-  }, 1200);
-}
-
 /* ── public API ──────────────────────────────────── */
 export async function init() {
   if (_ready) return;
   if (_initPromise) return _initPromise;
 
   _initPromise = (async () => {
-    console.warn('[mod] init start', MOD_BUILD_TAG, 'secureContext=', window.isSecureContext, 'AudioWorkletNode=', typeof AudioWorkletNode);
     _useV2 = !supportsWorklet();
     if (!_useV2) {
       try {
@@ -366,7 +323,6 @@ export async function init() {
       await initV2();
     }
     _ready = true;
-    console.warn('[mod] init complete, useV2=', _useV2);
   })();
 
   try {
@@ -377,7 +333,6 @@ export async function init() {
 }
 
 export async function load(url) {
-  console.warn('[mod] load start', url);
   await init();
 
   if (player) player.stop();
@@ -392,7 +347,6 @@ export async function load(url) {
   if (_useV2) {
     installLibopenmptGlobalShim();
     await unlockV2Audio();
-    console.warn('[mod] V2 load begin', url, 'ctx=', audioCtx?.state, 'touchLocked=', player?.touchLocked);
     return await new Promise((resolve, reject) => {
       _v2PendingReject = reject;
       const timer = setTimeout(() => {
@@ -405,7 +359,6 @@ export async function load(url) {
 
       player.load(url, (buffer) => {
         try {
-          console.warn('[mod] V2 load callback', url, 'bytes=', buffer?.byteLength || 0);
           if (_v2PendingReject === reject) _v2PendingReject = null;
           clearTimeout(timer);
 
@@ -422,8 +375,6 @@ export async function load(url) {
 
           const meta = player.metadata();
           startPoll();
-          scheduleV2Watchdog(url);
-          console.warn('[mod] V2 play started', url, 'duration=', _duration, 'ctx=', audioCtx?.state, 'touchLocked=', player?.touchLocked, 'modulePtr=', player.currentPlayingNode?.modulePtr || 0);
 
           resolve({
             fields: [
@@ -443,7 +394,6 @@ export async function load(url) {
   }
 
   const res = await fetch(url);
-  console.warn('[mod] V3 fetch status', res.status, url);
   if (!res.ok) throw new Error(`MOD fetch failed: HTTP ${res.status}`);
   const buffer = await res.arrayBuffer();
 

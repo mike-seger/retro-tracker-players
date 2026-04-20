@@ -64,6 +64,16 @@ function esc(s) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+function trimDisplayPath(path) {
+  if (!path || !path.includes('/')) return path;
+  const parts = path.split('/').filter(Boolean);
+  const letterIdx = parts.findIndex(part => part.length === 1);
+  if (letterIdx >= 0 && letterIdx < parts.length - 1) {
+    return parts.slice(letterIdx + 1).join('/');
+  }
+  return path;
+}
+
 function extOf(name) {
   const dot = name.lastIndexOf('.');
   return dot >= 0 ? name.substring(dot + 1).toUpperCase() : '';
@@ -186,7 +196,7 @@ function buildPlaylist() {
 
     const decodedName = decodeURIComponent(entry.name);
     const slash = decodedName.lastIndexOf('/');
-    const artist = slash >= 0 ? decodedName.substring(0, slash) : '';
+    const artist = slash >= 0 ? trimDisplayPath(decodedName.substring(0, slash)) : '';
     const baseName = slash >= 0 ? decodedName.substring(slash + 1) : decodedName;
     const displayName = baseName.replace(/\.\w+$/i, '').replace(/_/g, ' ');
 
@@ -383,10 +393,10 @@ function trackUrl(entry) {
 function extractArtist(entry) {
   const slash = entry.name.lastIndexOf('/');
   if (slash < 0) return '';
-  if (entry.playerId === 'ahx') return entry.name.substring(0, slash);
+  if (entry.playerId === 'ahx') return trimDisplayPath(entry.name.substring(0, slash));
   const fileName = entry.name.substring(slash + 1);
   const dashIdx = fileName.indexOf(' \u2013 ') >= 0 ? fileName.indexOf(' \u2013 ') : fileName.indexOf(' - ');
-  return dashIdx >= 0 ? fileName.substring(0, dashIdx) : '';
+  return dashIdx >= 0 ? trimDisplayPath(fileName.substring(0, dashIdx)) : '';
 }
 
 let _prefetchAbort = null;  // AbortController for current prefetch batch
@@ -1553,7 +1563,7 @@ function doModlandSearch() {
     const li = document.createElement('li');
     li.dataset.idx = si;
     const slash = r.name.lastIndexOf('/');
-    const artist = slash >= 0 ? r.name.substring(0, slash) : '';
+    const artist = slash >= 0 ? trimDisplayPath(r.name.substring(0, slash)) : '';
     const baseName = slash >= 0 ? r.name.substring(slash + 1) : r.name;
     const displayName = baseName.replace(/\.\w+$/i, '').replace(/_/g, ' ');
     const isAdded = addedUrls.has(r.url);
@@ -1717,7 +1727,7 @@ function doRandomBrowse(skip) {
     const li = document.createElement('li');
     li.dataset.idx = si;
     const slash = r.name.lastIndexOf('/');
-    const artist = slash >= 0 ? r.name.substring(0, slash) : '';
+    const artist = slash >= 0 ? trimDisplayPath(r.name.substring(0, slash)) : '';
     const baseName = slash >= 0 ? r.name.substring(slash + 1) : r.name;
     const displayName = baseName.replace(/\.\w+$/i, '').replace(/_/g, ' ');
     const isAdded = addedUrls.has(r.url);
