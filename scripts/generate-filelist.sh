@@ -7,9 +7,10 @@ generate_one() {
   local dir="$1"
   cd "$dir" || return 1
   if [ ! -d files ]; then
-    echo "  Skipped $dir (no files/ directory)" >&2
+    echo "[]" > filelist.json
+    echo "  $dir: 0 entries (no files/ directory)"
     cd - > /dev/null
-    return 1
+    return 0
   fi
   find files -type f -not -name '.*' | sort | sed 's|^files/||' | python3 -c "
 import sys, json
