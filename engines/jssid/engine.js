@@ -3,7 +3,9 @@ const BASE = 'engines/jssid/';
 let player = null;
 let _onEnd = null;
 let _compressor = null;
+let _analyser = null;
 let _connected = false;
+let _silenceTimer = null;
 
 function loadScript(src) {
   return new Promise((resolve, reject) => {
@@ -29,21 +31,26 @@ export async function init() {
     _compressor.ratio.value = 8;
     _compressor.attack.value = 0.003;
     _compressor.release.value = 0.15;
+    _analyser = ctx.createAnalyser();
+    _analyser.fftSize = 256;
+    _analyser.connect(_compressor);
     _compressor.connect(ctx.destination);
-    // Preserve original behavior and only add routing through compressor.
+    // Preserve original behavior and only add routing through analyser → compressor.
     const origPlay = player.playcont.bind(player);
     const origPause = player.pause.bind(player);
     player.playcont = () => {
       if (!_connected) {
-        node.connect(_compressor);
+        node.connect(_analyser);
         _connected = true;
       }
       origPlay();
     };
     player.pause = () => {
+      clearTimeout(_silenceTimer);
+      _silenceTimer = null;
       try { origPause(); } catch (_) {}
       if (_connected) {
-        try { node.disconnect(_compressor); } catch (_) {}
+        try { node.disconnect(_analyser); } catch (_) {}
         _connected = false;
       }
     };
@@ -61,7 +68,18 @@ export async function load(url) {
   await resumeContext();
   return new Promise((resolve) => {
     player.setloadcallback(() => {
+      player.setmodel(player.getprefmodel());
       player.playcont();
+      // Auto-advance if jsSID produces no audio (unsupported RSID files)
+      clearTimeout(_silenceTimer);
+      _silenceTimer = setTimeout(() => {
+        _silenceTimer = null;
+        if (!_analyser) return;
+        const buf = new Float32Array(_analyser.fftSize);
+        _analyser.getFloatTimeDomainData(buf);
+        const rms = Math.sqrt(buf.reduce((s, v) => s + v * v, 0) / buf.length);
+        if (rms < 0.001) _onEnd?.();
+      }, 3500);
       resolve({
         fields: [
           { label: 'Title',    value: player.gettitle().replace(/\0/g, '') },
