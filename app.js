@@ -406,38 +406,43 @@ function updateTrackPos() {
 }
 
 // ── track cache ─────────────────────────────────────
-const _trackCache = new Map();   // originalUrl → { blobUrl, ts }
-const CACHE_MAX = 20;
+// Two-tier: in-memory blob URLs (fast, same session) backed by Cache API (persistent across reloads)
+const _blobCache = new Map();    // url → blobUrl
+const CACHE_NAME = 'track-files-v1';
 
-function cacheHas(url) { return _trackCache.has(url); }
-
-function cacheGet(url) {
-  const c = _trackCache.get(url);
-  if (!c) return null;
-  c.ts = performance.now();
-  return c.blobUrl;
-}
+function cacheHas(url) { return _blobCache.has(url); }
 
 async function cacheFetch(url) {
-  const existing = cacheGet(url);
-  if (existing) return existing;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const buf = await res.arrayBuffer();
-  const blobUrl = URL.createObjectURL(new Blob([buf]));
-  _trackCache.set(url, { blobUrl, ts: performance.now() });
-  // evict oldest entries beyond limit
-  while (_trackCache.size > CACHE_MAX) {
-    let oldestKey = null, oldestTs = Infinity;
-    for (const [k, v] of _trackCache) {
-      if (v.ts < oldestTs) { oldestTs = v.ts; oldestKey = k; }
-    }
-    if (oldestKey) {
-      URL.revokeObjectURL(_trackCache.get(oldestKey).blobUrl);
-      _trackCache.delete(oldestKey);
+  // 1. In-memory blob URL hit — fastest path
+  if (_blobCache.has(url)) return _blobCache.get(url);
+
+  let buf;
+  // 2. Cache API hit — disk-persisted, survives page reloads
+  if (typeof caches !== 'undefined') {
+    try {
+      const cache = await caches.open(CACHE_NAME);
+      let cached = await cache.match(url);
+      if (!cached) {
+        const fetched = await fetch(url);
+        if (!fetched.ok) throw new Error(`HTTP ${fetched.status}`);
+        await cache.put(url, fetched.clone());
+        cached = fetched;
+      }
+      buf = await cached.arrayBuffer();
+    } catch (e) {
+      // Cache API failed (e.g. private browsing quota) — fall through to plain fetch
     }
   }
-  if (_debugTiming) tlog(`[cache] stored ${url.split('/').pop()} (${_trackCache.size}/${CACHE_MAX})`);
+  // 3. Plain fetch fallback
+  if (!buf) {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    buf = await res.arrayBuffer();
+  }
+
+  const blobUrl = URL.createObjectURL(new Blob([buf]));
+  _blobCache.set(url, blobUrl);
+  if (_debugTiming) tlog(`[cache] stored ${url.split('/').pop()} (${_blobCache.size} in-mem)`);
   return blobUrl;
 }
 
@@ -474,7 +479,7 @@ async function loadAndPlay(idx) {
   elDur.textContent = '—';
 
   try {
-    const playUrl = entry.playerId === 'mod' ? url : await cacheFetch(url);
+    const playUrl = await cacheFetch(url);
     const tFetch = performance.now();
     const result = await engine.load(playUrl);
     const tLoad = performance.now();
@@ -552,7 +557,7 @@ function advanceTrack() {
   const pos = visible.indexOf(currentIdx);
   const nextIdx = pos >= 0 && pos < visible.length - 1 ? visible[pos + 1] : visible[0];
   loadAndPlay(nextIdx);
-  setTimeout(() => prefetchAhead(1, 3), 200);
+  setTimeout(() => prefetchAhead(1, 5), 200);
 }
 
 function playPrevNext(dir) {
@@ -566,7 +571,7 @@ function playPrevNext(dir) {
     newIdx = pos >= 0 && pos < visible.length - 1 ? visible[pos + 1] : visible[0];
   }
   loadAndPlay(newIdx);
-  setTimeout(() => prefetchAhead(dir, 3), 200);
+  setTimeout(() => prefetchAhead(dir, 5), 200);
 }
 
 // ── transport ───────────────────────────────────────
