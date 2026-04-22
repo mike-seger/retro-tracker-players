@@ -1335,10 +1335,18 @@ let _localUrllistTracks = [];  // from per-engine urllists.json, shown in local 
         if (!Array.isArray(urls)) continue;
         for (const url of urls) {
           try {
-            const safeUrl = encodeURI(url);
+            // Normalise: decode any existing percent-encoding first, then re-encode
+            // This handles both raw URLs (with spaces) and pre-encoded URLs (with %20) correctly
+            const safeUrl = encodeURI(decodeURI(url));
             const segments = new URL(safeUrl).pathname.split('/').map(decodeURIComponent);
             const fileName = segments[segments.length - 1];
-            const artist = (segments.length >= 2 ? segments[segments.length - 2] : '').replace(/\//g, '+');
+            // Skip coop-* subdirectory segments to get the real artist
+            // Modland structure: .../<format>/<artist>/[coop-<partner>/]<filename>
+            let artistSeg = segments.length >= 2 ? segments[segments.length - 2] : '';
+            if (/^coop-/i.test(artistSeg) && segments.length >= 3) {
+              artistSeg = segments[segments.length - 3];
+            }
+            const artist = artistSeg.replace(/\//g, '+');
             const displayName = artist ? `${artist} - ${fileName}` : fileName;
             const name = `${folder}/${displayName}`;
             _localUrllistTracks.push({ name, ext: extOf(safeUrl), playerId: p.id, url: safeUrl });
