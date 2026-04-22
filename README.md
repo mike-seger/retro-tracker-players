@@ -71,6 +71,35 @@ The selection count updates in real time.
 - **Fully offline** — serve locally, no internet required after initial setup
 - **Modular** — engines live under `engines/`; add a new format by dropping in an `engine.js` and `filelist.json`
 
+## Deep Links
+
+You can link directly to a specific track or pre-configure the UI state via URL parameters. All parameters are optional and can be combined freely.
+
+| Parameter | Description | Example |
+|-----------|-------------|---------|
+| `play` | URL of the track to load (local path or absolute URL) | `play=engines/mod/files/trance/dct2%20-%20SP-TIME.IT` |
+| `source` | Pre-select the source mode (`local` or `modland`) | `source=modland` |
+| `folder` | Pre-select the Folder dropdown | `folder=trance` |
+| `artist` | Pre-select the Artist dropdown | `artist=dct2` |
+| `search` | Pre-fill the search/filter input | `search=trance` |
+
+### Examples
+
+Open a specific track and filter the list to its folder and artist:
+```
+index.html?play=engines/mod/files/trance/dct2%20-%20SP-TIME.IT&folder=trance&artist=dct2
+```
+
+Open in Modland mode with a pre-filled search:
+```
+index.html?source=modland&search=purple motion
+```
+
+Browse locally with only the trance folder visible:
+```
+index.html?folder=trance
+```
+
 ## Links
 - [ModTube * Modland Webplayer & Research Tools](https://modtu.be/)
 - [PlayMOD online player for various chiptune collections](https://www.wothke.ch/playmod/index.php)

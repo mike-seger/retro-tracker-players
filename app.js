@@ -103,15 +103,20 @@ function deepLinkFilters() {
       folder: params.get('folder') || '',
       artist: params.get('artist') || '',
       search: params.get('search') || '',
+      source: params.get('source') || '',
     };
   } catch (_) {
-    return { folder: '', artist: '', search: '' };
+    return { folder: '', artist: '', search: '', source: '' };
   }
 }
 
 function applyDeepLinkFilters() {
-  const { folder, artist, search } = deepLinkFilters();
-  if (!folder && !artist && !search) return;
+  const { folder, artist, search, source } = deepLinkFilters();
+  if (!folder && !artist && !search && !source) return;
+  // Switch mode first if requested (resets dropdowns, so must come before setting them)
+  if (source === 'modland' || source === 'local') {
+    if (searchMode !== source) switchMode(source);
+  }
   // Set folder first so populateLocalArtistDropdown rebuilds with the right scope
   if (folder) {
     if (![...elRefineFolder.options].some(o => o.value === folder)) {
