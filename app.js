@@ -96,6 +96,43 @@ function deepLinkTarget() {
   }
 }
 
+function deepLinkFilters() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    return {
+      folder: params.get('folder') || '',
+      artist: params.get('artist') || '',
+      search: params.get('search') || '',
+    };
+  } catch (_) {
+    return { folder: '', artist: '', search: '' };
+  }
+}
+
+function applyDeepLinkFilters() {
+  const { folder, artist, search } = deepLinkFilters();
+  if (!folder && !artist && !search) return;
+  // Set folder first so populateLocalArtistDropdown rebuilds with the right scope
+  if (folder) {
+    if (![...elRefineFolder.options].some(o => o.value === folder)) {
+      elRefineFolder.appendChild(new Option(folder, folder));
+    }
+    elRefineFolder.value = folder;
+  }
+  if (search) {
+    elFilter.value = search;
+  }
+  // Rebuild artist dropdown now (scoped to folder/search), then set value
+  populateLocalArtistDropdown();
+  if (artist) {
+    if (![...elRefineArtist.options].some(o => o.value === artist)) {
+      elRefineArtist.appendChild(new Option(artist, artist));
+    }
+    elRefineArtist.value = artist;
+  }
+  applyFilter();
+}
+
 function findLocalEntryByUrl(targetUrl) {
   for (const p of players) {
     const files = fileLists[p.id] || [];
@@ -1288,12 +1325,15 @@ let _localUrllistTracks = [];  // from per-engine urllists.json, shown in local 
       for (const [folder, urls] of Object.entries(data)) {
         if (!Array.isArray(urls)) continue;
         for (const url of urls) {
-          const segments = new URL(url).pathname.split('/').map(decodeURIComponent);
-          const fileName = segments[segments.length - 1];
-          const artist = (segments.length >= 2 ? segments[segments.length - 2] : '').replace(/\//g, '+');
-          const displayName = artist ? `${artist} - ${fileName}` : fileName;
-          const name = `${folder}/${displayName}`;
-          _localUrllistTracks.push({ name, ext: extOf(url), playerId: p.id, url });
+          try {
+            const safeUrl = encodeURI(url);
+            const segments = new URL(safeUrl).pathname.split('/').map(decodeURIComponent);
+            const fileName = segments[segments.length - 1];
+            const artist = (segments.length >= 2 ? segments[segments.length - 2] : '').replace(/\//g, '+');
+            const displayName = artist ? `${artist} - ${fileName}` : fileName;
+            const name = `${folder}/${displayName}`;
+            _localUrllistTracks.push({ name, ext: extOf(safeUrl), playerId: p.id, url: safeUrl });
+          } catch (_) {}
         }
       }
     } catch (_) {}
@@ -1309,6 +1349,7 @@ let _localUrllistTracks = [];  // from per-engine urllists.json, shown in local 
   restoreSelection();
 
   const deepLinked = await loadDeepLinkedTrack();
+  applyDeepLinkFilters();
 
   if (!deepLinked) {
     try {
