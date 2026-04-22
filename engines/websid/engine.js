@@ -10,6 +10,7 @@ import { BASIC_ROM, CHAR_ROM, KERNAL_ROM } from './roms.js';
 const BASE = 'engines/websid/';
 const PLAYER_JS = BASE + 'stdlib/scriptprocessor_player.min.js';
 const BACKEND_JS = BASE + 'backend_websid.js';
+const DEFAULT_TIMEOUT_SEC = 300;
 
 let _initPromise = null;
 let _onEnd = null;
@@ -179,7 +180,8 @@ export async function load(url) {
 
   const options = {
     track: -1,
-    timeout: -1,
+    // A finite timeout ensures WebSid can expose a seekable playback range.
+    timeout: DEFAULT_TIMEOUT_SEC,
     traceSID: false,
   };
 
@@ -200,9 +202,9 @@ export async function load(url) {
   const info = p?.getSongInfo?.() || {};
   const reportedMax = p?.getMaxPlaybackPosition?.() ?? -1;
   _maxPosRaw = reportedMax > 0 ? reportedMax : 0;
-  _posUnit = inferPosUnit(_maxPosRaw);
-  const duration = _maxPosRaw > 0 ? rawPosToSeconds(_maxPosRaw) : 300;
-  _durationSec = duration > 0 ? duration : 300;
+  _posUnit = reportedMax > 0 ? inferPosUnit(_maxPosRaw) : 'samples';
+  const duration = _maxPosRaw > 0 ? rawPosToSeconds(_maxPosRaw) : DEFAULT_TIMEOUT_SEC;
+  _durationSec = duration > 0 ? duration : DEFAULT_TIMEOUT_SEC;
 
   const maxSub = Number.isFinite(info.maxSubsong) ? info.maxSubsong : -1;
   const curSub = Number.isFinite(info.actualSubsong) ? info.actualSubsong : -1;
@@ -237,27 +239,33 @@ export function seekTo(s) {
   if (!p?.seekPlaybackPosition) return;
 
   const { maxPos } = rawPlaybackWindow();
-  const dur = _durationSec > 0 ? _durationSec : 300;
+  const dur = _durationSec > 0 ? _durationSec : DEFAULT_TIMEOUT_SEC;
   const ratio = Math.max(0, Math.min((s || 0) / dur, 1));
 
-  let target = 0;
+  const candidates = [];
   if (maxPos > 0) {
-    target = Math.max(0, Math.min(Math.round(maxPos * ratio), maxPos));
+    candidates.push(Math.max(0, Math.min(Math.round(maxPos * ratio), maxPos)));
   } else {
-    // Fallback when backend does not yet report max position.
-    target = Math.max(0, secondsToRawPos(s));
+    // No authoritative max position available: try common unit encodings.
+    candidates.push(Math.max(0, secondsToRawPos(s)));
+    candidates.push(Math.max(0, Math.round((s || 0) * sampleRate())));
+    candidates.push(Math.max(0, Math.round((s || 0) * 1000)));
+    candidates.push(Math.max(0, Math.round(s || 0)));
   }
 
-  p.seekPlaybackPosition(target);
-
-  // Defensive fallback: some WebSid builds ignore facade seek until a direct
-  // backend seek is issued.
-  try {
-    const module = p?._backendAdapter?.Module;
-    if (module?.ccall) {
-      module.ccall('emu_seek_position', 'number', ['number'], [target]);
-    }
-  } catch (_) {}
+  const tried = new Set();
+  const module = p?._backendAdapter?.Module;
+  for (const target of candidates) {
+    if (tried.has(target)) continue;
+    tried.add(target);
+    try { p.seekPlaybackPosition(target); } catch (_) {}
+    // Defensive fallback: some builds only react to direct backend seek.
+    try {
+      if (module?.ccall) {
+        module.ccall('emu_seek_position', 'number', ['number'], [target]);
+      }
+    } catch (_) {}
+  }
 
   kickPlayback();
 }
