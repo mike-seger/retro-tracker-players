@@ -111,6 +111,39 @@ function kickPlayback() {
   try { p.play?.(); } catch (_) {}
 }
 
+function rebuildAudioGraph(player) {
+  const ScriptNodePlayer = getScriptNodePlayerCtor();
+  const ctx = ScriptNodePlayer?.getWebAudioContext?.() || window._gPlayerAudioCtx;
+  if (!player || !ctx) return;
+
+  try { player._bufferSource?.stop?.(0); } catch (_) {}
+  try { player._producerNode?.disconnect?.(0); } catch (_) {}
+  try { player._analyzerNode?.disconnect?.(0); } catch (_) {}
+  try { player._gainNode?.disconnect?.(0); } catch (_) {}
+  try { player._tickerNode?.disconnect?.(0); } catch (_) {}
+
+  player._producerNode = undefined;
+  player._analyzerNode = undefined;
+  player._gainNode = undefined;
+  player._tickerNode = undefined;
+  player._bufferSource = undefined;
+
+  if (player._isAppleShit?.()) player._iOSHack?.(ctx);
+
+  player._analyzerNode = ctx.createAnalyser();
+  player._producerNode = player._backendAdapter?._createProducerNode?.(ctx);
+  player._gainNode = ctx.createGain();
+  player._producerNode?.connect?.(player._gainNode);
+  player._tickerNode = player._backendAdapter?._connectTickerNode?.(ctx, player._gainNode);
+  if (player._spectrumEnabled) {
+    player._gainNode.connect(player._analyzerNode);
+    player._analyzerNode.connect(ctx.destination);
+  } else {
+    player._gainNode.connect(ctx.destination);
+  }
+  player._bufferSource = player._createBufferSource?.(ctx);
+}
+
 function inferPosUnit(maxPosRaw) {
   if (!(maxPosRaw > 0)) return 'unknown';
   // Large values are usually raw sample positions.
@@ -365,12 +398,21 @@ export function seekTo(s) {
       // avoid stale-loop artifacts after synthetic stepping.
       try {
         const t = adapter2._transformer;
+        adapter2._resetBuffers?.();
         if (t) {
           t._currentPlaytime = targetSamples;
           t.resetBuffers?.();
+          t._numberOfSamplesRendered = 0;
+          t._numberOfSamplesToRender = 0;
+          t._sourceBufferLen = 0;
           t._sourceBufferIdx = 0;
+          t._silenceStarttime = -1;
+          t._resampleBuffer?.fill?.(0);
         }
       } catch (_) {}
+
+      rebuildAudioGraph(p2);
+      p2?.setVolume(_volume);
 
       debugSeek('fallback completed', { targetSec, targetSamples, chunk, steps });
 
