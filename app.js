@@ -660,12 +660,15 @@ elSeek.addEventListener('change', () => {
   userDragging = false;
   if (!activeEngine || !engines[activeEngine] || currentIdx < 0) return;
   const target = parseFloat(elSeek.value);
+  const engine = engines[activeEngine];
 
   elTime.textContent = '>>>';
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
-      engines[activeEngine].seekTo(target);
-      elTime.textContent = fmtTime(target);
+      const ok = engine.seekTo(target);
+      const t = ok === false ? engine.getTime() : target;
+      elTime.textContent = fmtTime(t);
+      elSeek.value = t;
     });
   });
 });
@@ -1023,8 +1026,10 @@ function scrub(delta) {
   elTime.textContent = '>>>';
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
-      engine.seekTo(target);
-      elTime.textContent = fmtTime(target);
+      const ok = engine.seekTo(target);
+      const t = ok === false ? engine.getTime() : target;
+      elTime.textContent = fmtTime(t);
+      elSeek.value = t;
     });
   });
 }

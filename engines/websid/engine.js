@@ -18,6 +18,23 @@ let _volume = 1.0;
 let _maxPosRaw = 0;
 let _durationSec = 300;
 let _posUnit = 'unknown';   // 'samples' | 'ms' | 'sec' | 'unknown'
+let _currentUrl = null;
+let _seekSerial = 0;
+
+function debugSeek(...args) {
+  if (!window.__WEB_SID_DEBUG_SEEK) return;
+  try { console.log('[websid-seek]', ...args); } catch (_) {}
+}
+
+function backendRawPos(module) {
+  if (!module?.ccall) return -1;
+  try {
+    const v = module.ccall('emu_get_current_position', 'number');
+    return Number.isFinite(v) ? v : -1;
+  } catch (_) {
+    return -1;
+  }
+}
 
 function resolveGlobalSymbol(name) {
   const direct = window[name];
@@ -173,6 +190,9 @@ export async function init() {
 export async function load(url) {
   await init();
 
+  debugSeek('debug enabled');
+  _currentUrl = url;
+
   const ScriptNodePlayer = getScriptNodePlayerCtor();
   if (!ScriptNodePlayer) throw new Error('ScriptNodePlayer unavailable');
 
@@ -235,8 +255,9 @@ export async function resume() {
 }
 
 export function seekTo(s) {
+  const seekToken = ++_seekSerial;
   const p = currentPlayer();
-  if (!p?.seekPlaybackPosition) return;
+  if (!p?.seekPlaybackPosition) return false;
 
   const { maxPos } = rawPlaybackWindow();
   const dur = _durationSec > 0 ? _durationSec : DEFAULT_TIMEOUT_SEC;
@@ -255,6 +276,11 @@ export function seekTo(s) {
 
   const tried = new Set();
   const module = p?._backendAdapter?.Module;
+  const wasPaused = !!p?.isPaused?.();
+  const beforePos = backendRawPos(module);
+  let movedByNativeSeek = false;
+  debugSeek('request', { seconds: s, maxPos, duration: _durationSec, posUnit: _posUnit, beforePos, candidates: [...candidates] });
+
   for (const target of candidates) {
     if (tried.has(target)) continue;
     tried.add(target);
@@ -265,9 +291,105 @@ export function seekTo(s) {
         module.ccall('emu_seek_position', 'number', ['number'], [target]);
       }
     } catch (_) {}
+
+    // Stop at the first candidate that actually moves backend position.
+    const afterPos = backendRawPos(module);
+    debugSeek('attempt', { target, beforePos, afterPos, moved: beforePos >= 0 && afterPos >= 0 ? Math.abs(afterPos - beforePos) : null });
+    if (beforePos >= 0 && afterPos >= 0 && Math.abs(afterPos - beforePos) > 512) {
+      movedByNativeSeek = true;
+      break;
+    }
   }
 
-  kickPlayback();
+  if (movedByNativeSeek) {
+    if (wasPaused) {
+      try { p.pause?.(); } catch (_) {}
+    } else {
+      kickPlayback();
+    }
+    return true;
+  }
+
+  // Native seek path is ineffective in this backend build. Use a deterministic
+  // reload + offline fast-forward fallback with synchronized transformer state.
+  debugSeek('native seek unsupported; using synced fallback');
+  const targetSec = Math.max(0, Number(s) || 0);
+  const url = _currentUrl;
+  if (!url) {
+    debugSeek('fallback skipped: no current URL');
+    return false;
+  }
+
+  void (async () => {
+    try {
+      const ScriptNodePlayer = getScriptNodePlayerCtor();
+      if (!ScriptNodePlayer) return;
+
+      await ensureAudioContextRunning(ScriptNodePlayer);
+      try { p.pause?.(); } catch (_) {}
+
+      const options = { track: -1, timeout: DEFAULT_TIMEOUT_SEC, traceSID: false };
+      await new Promise((resolve, reject) => {
+        ScriptNodePlayer.loadMusicFromURL(
+          url,
+          options,
+          () => reject(new Error('WebSid failed to reload SID for seek fallback')),
+          () => {},
+        ).then(resolve).catch(reject);
+      });
+
+      if (seekToken !== _seekSerial) return; // superseded by a newer seek
+
+      const p2 = currentPlayer();
+      p2?.setVolume(_volume);
+      try { p2?.pause?.(); } catch (_) {}
+
+      const adapter2 = p2?._backendAdapter;
+      if (!adapter2?.computeAudioSamples) return;
+
+      let chunk = 0;
+      try { chunk = adapter2.getAudioBufferLength?.() || 0; } catch (_) {}
+      if (!(chunk > 0)) chunk = 1024;
+
+      const targetSamples = Math.max(0, Math.round(targetSec * sampleRate()));
+      const maxSteps = 200000;
+      const steps = Math.min(maxSteps, Math.ceil(targetSamples / chunk));
+
+      for (let i = 0; i < steps; i++) {
+        if (seekToken !== _seekSerial) return;
+        const ended = adapter2.computeAudioSamples();
+        if (ended) break;
+      }
+
+      // Sync JS-side timing and clear pending buffered sample counters to
+      // avoid stale-loop artifacts after synthetic stepping.
+      try {
+        const t = adapter2._transformer;
+        if (t) {
+          t._currentPlaytime = targetSamples;
+          t.resetBuffers?.();
+          t._sourceBufferIdx = 0;
+        }
+      } catch (_) {}
+
+      debugSeek('fallback completed', { targetSec, targetSamples, chunk, steps });
+
+      if (wasPaused) {
+        try { p2?.pause?.(); } catch (_) {}
+      } else {
+        try { p2?.resume?.(); } catch (_) {}
+        try { p2?.play?.(); } catch (_) {}
+      }
+    } catch (err) {
+      debugSeek('fallback failed', { error: String(err) });
+      if (!wasPaused) {
+        try { p?.resume?.(); } catch (_) {}
+      }
+    }
+  })();
+
+  // Async fallback in progress; caller can keep temporary UI state.
+  return true;
 }
 
 export function getTime() {
@@ -276,6 +398,10 @@ export function getTime() {
     const ratio = Math.max(0, Math.min(rawPos / maxPos, 1));
     return ratio * _durationSec;
   }
+
+  // Prefer backend raw position when available: this reflects emu_seek_position
+  // immediately even if backend playtime lags one tick behind.
+  if (rawPos > 0) return rawPosToSeconds(rawPos);
 
   const p = currentPlayer();
   const currentSeconds = p?.getCurrentPlaytime?.();
