@@ -334,6 +334,7 @@ export async function init() {
 
 export async function load(url) {
   await init();
+  const engineLabel = _useV2 ? 'chiptune2 (v2)' : 'chiptune3 (v3)';
 
   if (player) player.stop();
   if (_useV2) stopPoll();
@@ -378,6 +379,7 @@ export async function load(url) {
 
           resolve({
             fields: [
+              { label: 'Engine', value: engineLabel },
               { label: 'Title', value: meta?.title || '—' },
               { label: 'Type', value: meta?.type_long || meta?.type || '—' },
               { label: 'Tracker', value: meta?.tracker || '—' },
@@ -409,15 +411,22 @@ export async function load(url) {
   player.play(buffer);
   _playing = true;
 
-  await metaPromise;
-
-  return {
+  // Return immediately — audio is already playing. Real title/duration arrive
+  // once the AudioWorklet fires its metadata callback (typically ~3 ms later).
+  const metaReady = metaPromise.then(() => ({
     fields: [
+      { label: 'Engine', value: engineLabel },
       { label: 'Title', value: _meta?.title || _meta?.name || '—' },
       { label: 'Type', value: _meta?.type || '—' },
       { label: 'Tracker', value: _meta?.tracker || '—' },
     ],
     duration: _duration || 300,
+  }));
+
+  return {
+    fields: [{ label: 'Engine', value: engineLabel }],
+    duration: 300,
+    metaReady,
   };
 }
 

@@ -82,6 +82,7 @@ export async function load(url) {
       }, 3500);
       resolve({
         fields: [
+          { label: 'Engine',   value: 'jsSID' },
           { label: 'Title',    value: player.gettitle().replace(/\0/g, '') },
           { label: 'Author',   value: player.getauthor().replace(/\0/g, '') },
           { label: 'Released', value: player.getinfo().replace(/\0/g, '') },

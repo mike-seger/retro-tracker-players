@@ -78,10 +78,23 @@ body.mode-modland {
 /* ── info ──────────────────────────────────────────── */
 #info {
   background: #1a1a1a; border: 1px solid #333; padding: 8px 12px;
-  margin-bottom: 12px; font-size: 13px; min-height: 60px; overflow: hidden;
-  display: grid; grid-template-columns: auto 1fr; gap: 0 8px;
+  margin-bottom: 12px; font-size: 13px;
+  height: calc(3 * 1.5em + 4px + 16px);
+  overflow-x: auto; overflow-y: hidden;
+  display: grid;
+  grid-template-rows: repeat(3, minmax(0, auto));
+  grid-auto-flow: column;
+  grid-auto-columns: max-content;
+  gap: 2px 16px;
 }
-#info .label { color: #666; text-align: right; cursor: pointer; user-select: none; }
+#info .info-field {
+  display: grid;
+  grid-template-columns: var(--info-label-col, max-content) max-content;
+  align-items: baseline;
+  gap: 0 10px;
+  width: max-content;
+}
+#info .label { color: #666; text-align: left; cursor: pointer; user-select: none; }
 #info .label:hover { color: #aaa; }
 #info .label.copied { color: #4c4; }
 #info .val { color: var(--info-val); }

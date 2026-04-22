@@ -22,12 +22,16 @@ let playing = false;
 let loaded = false;
 let activeEngine = null;    // playerId of the currently loaded engine
 let _playingUrl = null;     // URL of the currently playing track
+let _loadSeq = 0;           // incremented on every loadAndPlay to abort stale loads
 let bulkState = 'restore';  // restore | all | none
 let bulkRestoreSelection = new Set();
 let suppressBulkSnapshot = false;
 let _debugTiming = true;     // set to true to log perf timing
 
 const FIXED_VOLUME = 1.0;
+const USE_WEBSID = true;   // Set true to use engines/websid for SID playback
+const SID_TRACK_PLAYER_ID = 'jssid';
+const SID_ENGINE_PLAYER_ID = USE_WEBSID ? 'websid' : 'jssid';
 
 // ── DOM refs ────────────────────────────────────────
 const btnPlay     = document.getElementById('btn-play');
@@ -53,6 +57,24 @@ const elRefineArtist = document.getElementById('refine-artist');
 const elRefineRange  = document.getElementById('refine-range');
 const elRefineFormat = document.getElementById('refine-format');
 const elSelBulk   = document.getElementById('sel-bulk');
+
+function alignInfoValueColumn() {
+  const labels = elInfo.querySelectorAll('.info-field .label');
+  if (!labels.length) {
+    elInfo.style.removeProperty('--info-label-col');
+    return;
+  }
+
+  let max = 0;
+  labels.forEach((label) => {
+    const w = Math.ceil(label.getBoundingClientRect().width);
+    if (w > max) max = w;
+  });
+
+  if (max > 0) {
+    elInfo.style.setProperty('--info-label-col', `${max}px`);
+  }
+}
 
 // ── helpers ─────────────────────────────────────────
 function fmtTime(s) {
@@ -201,10 +223,14 @@ async function loadDeepLinkedTrack() {
 // ── engine management ───────────────────────────────
 async function getEngine(playerId) {
   if (!engines[playerId]) {
-    const mod = await import(`./engines/${playerId}/engine.js`);
+    const resolvedPlayerId = playerId === SID_TRACK_PLAYER_ID ? SID_ENGINE_PLAYER_ID : playerId;
+    const mod = await import(`./engines/${resolvedPlayerId}/engine.js`);
     await mod.init();
     mod.setVolume(FIXED_VOLUME);
     mod.onEnd(() => advanceTrack());
+    if (playerId === SID_TRACK_PLAYER_ID && resolvedPlayerId !== playerId) {
+      console.log(`[sid] using ${resolvedPlayerId} engine`);
+    }
     engines[playerId] = mod;
   }
   return engines[playerId];
@@ -448,6 +474,7 @@ async function cacheFetch(url) {
 
 // ── load + play ─────────────────────────────────────
 async function loadAndPlay(idx) {
+  const seq = ++_loadSeq;
   const t0 = performance.now();
   const files = activeFiles();
   if (idx < 0 || idx >= files.length) return;
@@ -462,6 +489,8 @@ async function loadAndPlay(idx) {
     elInfo.innerHTML = '<div class="label">Engine init failed: ' + esc(String(e)) + '</div>';
     return;
   }
+  if (seq !== _loadSeq) return; // superseded by a newer click
+
   // Pause the active engine itself too — handles same-engine rapid clicks
   engine.pause();
   const tEngine = performance.now();
@@ -474,33 +503,49 @@ async function loadAndPlay(idx) {
 
   const url = trackUrl(entry);
 
+  // Update UI immediately — don't wait for decode/metadata
   elSeek.value = 0;
   elTime.textContent = '0:00';
   elDur.textContent = '—';
-
-  try {
-    const playUrl = await cacheFetch(url);
-    const tFetch = performance.now();
-    const result = await engine.load(playUrl);
-    const tLoad = performance.now();
-
-    elInfo.innerHTML = result.fields
-      .map(f => `<span class="label" title="Copy ${esc(f.label)}" data-copy="${esc(f.value)}">${esc(f.label)}:</span><span class="val">${esc(f.value)}</span>`)
-      .join('');
-
-    elSeek.max = result.duration || 300;
-    elDur.textContent = fmtTime(result.duration || 300);
-
-    if (_debugTiming) tlog(`[T] engine ${(tEngine - t0).toFixed(0)}ms  fetch ${(tFetch - tEngine).toFixed(0)}ms  decode ${(tLoad - tFetch).toFixed(0)}ms`);
-  } catch (e) {
-    console.error('Failed to load', url, e);
-    elInfo.innerHTML = '<div class="label">Error loading track</div>';
-  }
-
+  elInfo.innerHTML = '<div class="label">Loading…</div>';
   highlightCurrent();
   setFocus(idx);
   updateTransportUI();
   updateTrackPos();
+
+  const applyMeta = (result) => {
+    if (_loadSeq !== seq) return;
+    elInfo.innerHTML = result.fields
+      .map(f =>
+        `<div class="info-field">` +
+        `<span class="label" title="Copy ${esc(f.label)}" data-copy="${esc(f.value)}">${esc(f.label)}:&nbsp;</span>` +
+        `<span class="val">${esc(f.value)}</span>` +
+        `</div>`)
+      .join('');
+    alignInfoValueColumn();
+    elSeek.max = result.duration || 300;
+    elDur.textContent = fmtTime(result.duration || 300);
+  };
+
+  try {
+    const playUrl = await cacheFetch(url);
+    if (seq !== _loadSeq) return; // superseded
+    const tFetch = performance.now();
+    const result = await engine.load(playUrl);
+    if (seq !== _loadSeq) return; // superseded
+    const tLoad = performance.now();
+
+    applyMeta(result);
+    // Some engines (mod/chiptune3) defer metadata — update info panel when ready
+    result.metaReady?.then(applyMeta).catch(() => {});
+
+    if (_debugTiming) tlog(`[T] engine ${(tEngine - t0).toFixed(0)}ms  fetch ${(tFetch - tEngine).toFixed(0)}ms  decode ${(tLoad - tFetch).toFixed(0)}ms`);
+  } catch (e) {
+    if (seq !== _loadSeq) return;
+    console.error('Failed to load', url, e);
+    elInfo.innerHTML = '<div class="label">Error loading track</div>';
+  }
+
   if (_debugTiming) tlog(`[T] total ${(performance.now() - t0).toFixed(0)}ms`);
 }
 
@@ -683,33 +728,35 @@ function applyFilter() {
 
 // ── highlight + focus ───────────────────────────────
 
-/** Scroll el into view inside #playlist. When already visible do nothing.
- *  Otherwise place it at the *opposite* edge from the direction it went out —
- *  this maximises arrow-key presses before the next scroll.
- *  If centered=true, always scroll to place the element in the center. */
+/** Scroll el into view inside #playlist.
+ *  Centered=true places the element in the middle of the container.
+ *  Otherwise, if even partially out of view, snap it to the top edge. */
 function scrollIntoViewSmart(el, centered) {
   if (!el) return;
-  const container = elList;             // #playlist = scroll container
+  const container = elList;
+  if (!container) return;
+
+  // Use getBoundingClientRect so the offset is always relative to the
+  // visible viewport, regardless of whether #playlist has position:relative.
   const cRect = container.getBoundingClientRect();
   const eRect = el.getBoundingClientRect();
-  // Account for outline (1px offset on each side)
-  const outlineExtra = 2;
-  const eTop = eRect.top - outlineExtra;
-  const eBot = eRect.bottom + outlineExtra;
+
+  // elTop = scroll offset needed to place el at the top of the container
+  const elTop = container.scrollTop + (eRect.top - cRect.top);
+
   if (centered) {
-    const containerMid = cRect.top + cRect.height / 2;
-    const elMid = eTop + (eBot - eTop) / 2;
-    container.scrollTop += (elMid - containerMid);
+    const target = elTop - Math.max(0, Math.floor((container.clientHeight - el.offsetHeight) / 2));
+    container.scrollTop = Math.max(0, target);
     return;
   }
-  if (eTop >= cRect.top && eBot <= cRect.bottom) return; // fully visible
-  if (eTop < cRect.top) {
-    // element above viewport → scroll it to top edge
-    container.scrollTop -= (cRect.top - eTop);
-  } else {
-    // element below viewport → scroll it to top edge
-    container.scrollTop += (eTop - cRect.top);
-  }
+
+  const elBottom = elTop + el.offsetHeight;
+  const viewTop = container.scrollTop;
+  const viewBottom = viewTop + container.clientHeight;
+
+  if (elTop >= viewTop && elBottom <= viewBottom) return;
+  // Subtract 2px so the focused outline isn't flush-clipped at the container edge.
+  container.scrollTop = Math.max(0, elTop - 2);
 }
 
 function highlightCurrent() {
@@ -1153,7 +1200,7 @@ window.addEventListener('unhandledrejection', (e) => dbg('[REJ] ' + e.reason));
 function detectPlayerIdFromUrl(url) {
   const ext = url.split('.').pop().toLowerCase();
   if (ext === 'ahx') return 'ahx';
-  if (ext === 'sid') return 'jssid';
+  if (ext === 'sid') return SID_TRACK_PLAYER_ID;
   if (['mod', 'xm', 's3m', 'it'].includes(ext)) return 'mod';
   return null;
 }
