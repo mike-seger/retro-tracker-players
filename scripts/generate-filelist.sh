@@ -14,7 +14,7 @@ generate_one() {
   find files -type f -not -name '.*' | sort | sed 's|^files/||' | python3 -c "
 import sys, json
 files = [line.strip() for line in sys.stdin if line.strip()]
-json.dump(files, sys.stdout, indent=2)
+json.dump(files, sys.stdout, indent=2, ensure_ascii=False)
 print()
 " > filelist.json
   local count

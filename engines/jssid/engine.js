@@ -41,7 +41,7 @@ export async function init() {
       origPlay();
     };
     player.pause = () => {
-      origPause();
+      try { origPause(); } catch (_) {}
       if (_connected) {
         try { node.disconnect(_compressor); } catch (_) {}
         _connected = false;

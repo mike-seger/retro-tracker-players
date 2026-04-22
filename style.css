@@ -81,7 +81,9 @@ body.mode-modland {
   margin-bottom: 12px; font-size: 13px; min-height: 60px; overflow: hidden;
   display: grid; grid-template-columns: auto 1fr; gap: 0 8px;
 }
-#info .label { color: #666; text-align: right; }
+#info .label { color: #666; text-align: right; cursor: pointer; user-select: none; }
+#info .label:hover { color: #aaa; }
+#info .label.copied { color: #4c4; }
 #info .val { color: var(--info-val); }
 
 /* ── filter row ────────────────────────────────────── */

@@ -211,9 +211,10 @@ async function getEngine(playerId) {
 }
 
 async function ensureEngine(playerId) {
-  // Pause the old engine if switching
-  if (activeEngine && activeEngine !== playerId && engines[activeEngine]) {
-    engines[activeEngine].pause();
+  // Pause all loaded engines before switching — prevents overlap when clicking
+  // a new track quickly while a previous async load is still in progress
+  for (const [id, eng] of Object.entries(engines)) {
+    if (id !== playerId) eng.pause();
   }
   activeEngine = playerId;
   return getEngine(playerId);
@@ -261,19 +262,10 @@ function renderToggles() {
 }
 
 function saveEnabledPlayers() {
-  localStorage.setItem('enabled-players', JSON.stringify(enabledPlayers));
+  // Player toggles removed — all players always enabled
 }
 
 function loadEnabledPlayers() {
-  try {
-    const saved = JSON.parse(localStorage.getItem('enabled-players'));
-    if (saved && typeof saved === 'object') {
-      players.forEach(p => {
-        enabledPlayers[p.id] = p.id in saved ? !!saved[p.id] : true;
-      });
-      return;
-    }
-  } catch (_) {}
   players.forEach(p => { enabledPlayers[p.id] = true; });
 }
 
@@ -465,6 +457,8 @@ async function loadAndPlay(idx) {
     elInfo.innerHTML = '<div class="label">Engine init failed: ' + esc(String(e)) + '</div>';
     return;
   }
+  // Pause the active engine itself too — handles same-engine rapid clicks
+  engine.pause();
   const tEngine = performance.now();
 
   currentIdx = idx;
@@ -486,7 +480,7 @@ async function loadAndPlay(idx) {
     const tLoad = performance.now();
 
     elInfo.innerHTML = result.fields
-      .map(f => `<span class="label">${esc(f.label)}:</span><span class="val">${esc(f.value)}</span>`)
+      .map(f => `<span class="label" title="Copy ${esc(f.label)}" data-copy="${esc(f.value)}">${esc(f.label)}:</span><span class="val">${esc(f.value)}</span>`)
       .join('');
 
     elSeek.max = result.duration || 300;
@@ -889,6 +883,16 @@ elSelBulk.addEventListener('click', (e) => {
   else if (next === 'none') selectNone();
   else restoreBulkSelection();
   suppressBulkSnapshot = false;
+});
+
+elInfo.addEventListener('click', (e) => {
+  const label = e.target.closest('.label[data-copy]');
+  if (!label) return;
+  const text = label.dataset.copy;
+  navigator.clipboard.writeText(text).then(() => {
+    label.classList.add('copied');
+    setTimeout(() => label.classList.remove('copied'), 1200);
+  }).catch(() => {});
 });
 
 btnCopy.addEventListener('click', () => {
