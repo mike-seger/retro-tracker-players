@@ -106,21 +106,29 @@ function rawPosToSeconds(rawPos) {
   if (!(rawPos > 0)) return 0;
   if (_posUnit === 'samples') return rawPos / sampleRate();
   if (_posUnit === 'ms') return rawPos / 1000;
-  return rawPos;
+  if (_posUnit === 'sec') return rawPos;
+  // Unknown unit: assume samples (most common for SID WASM backends).
+  return rawPos / sampleRate();
 }
 
 function secondsToRawPos(seconds) {
   const s = Math.max(0, seconds || 0);
   if (_posUnit === 'samples') return Math.round(s * sampleRate());
   if (_posUnit === 'ms') return Math.round(s * 1000);
-  return Math.round(s);
+  if (_posUnit === 'sec') return Math.round(s);
+  // Unknown unit: assume samples.
+  return Math.round(s * sampleRate());
 }
 
 function rawPlaybackWindow() {
   const p = currentPlayer();
   if (!p) return { rawPos: 0, maxPos: 0 };
-  const maxPos = p.getMaxPlaybackPosition?.() || _maxPosRaw || 0;
-  const rawPos = p.getPlaybackPosition?.() || 0;
+  // getMaxPlaybackPosition returns -1 when the backend has no precomputed
+  // duration; treat anything <= 0 as unknown.
+  const reportedMax = p.getMaxPlaybackPosition?.() ?? -1;
+  const maxPos = reportedMax > 0 ? reportedMax : (_maxPosRaw > 0 ? _maxPosRaw : 0);
+  const reportedPos = p.getPlaybackPosition?.() ?? -1;
+  const rawPos = reportedPos > 0 ? reportedPos : 0;
   return { rawPos, maxPos };
 }
 
@@ -190,7 +198,8 @@ export async function load(url) {
   const p = currentPlayer();
   p?.setVolume(_volume);
   const info = p?.getSongInfo?.() || {};
-  _maxPosRaw = p?.getMaxPlaybackPosition?.() || 0;
+  const reportedMax = p?.getMaxPlaybackPosition?.() ?? -1;
+  _maxPosRaw = reportedMax > 0 ? reportedMax : 0;
   _posUnit = inferPosUnit(_maxPosRaw);
   const duration = _maxPosRaw > 0 ? rawPosToSeconds(_maxPosRaw) : 300;
   _durationSec = duration > 0 ? duration : 300;
