@@ -11,6 +11,8 @@ const BASE = 'engines/websid/';
 const PLAYER_JS = BASE + 'stdlib/scriptprocessor_player.min.js';
 const BACKEND_JS = BASE + 'backend_websid.js';
 const DEFAULT_TIMEOUT_SEC = 300;
+const NORMAL_PROCESSOR_BUF_SIZE = 4096;
+const SEEK_PROCESSOR_BUF_SIZE = NORMAL_PROCESSOR_BUF_SIZE;
 
 let _initPromise = null;
 let _onEnd = null;
@@ -183,38 +185,43 @@ function rawPlaybackWindow() {
   return { rawPos, maxPos };
 }
 
+async function initializePlayerInstance(processorBufSize = NORMAL_PROCESSOR_BUF_SIZE) {
+  // backend_websid.js locates websid.wasm relative to this path.
+  window.WASM_SEARCH_PATH = new URL(BASE, window.location.href).href;
+
+  await loadScript(PLAYER_JS);
+  await loadScript(BACKEND_JS);
+
+  const ScriptNodePlayer = getScriptNodePlayerCtor();
+  const SIDBackendAdapter = getSidBackendAdapterCtor();
+  if (!ScriptNodePlayer || !SIDBackendAdapter) {
+    throw new Error('WebSid globals are missing after script load');
+  }
+
+  const backend = new SIDBackendAdapter(BASIC_ROM, CHAR_ROM, KERNAL_ROM);
+  backend.setProcessorBufSize(processorBufSize);
+
+  await ScriptNodePlayer.initialize(
+    backend,
+    () => { _onEnd?.(); },
+    [],
+    false,
+    undefined,
+  );
+
+  await ensureAudioContextRunning(ScriptNodePlayer);
+
+  const p = currentPlayer();
+  if (!p) throw new Error('WebSid player initialization failed');
+  p.setVolume(_volume);
+  return p;
+}
+
 export async function init() {
   if (_initPromise) return _initPromise;
 
   _initPromise = (async () => {
-    // backend_websid.js locates websid.wasm relative to this path.
-    window.WASM_SEARCH_PATH = new URL(BASE, window.location.href).href;
-
-    await loadScript(PLAYER_JS);
-    await loadScript(BACKEND_JS);
-
-    const ScriptNodePlayer = getScriptNodePlayerCtor();
-    const SIDBackendAdapter = getSidBackendAdapterCtor();
-    if (!ScriptNodePlayer || !SIDBackendAdapter) {
-      throw new Error('WebSid globals are missing after script load');
-    }
-
-    const backend = new SIDBackendAdapter(BASIC_ROM, CHAR_ROM, KERNAL_ROM);
-    backend.setProcessorBufSize(4096);
-
-    await ScriptNodePlayer.initialize(
-      backend,
-      () => { _onEnd?.(); },
-      [],
-      false,
-      undefined,
-    );
-
-    await ensureAudioContextRunning(ScriptNodePlayer);
-
-    const p = currentPlayer();
-    if (!p) throw new Error('WebSid player initialization failed');
-    p.setVolume(_volume);
+    await initializePlayerInstance();
   })();
 
   return _initPromise;
@@ -361,6 +368,8 @@ export function seekTo(s) {
       await ensureAudioContextRunning(ScriptNodePlayer);
       try { p.pause?.(); } catch (_) {}
 
+      await initializePlayerInstance(SEEK_PROCESSOR_BUF_SIZE);
+
       const options = { track: -1, timeout: DEFAULT_TIMEOUT_SEC, traceSID: false };
       await new Promise((resolve, reject) => {
         ScriptNodePlayer.loadMusicFromURL(
@@ -409,6 +418,11 @@ export function seekTo(s) {
           t._silenceStarttime = -1;
           t._resampleBuffer?.fill?.(0);
         }
+      } catch (_) {}
+
+      try {
+        adapter2.setProcessorBufSize?.(NORMAL_PROCESSOR_BUF_SIZE);
+        p2?.resetSampleRate?.(sampleRate());
       } catch (_) {}
 
       rebuildAudioGraph(p2);
