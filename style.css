@@ -161,26 +161,26 @@ body.mode-modland {
   cursor: pointer; flex-shrink: 0;
 }
 
-#refine-row {
-  display: flex; gap: 6px; margin-bottom: 8px; flex-shrink: 0;
+#refine-inline {
+  display: flex; gap: 6px; align-items: center;
 }
-#refine-row select {
+#refine-inline select {
   background: #1a1a1a; color: #999; border: 1px solid #333;
   padding: 4px 8px; font: inherit; border-radius: 3px;
-  cursor: pointer; max-width: 33%;
+  cursor: pointer; max-width: 130px;
 }
-#refine-row select:has(option:checked:not([value=""])) {
+#refine-inline select:has(option:checked:not([value=""])) {
   color: #ccc; border-color: #555;
 }
 
 /* ── format multi-select ───────────────────────────── */
 #refine-format-wrap {
-  position: relative; max-width: 33%; flex-shrink: 0;
+  position: relative; flex-shrink: 0;
 }
 #refine-format-btn {
   background: #1a1a1a; color: #999; border: 1px solid #333;
   padding: 4px 8px; font: inherit; border-radius: 3px;
-  cursor: pointer; width: 100%; text-align: left;
+  cursor: pointer; width: auto; text-align: left;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 #refine-format-btn.active { color: #ccc; border-color: #555; }
@@ -217,14 +217,14 @@ body.mode-modland {
 
 
 /* ── selection toolbar ─────────────────────────────── */
-#sel-row { display: flex; align-items: center; gap: 6px; margin-bottom: 12px; }
-#sel-row button {
+#sel-row { display: flex; align-items: center; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+#sel-row > button {
   background: #222; color: #ccc; border: 1px solid #444; padding: 2px 8px;
   font: inherit; cursor: pointer; border-radius: 3px; font-size: 12px;
   min-width: 26px; text-align: center;
 }
-#sel-row button:hover { background: #333; }
-#sel-row button:disabled { opacity: 0.45; cursor: not-allowed; }
+#sel-row > button:hover { background: #333; }
+#sel-row > button:disabled { opacity: 0.45; cursor: not-allowed; }
 #sel-count { color: #666; font-size: 12px; }
 .copied { color: #8f8 !important; }
 

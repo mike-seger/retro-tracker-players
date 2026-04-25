@@ -35,8 +35,14 @@ elList.addEventListener('touchmove', (e) => {
     const ratio   = dist / pinchStartDist;
     const newSize = Math.min(MAX_FONT, Math.max(MIN_FONT, pinchStartSize * ratio));
     setPlaylistFontSize(newSize);
+  } else if (swipeTracking && e.touches.length === 1) {
+    const dx = e.touches[0].clientX - swipeStartX;
+    const dy = e.touches[0].clientY - swipeStartY;
+    if (Math.abs(dx) > Math.abs(dy) * 1.5) {
+      e.preventDefault(); // block scroll so horizontal swipe reaches touchend
+    }
   }
-}, { passive: true });
+}, { passive: false });
 
 elList.addEventListener('touchend', (e) => {
   if (!swipeTracking || e.changedTouches.length === 0) { swipeTracking = false; return; }
