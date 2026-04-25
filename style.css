@@ -149,6 +149,45 @@ body.mode-modland {
   color: #ccc; border-color: #555;
 }
 
+/* ── format multi-select ───────────────────────────── */
+#refine-format-wrap {
+  position: relative; max-width: 33%; flex-shrink: 0;
+}
+#refine-format-btn {
+  background: #1a1a1a; color: #999; border: 1px solid #333;
+  padding: 4px 8px; font: inherit; border-radius: 3px;
+  cursor: pointer; width: 100%; text-align: left;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+#refine-format-btn.active { color: #ccc; border-color: #555; }
+#refine-format-panel {
+  position: absolute; z-index: 200;
+  background: #222; border: 1px solid #555; border-radius: 4px;
+  top: calc(100% + 2px); left: 0; min-width: 100%;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+.fmt-opt {
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 10px; cursor: pointer;
+  white-space: nowrap; color: #ccc; font-size: 13px; line-height: 1.4;
+  -webkit-user-select: none; user-select: none;
+}
+.fmt-opt:hover { background: #333; }
+.fmt-master { border-bottom: 1px solid #444; min-height: 1.9em; }
+.fmt-opt input[type="checkbox"] {
+  appearance: none; -webkit-appearance: none;
+  width: 13px; height: 13px; border: 1px solid #555; border-radius: 2px;
+  background: #333; cursor: pointer; flex-shrink: 0; position: relative;
+}
+.fmt-opt input[type="checkbox"]:checked {
+  background: var(--accent-bg); border-color: var(--accent-border);
+}
+.fmt-opt input[type="checkbox"].indeterminate {
+  background: var(--accent-bg);
+  border-color: var(--accent-border);
+  opacity: 0.55;
+}
+
 
 
 
@@ -161,6 +200,7 @@ body.mode-modland {
   min-width: 26px; text-align: center;
 }
 #sel-row button:hover { background: #333; }
+#sel-row button:disabled { opacity: 0.45; cursor: not-allowed; }
 #sel-count { color: #666; font-size: 12px; }
 .copied { color: #8f8 !important; }
 
@@ -178,12 +218,6 @@ body.mode-modland {
 #sel-bulk input[type="checkbox"]:checked {
   background: var(--accent-bg);
   border-color: var(--accent-border);
-}
-#sel-bulk input[type="checkbox"]:checked::after {
-  content: '\2713';
-  color: var(--accent-text);
-  font-size: 11px;
-  position: absolute; top: -1px; left: 1px;
 }
 #sel-bulk input[type="checkbox"].indeterminate {
   background: var(--accent-bg);
@@ -247,12 +281,6 @@ body.mode-modland {
 #playlist li .sel-cb:checked {
   background: var(--accent-bg);
   border-color: var(--accent-border);
-}
-#playlist li .sel-cb:checked::after {
-  content: '\2713';
-  color: var(--accent-text);
-  font-size: 11px;
-  position: absolute; top: -1px; left: 1px;
 }
 
 /* ── mobile ────────────────────────────────────────── */

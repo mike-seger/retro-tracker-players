@@ -28,8 +28,16 @@ let bulkRestoreSelection = new Set();
 let suppressBulkSnapshot = false;
 let _debugTiming = true;     // set to true to log perf timing
 
+// ── format multi-select state ────────────────────────
+let selectedFormats = new Set();   // values match entry.ext (local=lowercase, modland=uppercase)
+let _allFormatOptions = new Set(); // all options currently shown in the panel
+
+// ── per-mode context (filter state preserved across mode switches) ──
+let _localCtx = null;    // { filter, folder, artist, formats, currentIdx, focusedIdx }
+let _modlandCtx = null;  // { filter, folder, folderLabel, currentIdx }
+
 const FIXED_VOLUME = 1.0;
-const USE_WEBSID = true;   // Set true to use engines/websid for SID playback
+const USE_WEBSID = false;   // Set true to use engines/websid for SID playback
 const SID_TRACK_PLAYER_ID = 'jssid';
 const SID_ENGINE_PLAYER_ID = USE_WEBSID ? 'websid' : 'jssid';
 
@@ -55,7 +63,10 @@ const elTrackPos  = document.getElementById('track-pos');
 const elRefineFolder = document.getElementById('refine-folder');
 const elRefineArtist = document.getElementById('refine-artist');
 const elRefineRange  = document.getElementById('refine-range');
-const elRefineFormat = document.getElementById('refine-format');
+const elRefineFormat    = null; // replaced by custom multi-select below
+const elRefineFormatWrap  = document.getElementById('refine-format-wrap');
+const elRefineFormatBtn   = document.getElementById('refine-format-btn');
+const elRefineFormatPanel = document.getElementById('refine-format-panel');
 const elSelBulk   = document.getElementById('sel-bulk');
 
 function alignInfoValueColumn() {
@@ -77,6 +88,122 @@ function alignInfoValueColumn() {
 }
 
 // ── helpers ─────────────────────────────────────────
+
+// ── format multi-select helpers ──────────────────────
+function buildFormatPanel(formats) {
+  // formats: iterable of string values (must match entry.ext for the current mode)
+  const sorted = [...formats].sort();
+  _allFormatOptions = new Set(sorted);
+  // Restore only formats that still exist
+  const kept = new Set([...selectedFormats].filter(f => _allFormatOptions.has(f)));
+  selectedFormats = kept;
+
+  const panel = elRefineFormatPanel;
+  panel.innerHTML = '';
+
+  // Empty master row checkbox toggles all/none
+  const master = document.createElement('label');
+  master.className = 'fmt-opt fmt-master';
+  const masterCb = document.createElement('input');
+  masterCb.type = 'checkbox';
+  masterCb.value = '__master__';
+  masterCb.checked = true;
+  masterCb.addEventListener('change', () => {
+    if (masterCb.checked) selectedFormats = new Set(_allFormatOptions);
+    else selectedFormats = new Set();
+    updateFormatBtn();
+    syncFormatCheckboxes();
+    _triggerFormatChange();
+  });
+  master.appendChild(masterCb);
+  master.appendChild(document.createTextNode(''));
+  panel.appendChild(master);
+
+  // Individual format rows
+  for (const fmt of sorted) {
+    const label = document.createElement('label');
+    label.className = 'fmt-opt';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.value = fmt;
+    cb.checked = selectedFormats.has(fmt);
+    cb.addEventListener('change', () => {
+      if (cb.checked) selectedFormats.add(fmt);
+      else selectedFormats.delete(fmt);
+      updateFormatBtn();
+      syncFormatCheckboxes();
+      _triggerFormatChange();
+    });
+    label.appendChild(cb);
+    label.appendChild(document.createTextNode(fmt));
+    panel.appendChild(label);
+  }
+
+  updateFormatBtn();
+  syncFormatCheckboxes();
+}
+
+function syncFormatCheckboxes() {
+  const allSelected = _allFormatOptions.size > 0 && selectedFormats.size === _allFormatOptions.size;
+  const partialSelected = selectedFormats.size > 0 && selectedFormats.size < _allFormatOptions.size;
+  for (const cb of elRefineFormatPanel.querySelectorAll('input[type="checkbox"]')) {
+    if (cb.value === '__master__') {
+      cb.checked = allSelected;
+      cb.indeterminate = partialSelected;
+      cb.classList.toggle('indeterminate', partialSelected);
+      continue;
+    }
+    cb.indeterminate = false;
+    cb.classList.remove('indeterminate');
+    cb.checked = selectedFormats.has(cb.value);
+  }
+}
+
+function updateFormatBtn() {
+  const count = selectedFormats.size;
+  const total = _allFormatOptions.size;
+  const active = count > 0 && count < total;
+  elRefineFormatBtn.textContent = 'Format';
+  elRefineFormatBtn.classList.toggle('active', active);
+}
+
+function clearFormatFilter() {
+  selectedFormats = new Set(_allFormatOptions);
+  updateFormatBtn();
+  syncFormatCheckboxes();
+}
+
+function _triggerFormatChange() {
+  if (searchMode === 'local') {
+    populateLocalArtistDropdown();
+    applyFilter();
+  } else if (_randomBrowsing) {
+    const skip = parseInt(elRefineRange.value, 10) || 0;
+    doRandomBrowse(skip);
+  } else {
+    doModlandSearch();
+  }
+}
+
+// Toggle panel open/close
+elRefineFormatBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const hidden = elRefineFormatPanel.hidden;
+  elRefineFormatPanel.hidden = !hidden;
+});
+
+// Close panel on outside click
+document.addEventListener('click', () => {
+  elRefineFormatPanel.hidden = true;
+});
+
+// Prevent panel clicks from closing via the document listener
+elRefineFormatPanel.addEventListener('click', (e) => {
+  e.stopPropagation();
+});
+
+// ── end format multi-select helpers ─────────────────
+
 function fmtTime(s) {
   if (!isFinite(s) || s < 0) return '0:00';
   return Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
@@ -385,28 +512,23 @@ function buildPlaylist() {
       addLongPress(li, () => searchByArtist(artist));
     } else if (searchMode === 'local') {
       const folder = decodedName.includes('/') ? decodedName.substring(0, decodedName.lastIndexOf('/')) : '';
-      if (folder) {
-        const setRefine = () => {
-          if (entry.playerId === 'ahx') {
-            if (![...elRefineArtist.options].some(o => o.value === folder)) {
-              elRefineArtist.appendChild(new Option(folder, folder));
-            }
-            elRefineArtist.value = folder;
-          } else {
-            if (![...elRefineFolder.options].some(o => o.value === folder)) {
-              elRefineFolder.appendChild(new Option(folder, folder));
-            }
-            elRefineFolder.value = folder;
-            populateLocalArtistDropdown();
-          }
-          applyFilter();
-        };
-        li.addEventListener('dblclick', (ev) => {
-          if (ev.target.classList.contains('sel-cb') || ev.target.classList.contains('r-dl')) return;
-          setRefine();
-        });
-        addLongPress(li, setRefine);
-      }
+      // Double/long-click: jump to modland and search by this track's artist
+      const goToArtist = () => {
+        let artist = extractArtist(entry);
+        if (!artist && folder) {
+          // Fall back to the innermost folder segment (e.g. AHX folder = artist)
+          const fseg = folder.lastIndexOf('/');
+          artist = fseg >= 0 ? folder.substring(fseg + 1) : folder;
+        }
+        if (!artist) return;
+        // saveLocalContext() is called inside switchMode; searchByArtist will override folder
+        searchByArtist(artist);
+      };
+      li.addEventListener('dblclick', (ev) => {
+        if (ev.target.classList.contains('sel-cb') || ev.target.classList.contains('r-dl')) return;
+        goToArtist();
+      });
+      addLongPress(li, goToArtist);
     }
 
     if (i === currentIdx) li.classList.add('current');
@@ -692,11 +814,44 @@ function applyFilter() {
   const raw = elFilter.value.trim();
   const folderVal = elRefineFolder.value.toLowerCase();
   const artistVal = elRefineArtist.value.toLowerCase();
-  const formatVal = elRefineFormat.value;
   const terms = raw.toLowerCase().split(/\s+/).filter(Boolean);
   let visible = 0;
   const files = activeFiles();
   const items = elList.children;
+
+  // In local mode, keep format options aligned with the currently refined subset
+  // (search text + folder + artist + enabled player), before applying format filtering.
+  if (searchMode === 'local') {
+    const availableFormats = new Set();
+    for (let i = 0; i < items.length; i++) {
+      const entry = files[i];
+      const name = entry ? entry.name.toLowerCase() : '';
+      let nameMatch = terms.length === 0 || terms.every(t => name.includes(t));
+      if (nameMatch && folderVal) {
+        const slash = name.lastIndexOf('/');
+        const entryFolder = slash >= 0 ? name.substring(0, slash) : '';
+        if (folderVal.length === 1) {
+          nameMatch = entryFolder.length > 0 && entryFolder[0] === folderVal;
+        } else {
+          nameMatch = entryFolder === folderVal;
+        }
+      }
+      if (nameMatch && artistVal) {
+        const artist = entry ? extractArtist(entry).toLowerCase() : '';
+        if (artistVal.length === 1) {
+          nameMatch = artist.length > 0 && artist[0] === artistVal;
+        } else {
+          nameMatch = artist === artistVal;
+        }
+      }
+      const typeMatch = !entry || !entry.playerId || enabledPlayers[entry.playerId] !== false;
+      if (nameMatch && typeMatch && entry?.ext) {
+        availableFormats.add(entry.ext);
+      }
+    }
+    buildFormatPanel(availableFormats);
+  }
+
   for (let i = 0; i < items.length; i++) {
     const entry = files[i];
     const name = entry ? entry.name.toLowerCase() : '';
@@ -718,15 +873,16 @@ function applyFilter() {
         nameMatch = artist === artistVal;
       }
     }
-    if (nameMatch && formatVal) {
-      nameMatch = entry && entry.ext === formatVal;
+    if (nameMatch && selectedFormats.size > 0 && selectedFormats.size < _allFormatOptions.size) {
+      nameMatch = entry && selectedFormats.has(entry.ext);
     }
     const typeMatch = !entry || !entry.playerId || enabledPlayers[entry.playerId] !== false;
     const show = nameMatch && typeMatch;
     items[i].classList.toggle('hidden', !show);
     if (show) visible++;
   }
-  elFilterCnt.textContent = (terms.length || folderVal || artistVal || formatVal) ? `${visible} / ${files.length}` : '';
+  const fmtActive = selectedFormats.size > 0 && selectedFormats.size < _allFormatOptions.size;
+  elFilterCnt.textContent = (terms.length || folderVal || artistVal || fmtActive) ? `${visible} / ${files.length}` : '';
 }
 
 // ── highlight + focus ───────────────────────────────
@@ -853,6 +1009,8 @@ function updateSelCount() {
     elSelCount.textContent = '';
     elSelCount.dataset.short = '';
   }
+  btnCopy.disabled = n === 0;
+  btnZip.disabled = n === 0;
   syncBulkState();
 }
 
@@ -1327,7 +1485,65 @@ function showDeepLinkPrompt(trackName, onConfirm) {
   overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
 }
 
+function saveLocalContext() {
+  _localCtx = {
+    filter: elFilter.value,
+    folder: elRefineFolder.value,
+    artist: elRefineArtist.value,
+    formats: new Set(selectedFormats),
+    currentIdx,
+    focusedIdx,
+  };
+}
+
+function restoreLocalContext() {
+  if (!_localCtx) return;
+  elFilter.value = _localCtx.filter;
+  // Folder dropdown already rebuilt; try to restore the saved value
+  if (_localCtx.folder && [...elRefineFolder.options].some(o => o.value === _localCtx.folder)) {
+    elRefineFolder.value = _localCtx.folder;
+  }
+  // Re-scope artist dropdown to the restored folder+filter, then restore value
+  populateLocalArtistDropdown();
+  if (_localCtx.artist && [...elRefineArtist.options].some(o => o.value === _localCtx.artist)) {
+    elRefineArtist.value = _localCtx.artist;
+  }
+  // Restore format selection (intersect with currently available formats)
+  selectedFormats = new Set([..._localCtx.formats].filter(f => _allFormatOptions.has(f)));
+  updateFormatBtn();
+  syncFormatCheckboxes();
+  if (_localCtx.currentIdx >= 0) currentIdx = _localCtx.currentIdx;
+  if (_localCtx.focusedIdx >= 0) focusedIdx = _localCtx.focusedIdx;
+}
+
+function saveModlandContext() {
+  const folderOpt = [...elRefineFolder.options].find(o => o.value === elRefineFolder.value);
+  _modlandCtx = {
+    filter: elFilter.value,
+    folder: elRefineFolder.value,
+    folderLabel: folderOpt ? folderOpt.text : elRefineFolder.value,
+    currentIdx,
+    focusedIdx,
+  };
+}
+
+function restoreModlandContext() {
+  if (!_modlandCtx) return;
+  elFilter.value = _modlandCtx.filter;
+  elRefineFolder.innerHTML = '<option value="">Folder</option>';
+  if (_modlandCtx.folder) {
+    elRefineFolder.appendChild(new Option(_modlandCtx.folderLabel, _modlandCtx.folder));
+    elRefineFolder.value = _modlandCtx.folder;
+  }
+  if (_modlandCtx.currentIdx >= 0) currentIdx = _modlandCtx.currentIdx;
+  if (_modlandCtx.focusedIdx >= 0) focusedIdx = _modlandCtx.focusedIdx;
+}
+
 function switchMode(mode) {
+  // Save outgoing mode's filter context before resetting
+  if (searchMode === 'local') saveLocalContext();
+  else if (searchMode === 'modland') saveModlandContext();
+
   searchMode = mode;
   elSearchMode.value = mode;
   document.body.classList.toggle('mode-modland', mode === 'modland');
@@ -1338,20 +1554,21 @@ function switchMode(mode) {
   elRefineFolder.value = '';
   elRefineArtist.value = '';
   elRefineRange.value = '';
-  elRefineFormat.value = '';
+  clearFormatFilter();
+  currentIdx = -1;
+  focusedIdx = -1;
   if (mode === 'local') {
     populateLocalArtistDropdown();
     populateFolderDropdown();
     populateLocalFormatDropdown();
     elSelBulk.style.display = '';
+    restoreLocalContext(); // restores filter, folder, artist, formats, currentIdx, focusedIdx
   } else {
     elRefineFolder.innerHTML = '<option value="">Folder</option>';
-    elRefineFormat.innerHTML = '<option value="">Format</option>';
+    buildFormatPanel([]);
+    restoreModlandContext(); // restores filter, folder, currentIdx
   }
-  // Preserve filter text but rebuild list for the mode
-  currentIdx = -1;
-  focusedIdx = -1;
-  if (mode === 'modland' && elFilter.value.trim().length >= 2) {
+  if (mode === 'modland' && (elFilter.value.trim().length >= 2 || elRefineFolder.value)) {
     doModlandSearch();
   } else {
     buildPlaylist();
@@ -1487,7 +1704,7 @@ elFilterClr.addEventListener('click', () => {
   elRefineFolder.value = '';
   elRefineArtist.value = '';
   elRefineRange.value = '';
-  elRefineFormat.value = '';
+  clearFormatFilter();
   elFilter.dispatchEvent(new Event('input'));
   elFilter.focus();
 });
@@ -1557,19 +1774,12 @@ function populateLocalArtistDropdown() {
 }
 
 function populateLocalFormatDropdown() {
-  const prev = elRefineFormat.value;
-  elRefineFormat.innerHTML = '<option value="">Format</option>';
   const exts = new Set();
   for (const f of mergedFiles) {
     if (!enabledPlayers[f.playerId]) continue;
     if (f.ext) exts.add(f.ext);
   }
-  for (const e of [...exts].sort()) {
-    elRefineFormat.appendChild(new Option(e, e));
-  }
-  if (prev && [...elRefineFormat.options].some(o => o.value === prev)) {
-    elRefineFormat.value = prev;
-  }
+  buildFormatPanel(exts);
 }
 
 function populateRangeDropdown(total) {
@@ -1590,7 +1800,7 @@ function updateRefineVisibility() {
   elRefineArtist.style.display = isLocal ? '' : 'none';
   elRefineFolder.style.display = '';  // always visible
   elRefineRange.style.display = isLocal ? 'none' : '';
-  elRefineFormat.style.display = '';
+  elRefineFormatWrap.style.display = '';
 }
 
 elRefineFolder.addEventListener('change', () => {
@@ -1615,17 +1825,7 @@ elRefineRange.addEventListener('change', () => {
   }
 });
 
-elRefineFormat.addEventListener('change', () => {
-  if (searchMode === 'local') {
-    populateLocalArtistDropdown();
-    applyFilter();
-  } else if (_randomBrowsing) {
-    const skip = parseInt(elRefineRange.value, 10) || 0;
-    doRandomBrowse(skip);
-  } else {
-    doModlandSearch();
-  }
-});
+// format change handled inside _triggerFormatChange() called from buildFormatPanel callbacks
 
 function localPlaceholder() {
   return `Search ${mergedFiles.length.toLocaleString()} local tracks…`;
@@ -1745,20 +1945,14 @@ function doModlandSearch() {
   }
 
   // Populate format dropdown from result formats
-  const prevFormat = elRefineFormat.value;
   const formats = new Set();
   for (const r of filtered) formats.add(r.ext.toUpperCase());
-  elRefineFormat.innerHTML = '<option value="">Format</option>';
-  for (const f of [...formats].sort()) {
-    elRefineFormat.appendChild(new Option(f, f));
-  }
-  if (prevFormat && [...elRefineFormat.options].some(o => o.value === prevFormat)) {
-    elRefineFormat.value = prevFormat;
-  }
+  buildFormatPanel(formats);
 
   // Apply format filter
-  const fmtFilter = elRefineFormat.value;
-  const displayed = fmtFilter ? filtered.filter(r => r.ext.toUpperCase() === fmtFilter) : filtered;
+  const displayed = (selectedFormats.size > 0 && selectedFormats.size < _allFormatOptions.size)
+    ? filtered.filter(r => selectedFormats.has(r.ext.toUpperCase()))
+    : filtered;
   _lastSearchResults = displayed;
 
   // Save currently playing track URL before rebuilding
@@ -1886,7 +2080,7 @@ elMlRandom.addEventListener('click', () => {
   _randomBrowsing = true;
   elFilter.value = '';
   elRefineFolder.value = '';
-  elRefineFormat.value = '';
+  clearFormatFilter();
   doRandomBrowse(0);
 });
 
@@ -1911,20 +2105,14 @@ function doRandomBrowse(skip) {
   elRefineRange.value = String(skip);
 
   // Populate format dropdown from results
-  const prevFormat = elRefineFormat.value;
   const formats = new Set();
   for (const r of results) formats.add(r.ext.toUpperCase());
-  elRefineFormat.innerHTML = '<option value="">Format</option>';
-  for (const f of [...formats].sort()) {
-    elRefineFormat.appendChild(new Option(f, f));
-  }
-  if (prevFormat && [...elRefineFormat.options].some(o => o.value === prevFormat)) {
-    elRefineFormat.value = prevFormat;
-  }
+  buildFormatPanel(formats);
 
   // Apply format filter
-  const fmtFilter = elRefineFormat.value;
-  const displayed = fmtFilter ? results.filter(r => r.ext.toUpperCase() === fmtFilter) : results;
+  const displayed = (selectedFormats.size > 0 && selectedFormats.size < _allFormatOptions.size)
+    ? results.filter(r => selectedFormats.has(r.ext.toUpperCase()))
+    : results;
   _lastSearchResults = displayed;
 
   const playingUrl = _playingUrl;
