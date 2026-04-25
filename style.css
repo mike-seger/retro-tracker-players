@@ -104,6 +104,30 @@ body.mode-modland {
 #filter-wrap {
   flex: 1; min-width: 0; position: relative; display: flex;
 }
+#share-wrap {
+  position: relative; flex-shrink: 0;
+}
+#share-btn {
+  background: #1a1a1a; color: #999; border: 1px solid #333;
+  padding: 4px 8px; font: inherit; border-radius: 3px;
+  cursor: pointer; white-space: nowrap;
+}
+#share-btn:hover { color: #ccc; border-color: #555; }
+#share-panel {
+  position: absolute; z-index: 200;
+  background: #222; border: 1px solid #555; border-radius: 4px;
+  top: calc(100% + 2px); left: 0;
+  min-width: 160px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+.share-opt {
+  display: block; width: 100%;
+  background: none; border: none; border-radius: 0;
+  padding: 5px 10px; cursor: pointer;
+  white-space: nowrap; color: #ccc; font: inherit; font-size: 13px; text-align: left;
+  line-height: 1.4; -webkit-user-select: none; user-select: none;
+}
+.share-opt:hover { background: #333; }
 #filter {
   flex: 1; min-width: 0; background: #1a1a1a; color: #ccc; border: 1px solid #444;
   padding: 4px 24px 4px 8px; font: inherit; border-radius: 3px;

@@ -4,6 +4,7 @@
 //   filelist.json — array of relative file paths under engines/<player>/files/
 
 import * as remoteSearch from './remote-search.js';
+import { showSharePanel } from './share-panel.js';
 
 // ── state ───────────────────────────────────────────
 let players = [];           // from players.json
@@ -56,6 +57,7 @@ const elMlDelAll   = document.getElementById('ml-del-all');
 const elMlRandom   = document.getElementById('ml-random');
 const btnCopy     = document.getElementById('btn-copy');
 const btnZip      = document.getElementById('btn-zip');
+const btnShare    = document.getElementById('share-btn');
 const elBulkCb    = document.getElementById('sel-bulk-cb');
 const elSelCount  = document.getElementById('sel-count');
 const elList      = document.getElementById('playlist');
@@ -234,6 +236,31 @@ function toAbsoluteUrl(url) {
   } catch (_) {
     return url;
   }
+}
+
+function buildDeepLink(fullContext = false) {
+  // If fullContext: include mode, filter, folder, artist, formats, current track
+  // Otherwise: just the current track (for legacy link compatibility)
+  const url = new URL(window.location.href.split('#')[0]);
+  let entry = null;
+  if (currentIdx >= 0) {
+    const files = activeFiles();
+    entry = files[currentIdx];
+    if (entry) url.searchParams.set('play', entry.url || trackUrl(entry));
+  }
+  if (fullContext) {
+    url.searchParams.set('source', searchMode);
+    if (elFilter.value) url.searchParams.set('search', elFilter.value);
+    if (elRefineFolder.value) url.searchParams.set('folder', elRefineFolder.value);
+    if (elRefineArtist.value) url.searchParams.set('artist', elRefineArtist.value);
+    // Formats: only if not all selected
+    if (selectedFormats.size > 0 && selectedFormats.size < _allFormatOptions.size) {
+      url.searchParams.set('formats', [...selectedFormats].join(','));
+    } else {
+      url.searchParams.delete('formats');
+    }
+  }
+  return url.href;
 }
 
 function deepLinkTarget() {
@@ -1211,6 +1238,14 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
+// ── share button/dropdown ──────────────────────────
+if (btnShare) {
+  btnShare.addEventListener('click', (e) => {
+    e.preventDefault();
+    showSharePanel(btnShare, () => buildDeepLink(true));
+  });
+}
+
 // ── debug log (toggle with double-click or long-press on transport) ─
 const debugLog = document.getElementById('debug-log');
 const elTransport = document.getElementById('transport');
@@ -1574,6 +1609,17 @@ function switchMode(mode) {
     buildPlaylist();
     restoreSelection();
   }
+  // Scroll currently playing track into view if present
+  setTimeout(() => {
+    const files = activeFiles();
+    if (_playingUrl && files.length) {
+      const idx = files.findIndex(e => (e.url || trackUrl(e)) === _playingUrl);
+      if (idx >= 0 && elList.children[idx]) {
+        elList.children[idx].classList.add('current');
+        scrollIntoViewSmart(elList.children[idx], true);
+      }
+    }
+  }, 0);
   updateSelCount();
 }
 
