@@ -308,6 +308,10 @@ body.mode-modland {
 }
 
 /* ── mobile ────────────────────────────────────────── */
+@media (max-height: 400px) {
+  #info { display: none; }
+}
+
 @media (max-width: 600px) {
   body { font-size: 13px; }
   #player { padding: 8px 10px max(env(safe-area-inset-bottom), 8px) 10px; }
