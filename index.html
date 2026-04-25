@@ -13,6 +13,7 @@
 <title>Retro Tracker Players</title>
 <link rel="stylesheet" href="style.css">
 <script src="https://cdn.jsdelivr.net/npm/jszip@3/dist/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
 
@@ -47,6 +48,7 @@
       <button id="refine-format-btn" type="button">Format</button>
       <div id="refine-format-panel" hidden></div>
     </div>
+    <button id="help-btn" type="button" title="Help / About">?</button>
   </div>
 
   <div id="sel-row">
@@ -71,8 +73,13 @@
     <span class="time" id="duration">—</span>
   </div>
   <pre id="debug-log" hidden></pre>
+
+  <div id="help-overlay" hidden>
+    <button id="help-close" type="button" aria-label="Close help">&times;</button>
+    <div id="help-content"></div>
+  </div>
 </div>
 
-<script type="module" src="app.js"></script>
+<script type="module" src="js/app.js"></script>
 </body>
 </html>

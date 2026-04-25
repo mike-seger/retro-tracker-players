@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Retro Tracker Players — Help</title>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #141414; color: #bbb;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-size: 14px; line-height: 1.65;
+    padding: 24px 20px 48px; max-width: 740px; margin: 0 auto;
+  }
+  h1, h2, h3 { color: #ddd; margin-top: 1.4em; margin-bottom: 0.4em; }
+  h1 { font-size: 1.4em; }
+  h2 { font-size: 1.15em; }
+  h3 { font-size: 1em; }
+  p { margin: 0.5em 0; }
+  a { color: #8af; }
+  code { background: #222; border-radius: 3px; padding: 1px 4px; font-size: 0.92em; }
+  pre { background: #1a1a1a; border: 1px solid #333; border-radius: 4px;
+    padding: 10px 12px; overflow-x: auto; margin: 0.8em 0; }
+  pre code { background: none; padding: 0; }
+  hr { border: none; border-top: 1px solid #333; margin: 1.5em 0; }
+  ul, ol { padding-left: 1.4em; margin: 0.5em 0; }
+  li { margin: 0.25em 0; }
+  table { border-collapse: collapse; width: 100%; margin: 0.8em 0; }
+  th, td { border: 1px solid #333; padding: 6px 10px; text-align: left; }
+  th { background: #1e1e1e; color: #ccc; }
+  tr:nth-child(even) td { background: #181818; }
+  kbd {
+    display: inline-block; background: #222; border: 1px solid #555;
+    border-radius: 3px; padding: 1px 5px; font-size: 0.88em;
+    font-family: inherit; color: #ccc;
+  }
+  #back { display: inline-block; margin-bottom: 1.2em; color: #8af; text-decoration: none;
+    font-size: 13px; }
+  #back:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<a id="back" href="../index.html">← Back to player</a>
+<div id="content"><p>Loading…</p></div>
+<script>
+  fetch('README.md')
+    .then(r => r.ok ? r.text() : Promise.reject(r.status))
+    .then(md => { document.getElementById('content').innerHTML = marked.parse(md); })
+    .catch(err => { document.getElementById('content').innerHTML = '<p>Could not load doc (' + err + ').</p>'; });
+</script>
+</body>
+</html>

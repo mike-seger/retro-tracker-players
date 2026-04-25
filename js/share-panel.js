@@ -1,4 +1,4 @@
-// share-panel.js
+// js/share-panel.js — Share panel popup
 let _removeOutsideClick = null;
 
 export function showSharePanel(anchor, getDeepLink) {

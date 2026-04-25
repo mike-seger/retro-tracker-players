@@ -1,4 +1,4 @@
-// remote-search.js — Search remote-index.json by substring
+// js/remote-search.js — Search remote-index.json by substring
 // The index format: { base, formats, entries: [[fmtIdx, "Artist/file.ext"], ...] }
 
 let _index = null;
@@ -114,7 +114,7 @@ export function totalPlayable() {
   return n;
 }
 
-// Return a slice of all playable entries (no query filter), sorted by name
+// Return a slice of all playable entries (no query filter), shuffled per session
 export function browseAll(limit = 1000, skip = 0) {
   if (!_index) return [];
   const entries = _index.entries;
