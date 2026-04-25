@@ -24,6 +24,8 @@ let loaded = false;
 let activeEngine = null;    // playerId of the currently loaded engine
 let _playingUrl = null;     // URL of the currently playing track
 let _loadSeq = 0;           // incremented on every loadAndPlay to abort stale loads
+let _advancing = false;     // true while advanceTrack's loadAndPlay is in-flight (prevents double-advance)
+let _appReady = false;      // set to true after startup completes; guards persistContext
 let bulkState = 'restore';  // restore | all | none
 let bulkRestoreSelection = new Set();
 let suppressBulkSnapshot = false;
@@ -630,6 +632,10 @@ async function loadAndPlay(idx) {
 
   const entry = files[idx];
 
+  // Immediately silence all engines before any async work begins.
+  // Prevents a stale in-flight engine.load() from starting audio after being superseded.
+  for (const eng of Object.values(engines)) { try { eng.pause(); } catch (_) {} }
+
   let engine;
   try {
     engine = await ensureEngine(entry.playerId);
@@ -638,7 +644,7 @@ async function loadAndPlay(idx) {
     elInfo.innerHTML = '<div class="label">Engine init failed: ' + esc(String(e)) + '</div>';
     return;
   }
-  if (seq !== _loadSeq) return; // superseded by a newer click
+  if (seq !== _loadSeq) { engine.pause(); return; } // superseded by a newer click
 
   // Pause the active engine itself too — handles same-engine rapid clicks
   engine.pause();
@@ -648,7 +654,7 @@ async function loadAndPlay(idx) {
   playing = true;
   loaded = true;
   _playingUrl = entry.url || trackUrl(entry);
-  localStorage.setItem('current-track', JSON.stringify({ playerId: entry.playerId, name: entry.name, mode: searchMode }));
+  localStorage.setItem('current-track', JSON.stringify({ playerId: entry.playerId, name: entry.name, mode: searchMode, wasPlaying: true }));
 
   const url = trackUrl(entry);
 
@@ -678,10 +684,10 @@ async function loadAndPlay(idx) {
 
   try {
     const playUrl = await cacheFetch(url);
-    if (seq !== _loadSeq) return; // superseded
+    if (seq !== _loadSeq) { engine.pause(); return; } // superseded
     const tFetch = performance.now();
     const result = await engine.load(playUrl);
-    if (seq !== _loadSeq) return; // superseded
+    if (seq !== _loadSeq) { engine.pause(); return; } // superseded
     const tLoad = performance.now();
 
     applyMeta(result);
@@ -690,7 +696,7 @@ async function loadAndPlay(idx) {
 
     if (_debugTiming) tlog(`[T] engine ${(tEngine - t0).toFixed(0)}ms  fetch ${(tFetch - tEngine).toFixed(0)}ms  decode ${(tLoad - tFetch).toFixed(0)}ms`);
   } catch (e) {
-    if (seq !== _loadSeq) return;
+    if (seq !== _loadSeq) { try { engine?.pause(); } catch (_) {} return; }
     console.error('Failed to load', url, e);
     elInfo.innerHTML = '<div class="label">Error loading track</div>';
   }
@@ -746,11 +752,16 @@ async function prefetchAhead(dir, count) {
 }
 
 function advanceTrack() {
+  if (_advancing) return;
+  _advancing = true;
   const visible = getVisibleIndices();
-  if (visible.length === 0) return;
+  if (visible.length === 0) { _advancing = false; return; }
   const pos = visible.indexOf(currentIdx);
   const nextIdx = pos >= 0 && pos < visible.length - 1 ? visible[pos + 1] : visible[0];
-  loadAndPlay(nextIdx);
+  loadAndPlay(nextIdx).then(
+    () => { _advancing = false; },
+    () => { _advancing = false; }
+  );
   setTimeout(() => prefetchAhead(1, 5), 200);
 }
 
@@ -798,6 +809,11 @@ btnPlay.addEventListener('click', async () => {
     playing = true;
   }
   updateTransportUI();
+  // Keep stored wasPlaying in sync with actual play state
+  try {
+    const saved = JSON.parse(localStorage.getItem('current-track'));
+    if (saved) { saved.wasPlaying = playing; localStorage.setItem('current-track', JSON.stringify(saved)); }
+  } catch (_) {}
 });
 
 // ── seek ────────────────────────────────────────────
@@ -910,6 +926,15 @@ function applyFilter() {
   }
   const fmtActive = selectedFormats.size > 0 && selectedFormats.size < _allFormatOptions.size;
   elFilterCnt.textContent = (terms.length || folderVal || artistVal || fmtActive) ? `${visible} / ${files.length}` : '';
+  persistContext();
+
+  // If the playing track is still in the filtered list, ensure it stays visible.
+  if (currentIdx >= 0) {
+    const curItem = elList.children[currentIdx];
+    if (curItem && !curItem.classList.contains('hidden')) {
+      scrollIntoViewSmart(curItem, false);
+    }
+  }
 }
 
 // ── highlight + focus ───────────────────────────────
@@ -1520,6 +1545,96 @@ function showDeepLinkPrompt(trackName, onConfirm) {
   overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
 }
 
+function showResumePrompt(trackName, onConfirm) {
+  const overlay = document.createElement('div');
+  overlay.className = 'confirm-overlay';
+  overlay.innerHTML =
+    `<div class="confirm-box">` +
+    `<div class="confirm-msg">Resume playback?<br><span class="confirm-detail">${esc(trackName)}</span></div>` +
+    `<div class="confirm-auto-opt">` +
+    `<label><input type="checkbox" id="auto-resume-cb"> Always resume automatically</label>` +
+    `</div>` +
+    `<div class="confirm-btns">` +
+    `<button class="confirm-yes">▶ Resume</button>` +
+    `<button class="confirm-no">Cancel</button>` +
+    `</div></div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('.confirm-yes').addEventListener('click', () => {
+    if (overlay.querySelector('#auto-resume-cb').checked) {
+      localStorage.setItem('auto-resume', '1');
+    }
+    overlay.remove();
+    onConfirm();
+  });
+  overlay.querySelector('.confirm-no').addEventListener('click', () => overlay.remove());
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+}
+
+function showResumeToast(trackName) {
+  const toast = document.createElement('div');
+  toast.className = 'resume-toast';
+  toast.innerHTML =
+    `<span>▶ Resuming <em>${esc(trackName)}</em></span>` +
+    `<button class="resume-toast-close" title="Turn off auto-resume">×</button>`;
+  document.body.appendChild(toast);
+  const timer = setTimeout(() => toast.remove(), 3000);
+  toast.querySelector('.resume-toast-close').addEventListener('click', () => {
+    clearTimeout(timer);
+    toast.remove();
+    localStorage.removeItem('auto-resume');
+  });
+}
+
+// ── persist filter context to localStorage ────────
+function persistContext() {
+  if (!_appReady) return;
+  try {
+    localStorage.setItem('app-context', JSON.stringify({
+      mode: searchMode,
+      filter: elFilter.value,
+      folder: elRefineFolder.value,
+      artist: elRefineArtist.value,
+      formats: [...selectedFormats],
+    }));
+  } catch (_) {}
+}
+
+function restorePersistedContext() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('app-context'));
+    if (!saved) return;
+    if (saved.mode && saved.mode !== searchMode) {
+      switchMode(saved.mode);
+    }
+    if (saved.filter) elFilter.value = saved.filter;
+    if (saved.folder) {
+      const opt = [...elRefineFolder.options].find(o => o.value === saved.folder);
+      if (opt) {
+        elRefineFolder.value = saved.folder;
+      } else if (searchMode === 'modland') {
+        elRefineFolder.appendChild(new Option(saved.folder, saved.folder));
+        elRefineFolder.value = saved.folder;
+      }
+    }
+    if (saved.artist && searchMode === 'local') {
+      populateLocalArtistDropdown();
+      if ([...elRefineArtist.options].some(o => o.value === saved.artist)) {
+        elRefineArtist.value = saved.artist;
+      }
+    }
+    if (saved.formats?.length && searchMode === 'local') {
+      selectedFormats = new Set(saved.formats.filter(f => _allFormatOptions.has(f)));
+      updateFormatBtn();
+      syncFormatCheckboxes();
+    }
+    if (searchMode === 'modland' && (elFilter.value.trim().length >= 2 || elRefineFolder.value)) {
+      doModlandSearch();
+    } else {
+      applyFilter();
+    }
+  } catch (_) {}
+}
+
 function saveLocalContext() {
   _localCtx = {
     filter: elFilter.value,
@@ -1685,12 +1800,17 @@ let _localUrllistTracks = [];  // from per-engine urllists.json, shown in local 
   buildPlaylist();
   restoreSelection();
 
+  const hadDeepLink = !!window.location.search;
   const deepLinked = await loadDeepLinkedTrack();
   applyDeepLinkFilters();
 
   // Clean URL after params have been consumed
   if (window.location.search) {
     history.replaceState(null, '', window.location.pathname);
+  }
+
+  if (!hadDeepLink) {
+    restorePersistedContext();
   }
 
   if (!deepLinked) {
@@ -1710,6 +1830,26 @@ let _localUrllistTracks = [];  // from per-engine urllists.json, shown in local 
         if (currentIdx >= 0) {
           highlightCurrent();
           setFocus(currentIdx);
+          if (saved.wasPlaying) {
+            const files = activeFiles();
+            const entry = files[currentIdx];
+            const label = entry
+              ? (decodeURIComponent(entry.name).split('/').pop() || entry.name)
+              : String(currentIdx + 1);
+            const resumePos = (typeof saved.playPos === 'number' && saved.playPos > 0) ? saved.playPos : 0;
+            const doResume = () =>
+              loadAndPlay(currentIdx).then(() => {
+                if (resumePos > 0 && activeEngine && engines[activeEngine]) {
+                  engines[activeEngine].seekTo(resumePos);
+                }
+              });
+            if (localStorage.getItem('auto-resume') === '1') {
+              doResume();
+              showResumeToast(label);
+            } else {
+              showResumePrompt(label, doResume);
+            }
+          }
         }
       }
     } catch (_) {}
@@ -1719,6 +1859,8 @@ let _localUrllistTracks = [];  // from per-engine urllists.json, shown in local 
   const savedSize = parseFloat(localStorage.getItem('playlist-font-size'));
   if (savedSize) setPlaylistFontSize(savedSize);
 
+  _appReady = true;
+
   // Start loading remote index in background
   remoteSearch.loadIndex().then(() => {
     if (searchMode === 'modland') {
@@ -1726,6 +1868,22 @@ let _localUrllistTracks = [];  // from per-engine urllists.json, shown in local 
     }
   }).catch(e => console.warn('Remote index not available:', e));
 })();
+
+// ── persist playback position on page hide ───────────
+function savePlayPos() {
+  if (!playing || !activeEngine || !engines[activeEngine]) return;
+  try {
+    const saved = JSON.parse(localStorage.getItem('current-track'));
+    if (!saved) return;
+    saved.playPos = engines[activeEngine].getTime();
+    localStorage.setItem('current-track', JSON.stringify(saved));
+  } catch (_) {}
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') savePlayPos();
+});
+window.addEventListener('pagehide', savePlayPos);
 
 // ── mode switching + modland search ─────────────────
 elSearchMode.addEventListener('change', () => {
