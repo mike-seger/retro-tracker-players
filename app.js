@@ -1688,6 +1688,11 @@ let _localUrllistTracks = [];  // from per-engine urllists.json, shown in local 
   const deepLinked = await loadDeepLinkedTrack();
   applyDeepLinkFilters();
 
+  // Clean URL after params have been consumed
+  if (window.location.search) {
+    history.replaceState(null, '', window.location.pathname);
+  }
+
   if (!deepLinked) {
     try {
       const saved = JSON.parse(localStorage.getItem('current-track'));
