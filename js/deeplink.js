@@ -1,5 +1,5 @@
 // js/deeplink.js — Deep link encode/decode and initial load
-import { S, elFilter } from './state.js';
+import { S, elFilter, elList } from './state.js';
 import { trackUrl, extOf } from './utils.js';
 import { activeFiles, buildPlaylist, scrollIntoViewSmart, setFocus, highlightCurrent } from './playlist.js';
 import { loadAndPlay } from './player.js';
@@ -131,12 +131,24 @@ export async function loadDeepLinkedTrack() {
     switchMode('modland');
     elFilter.value = f.search;
     if (!remoteSearch.isLoaded()) await remoteSearch.loadIndex();
+
+    // Find which page the target URL is on (results are paged at 200)
+    const pageSize = 200;
+    const total = remoteSearch.count(f.search);
+    if (total > pageSize) {
+      const allResults = remoteSearch.search(f.search, total, 0);
+      const globalIdx = allResults.findIndex(r => r.url === targetUrl);
+      if (globalIdx >= 0) {
+        S._currentRange = Math.floor(globalIdx / pageSize) * pageSize;
+      }
+    }
+
     doModlandSearch();
     // After search the list is in S._lastSearchResults
     const ci = (S._lastSearchResults || []).findIndex(r => r.url === targetUrl);
     if (ci >= 0) {
       S.currentIdx = ci;
-      const curLi = document.getElementById('list').children[ci];
+      const curLi = elList.children[ci];
       if (curLi) { curLi.classList.add('current'); scrollIntoViewSmart(curLi, true); }
       const entry = S._lastSearchResults[ci];
       const label = decodeURIComponent(entry.name).split('/').pop() || entry.name;
@@ -158,8 +170,15 @@ export async function loadDeepLinkedTrack() {
 
     const entry = { name, ext: ext.toUpperCase(), playerId, url: targetUrl };
     S.modlandFiles.push(entry);
-    const { switchMode } = await import('./mode.js');
-    switchMode('modland');
+    // If already in modland mode (came through the search branch), switch off
+    // search-results view so activeFiles() returns S.modlandFiles correctly.
+    if (S.searchMode === 'modland') {
+      S._inSearchResults = false;
+      buildPlaylist();
+    } else {
+      const { switchMode } = await import('./mode.js');
+      switchMode('modland');
+    }
     S.currentIdx = S.modlandFiles.length - 1;
     highlightCurrent();
     setFocus(S.currentIdx);
