@@ -76,21 +76,24 @@ export function showResumeToast(trackName, onResume) {
 
   // Fire resume on the first tap anywhere so AudioContext.resume() is called
   // inside a real user gesture on iOS Safari (activation window constraint).
+  const closeBtn = toast.querySelector('.resume-toast-close');
+
   const gestureEvents = ['pointerdown', 'touchstart', 'keydown'];
-  const onGesture = () => {
+  const onGesture = (e) => {
+    // If the user tapped the × button, let its own click handler do the cleanup.
+    if (e.target === closeBtn || closeBtn.contains(e.target)) return;
     gestureEvents.forEach(t => document.removeEventListener(t, onGesture, true));
     dismiss();
     onResume?.();
   };
-  gestureEvents.forEach(t => document.addEventListener(t, onGesture, { capture: true, once: true, passive: true }));
+  gestureEvents.forEach(t => document.addEventListener(t, onGesture, { capture: true, passive: true }));
 
   const timer = setTimeout(() => {
     gestureEvents.forEach(t => document.removeEventListener(t, onGesture, true));
     toast.remove();
   }, 8000);
 
-  toast.querySelector('.resume-toast-close').addEventListener('click', (e) => {
-    e.stopPropagation();
+  closeBtn.addEventListener('click', () => {
     gestureEvents.forEach(t => document.removeEventListener(t, onGesture, true));
     dismiss();
     localStorage.removeItem('auto-resume');
