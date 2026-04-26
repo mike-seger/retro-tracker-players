@@ -1,6 +1,6 @@
 ---
-description: "Use when editing engine files, audio initialization, dynamic imports, or the player/engines modules. Covers the iOS Safari AudioContext user-activation constraint that broke chiptune playback after modularization."
-applyTo: ["engines/**", "js/engines.js", "js/player.js"]
+description: "Use when editing engine files, audio initialization, dynamic imports, resume/autoplay logic, or the player/engines/prompts modules. Covers the iOS Safari AudioContext user-activation constraint that broke chiptune playback and auto-resume after modularization."
+applyTo: ["engines/**", "js/engines.js", "js/player.js", "js/prompts.js", "js/app.js"]
 ---
 # iOS Safari AudioContext – Hard Constraints
 
@@ -54,7 +54,31 @@ function supportsWorklet() {
 Wrapping them in `setTimeout`, `Promise.then` after a fetch, or module-startup code will
 silently fail on iOS.
 
-### 4. If adding a new engine
+### 4. Never auto-play or auto-resume audio at startup without a gesture
+Calling `loadAndPlay()` (or any function that leads to `AudioContext.resume()`) from the
+app init IIFE, a `DOMContentLoaded` handler, or any startup path that has no user gesture
+will silently fail on iOS.
+
+The auto-resume feature (`localStorage.getItem('auto-resume') === '1'`) was broken this way.
+The fix (`js/prompts.js` `showResumeToast`, commit `60f1d0a`) defers the resume callback
+until the **first user gesture** via a one-shot capture-phase listener:
+
+```js
+// js/prompts.js — pattern to use whenever audio must start at startup
+const gestureEvents = ['pointerdown', 'touchstart', 'keydown'];
+const onGesture = () => {
+  gestureEvents.forEach(t => document.removeEventListener(t, onGesture, true));
+  doResume(); // ← AudioContext.resume() now happens inside a real gesture
+};
+gestureEvents.forEach(t =>
+  document.addEventListener(t, onGesture, { capture: true, once: true, passive: true })
+);
+```
+
+Show a visible prompt/toast so the user knows to tap. **Never call `loadAndPlay()` or
+`AudioContext.resume()` from startup code directly**, even if "auto" behaviour is intended.
+
+### 5. If adding a new engine
 - Add its `import()` to the pre-warm block in `js/engines.js`.
 - If it uses an AudioWorklet loaded from a CDN, add an `isMobile()` guard to skip that
   path and fall back to a ScriptProcessorNode implementation.
