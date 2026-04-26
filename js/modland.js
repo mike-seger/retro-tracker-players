@@ -141,7 +141,7 @@ export function doModlandSearch() {
     S._lastSearchResults = [];
     S._inSearchResults = false;
     updateMlButtons();
-    populateRangePanel(0);
+    buildRangePanel(0);
     buildPlaylist();
     restoreSelection();
     return;
@@ -165,7 +165,7 @@ export function doModlandSearch() {
   S._lastSearchTotal = total;
   S._inSearchResults = true;
 
-  populateRangePanel(total);
+  buildRangePanel(total);
 
   // Populate format dropdown
   const formats = new Set();
