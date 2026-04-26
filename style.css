@@ -222,6 +222,11 @@ body.mode-modland {
 }
 .range-opt:hover { background: #333; }
 .range-opt.selected { background: #2a3a2a; color: #8f8; }
+.panel-title {
+  padding: 5px 12px 4px; font-size: 11px; font-weight: bold; letter-spacing: 0.06em;
+  text-transform: uppercase; color: #888; background: #1a1a1a;
+  border-bottom: 1px solid #444; user-select: none;
+}
 .fmt-opt {
   display: flex; align-items: center; gap: 6px;
   padding: 5px 12px; cursor: pointer;

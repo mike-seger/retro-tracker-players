@@ -15,6 +15,11 @@ export function buildFormatPanel(formats) {
   const panel = elRefineFormatPanel;
   panel.innerHTML = '';
 
+  const title = document.createElement('div');
+  title.className = 'panel-title';
+  title.textContent = 'Format';
+  panel.appendChild(title);
+
   const master = document.createElement('label');
   master.className = 'fmt-opt fmt-master';
   const masterCb = document.createElement('input');

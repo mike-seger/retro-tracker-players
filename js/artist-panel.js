@@ -13,6 +13,11 @@ export function buildArtistPanel(artists) {
   const panel = elRefineArtistPanel;
   panel.innerHTML = '';
 
+  const title = document.createElement('div');
+  title.className = 'panel-title';
+  title.textContent = 'Artist';
+  panel.appendChild(title);
+
   const master = document.createElement('label');
   master.className = 'fmt-opt fmt-master';
   const masterCb = document.createElement('input');

@@ -13,6 +13,11 @@ export function buildFolderPanel(folders) {
   const panel = elRefineFolderPanel;
   panel.innerHTML = '';
 
+  const title = document.createElement('div');
+  title.className = 'panel-title';
+  title.textContent = 'Folder';
+  panel.appendChild(title);
+
   const master = document.createElement('label');
   master.className = 'fmt-opt fmt-master';
   const masterCb = document.createElement('input');
