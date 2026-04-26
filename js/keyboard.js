@@ -5,6 +5,7 @@ import { scrub, playPrevNext } from './player.js';
 import { toggleSelect } from './selection.js';
 import { buildDeepLink } from './deeplink.js';
 import { showSharePanel } from './share-panel.js';
+import { isDropdownOpen } from './dropdown-keys.js';
 
 document.addEventListener('keydown', (e) => {
   const focused = document.activeElement;
@@ -18,6 +19,9 @@ document.addEventListener('keydown', (e) => {
   }
 
   if (inInput) return;
+
+  // Let the open dropdown's own keydown handler take over for navigation keys
+  if (isDropdownOpen()) return;
 
   switch (e.key) {
     case ' ':

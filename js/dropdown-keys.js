@@ -2,6 +2,12 @@
 
 const _registered = new Map(); // panel -> { btn, saveState, restoreState }
 
+/** Returns true if any registered dropdown is currently open. */
+export function isDropdownOpen() {
+  for (const [panel] of _registered) if (!panel.hidden) return true;
+  return false;
+}
+
 /** Close every registered dropdown panel. */
 export function closeAllDropdowns() {
   for (const [panel] of _registered) panel.hidden = true;
