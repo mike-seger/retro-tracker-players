@@ -9,6 +9,14 @@ import { showSharePanel } from './share-panel.js';
 import { isDropdownOpen } from './dropdown-keys.js';
 import { hasOpenConfirm } from './prompts.js';
 
+function isAddKey(e) {
+  return e.key === '+' || e.code === 'NumpadAdd' || (e.code === 'Equal' && e.shiftKey);
+}
+
+function isDelKey(e) {
+  return e.key === '-' || e.key === '_' || e.code === 'NumpadSubtract' || e.code === 'Minus';
+}
+
 document.addEventListener('keydown', (e) => {
   const focused = document.activeElement;
   const inInput = focused && (focused.tagName === 'INPUT' || focused.tagName === 'SELECT' || focused.tagName === 'TEXTAREA' || focused.isContentEditable);
@@ -27,6 +35,18 @@ document.addEventListener('keydown', (e) => {
 
   // Let the open dropdown's own keydown handler take over for navigation keys
   if (isDropdownOpen()) return;
+
+  if (isAddKey(e)) {
+    e.preventDefault();
+    if (elMlAddAll.offsetParent !== null) elMlAddAll.click();
+    return;
+  }
+
+  if (isDelKey(e)) {
+    e.preventDefault();
+    if (elMlDelAll.offsetParent !== null) elMlDelAll.click();
+    return;
+  }
 
   switch (e.key) {
     case ' ':
@@ -70,8 +90,6 @@ document.addEventListener('keydown', (e) => {
     case 'c': btnCopy?.click(); break;
     case 'z': btnZip?.click(); break;
     case 'r': if (elMlRandom.offsetParent !== null) elMlRandom.click(); break;
-    case '+': if (elMlAddAll.offsetParent !== null) elMlAddAll.click(); break;
-    case '-': if (elMlDelAll.offsetParent !== null) elMlDelAll.click(); break;
     case 'f': if (!elRefineFolderBtn.hidden) elRefineFolderBtn.click(); break;
     case 'a': if (!elRefineArtistBtn.hidden) elRefineArtistBtn.click(); break;
     case 't': if (!elRefineFormatBtn.hidden) elRefineFormatBtn.click(); break;
