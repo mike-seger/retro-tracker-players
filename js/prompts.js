@@ -97,12 +97,9 @@ export function showResumeToast(trackName, onResume) {
     toast.remove();
   }, 8000);
 
-  // Play button is also a direct target (belt-and-suspenders for the gesture listener).
-  playBtn.addEventListener('click', () => {
-    removeGestureListeners();
-    dismiss();
-    onResume?.();
-  });
+  // NOTE: no click handler on playBtn — the capture-phase pointerdown listener
+  // above already fires first and calls onResume(). Adding a click handler too
+  // would call loadAndPlay() twice, causing an unplayable state.
 
   closeBtn.addEventListener('click', () => {
     removeGestureListeners();
