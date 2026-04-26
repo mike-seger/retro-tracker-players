@@ -201,6 +201,9 @@ body.mode-modland {
   cursor: pointer; width: auto; text-align: center;
   white-space: nowrap;
 }
+#refine-folder-btn::after, #refine-artist-btn::after, #refine-format-btn::after {
+  content: '▾'; font-size: 9px; margin-left: 3px; opacity: 0.6; vertical-align: 1px;
+}
 #refine-folder-btn.active, #refine-artist-btn.active, #refine-range-btn.active {
   border-color: #666;
 }
