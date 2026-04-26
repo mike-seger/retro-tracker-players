@@ -9,6 +9,13 @@ import { showSharePanel } from './share-panel.js';
 import { isDropdownOpen } from './dropdown-keys.js';
 import { hasOpenConfirm } from './prompts.js';
 
+function getActiveRow() {
+  const idx = S.focusedIdx >= 0 ? S.focusedIdx : S.currentIdx;
+  if (idx < 0) return null;
+  const list = document.getElementById('playlist');
+  return list?.children?.[idx] || null;
+}
+
 function isAddKey(e) {
   return e.key === '+' || e.code === 'NumpadAdd' || (e.code === 'Equal' && e.shiftKey);
 }
@@ -76,6 +83,16 @@ document.addEventListener('keydown', (e) => {
       break;
 
     case 'Enter': {
+      // In Modland search results, Enter mirrors the row [+] button.
+      if (S._inSearchResults) {
+        const addBtn = getActiveRow()?.querySelector('.r-add');
+        if (addBtn) {
+          e.preventDefault();
+          addBtn.click();
+          break;
+        }
+      }
+
       e.preventDefault();
       const idx = S.focusedIdx >= 0 ? S.focusedIdx : S.currentIdx;
       if (idx >= 0) {
@@ -83,6 +100,16 @@ document.addEventListener('keydown', (e) => {
         else {
           import('./player.js').then(m => m.loadAndPlay(idx));
         }
+      }
+      break;
+    }
+
+    case 'Backspace': {
+      // In Modland list rows, Backspace mirrors the row [X] remove button.
+      const delBtn = getActiveRow()?.querySelector('.r-del');
+      if (delBtn) {
+        e.preventDefault();
+        delBtn.click();
       }
       break;
     }
