@@ -14,7 +14,8 @@ function isAddKey(e) {
 }
 
 function isDelKey(e) {
-  return e.key === '-' || e.key === '_' || e.code === 'NumpadSubtract' || e.code === 'Minus';
+  return e.key === '-' || e.key === '_' || e.key === 'Subtract' || e.key === '−' || e.key === '–' ||
+    e.code === 'NumpadSubtract' || e.code === 'Minus';
 }
 
 document.addEventListener('keydown', (e) => {
@@ -38,13 +39,13 @@ document.addEventListener('keydown', (e) => {
 
   if (isAddKey(e)) {
     e.preventDefault();
-    if (elMlAddAll.offsetParent !== null) elMlAddAll.click();
+    elMlAddAll.click();
     return;
   }
 
   if (isDelKey(e)) {
     e.preventDefault();
-    if (elMlDelAll.offsetParent !== null) elMlDelAll.click();
+    elMlDelAll.click();
     return;
   }
 

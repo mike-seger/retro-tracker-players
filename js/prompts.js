@@ -29,8 +29,15 @@ function showConfirm({ messageHtml, yesLabel, noLabel = 'Cancel', onConfirm }) {
   overlay.addEventListener('keydown', (e) => {
     if (e.key === 'Tab') {
       e.preventDefault();
-      if (document.activeElement === yesBtn) noBtn.focus();
-      else yesBtn.focus();
+      if (document.activeElement !== yesBtn && document.activeElement !== noBtn) {
+        yesBtn.focus();
+      } else if (e.shiftKey) {
+        if (document.activeElement === yesBtn) noBtn.focus();
+        else yesBtn.focus();
+      } else {
+        if (document.activeElement === yesBtn) noBtn.focus();
+        else yesBtn.focus();
+      }
       return;
     }
     if (e.key === 'Escape') {
@@ -40,7 +47,8 @@ function showConfirm({ messageHtml, yesLabel, noLabel = 'Cancel', onConfirm }) {
     }
     if (e.key === 'Enter') {
       e.preventDefault();
-      confirm();
+      if (document.activeElement === noBtn) close();
+      else confirm();
     }
   });
 
