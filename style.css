@@ -318,6 +318,7 @@ body.mode-modland {
   #player { padding: 8px 10px max(env(safe-area-inset-bottom), 8px) 10px; }
   #info { display: none; }
   #ml-random, #btn-zip { display: none !important; }
+  #refine-inline { order: -1; width: 100%; }
   #filter-row { margin-bottom: 8px; gap: 6px; }
   #filter { padding: 6px 8px; }
   #filter-count { display: none; }
