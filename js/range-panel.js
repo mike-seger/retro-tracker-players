@@ -10,6 +10,11 @@ export function buildRangePanel(total, pageSize = 200) {
   const panel = elRefineRangePanel;
   panel.innerHTML = '';
 
+  const title = document.createElement('div');
+  title.className = 'panel-title';
+  title.textContent = 'Range';
+  panel.appendChild(title);
+
   if (total <= pageSize) {
     S._currentRange = 0;
     updateRangeBtn();

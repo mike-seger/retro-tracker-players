@@ -201,7 +201,7 @@ body.mode-modland {
   cursor: pointer; width: auto; text-align: center;
   white-space: nowrap;
 }
-#refine-folder-btn::after, #refine-artist-btn::after, #refine-format-btn::after {
+#refine-folder-btn::after, #refine-artist-btn::after, #refine-format-btn::after, #refine-range-btn::after {
   content: '▾'; font-size: 11px; margin-left: 5px; opacity: 0.8; vertical-align: 1px;
 }
 #refine-folder-btn.active, #refine-artist-btn.active, #refine-range-btn.active {
