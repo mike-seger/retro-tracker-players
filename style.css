@@ -220,7 +220,7 @@ body.mode-modland {
   white-space: nowrap; color: #ccc; font-size: 13px; line-height: 1.4;
   -webkit-user-select: none; user-select: none;
 }
-.range-opt:hover { background: #333; }
+.range-opt:hover, .range-opt:focus { background: #333; outline: none; }
 .range-opt.selected { background: #2a3a2a; color: #8f8; }
 .panel-title {
   padding: 5px 12px 4px; font-size: 11px; font-weight: bold; letter-spacing: 0.06em;
@@ -233,7 +233,7 @@ body.mode-modland {
   white-space: nowrap; color: #ccc; font-size: 13px; line-height: 1.4;
   -webkit-user-select: none; user-select: none;
 }
-.fmt-opt:hover { background: #333; }
+.fmt-opt:hover, .fmt-opt:focus, .fmt-opt:focus-within { background: #333; outline: none; }
 .fmt-master { border-bottom: 1px solid #444; min-height: 1.9em; }
 .fmt-opt input[type="checkbox"] {
   appearance: none; -webkit-appearance: none;

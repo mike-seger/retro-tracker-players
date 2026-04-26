@@ -19,11 +19,15 @@ export function closeAllDropdowns() {
  */
 export function openDropdown(btn, panel) {
   const wasHidden = panel.hidden;
-  closeAllDropdowns();
+  // Close all OTHER dropdowns without touching this one
+  for (const [p] of _registered) if (p !== panel) p.hidden = true;
   if (wasHidden) {
     _registered.get(panel)?.saveState?.();
     panel.hidden = false;
-    getNavItems(panel)[0]?.focus();
+    // Use setTimeout so the panel is rendered before focus
+    setTimeout(() => getNavItems(panel)[0]?.focus(), 0);
+  } else {
+    panel.hidden = true;
   }
 }
 
