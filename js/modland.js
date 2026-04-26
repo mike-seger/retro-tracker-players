@@ -26,13 +26,17 @@ function urlToTrack(url) {
   const playerId = detectPlayerIdFromUrl(url);
   if (!playerId) return null;
   const { extOf } = { extOf: (u) => { const d = u.lastIndexOf('.'); return d >= 0 ? u.substring(d + 1).toUpperCase() : ''; } };
-  const segments = new URL(url).pathname.split('/').map(decodeURIComponent);
+  const parsed = new URL(url);
+  const segments = parsed.pathname.split('/').map(decodeURIComponent);
   const artist = (segments[segments.length - 2] || '').replace(/\//g, '+');
   const file = segments[segments.length - 1];
   const name = `${artist}/${file}`;
   const dot = url.lastIndexOf('.');
   const ext = dot >= 0 ? url.substring(dot + 1).toUpperCase() : '';
-  return { name, ext, playerId, url };
+  // Reconstruct the URL with proper single-encoding (fixes any double-encoded % in stored URLs)
+  const normalizedPath = segments.map((s, i) => i === 0 ? s : encodeURIComponent(s)).join('/');
+  const normalizedUrl = parsed.origin + normalizedPath;
+  return { name, ext, playerId, url: normalizedUrl };
 }
 
 // ── file list management ──────────────────────────────
@@ -50,6 +54,7 @@ export function loadModlandTracks() {
     }
   } catch (_) {}
   S.modlandFiles.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+  saveModlandUrls(); // persist normalized URLs (fixes any historically double-encoded entries)
 }
 
 export function saveModlandUrls() {
