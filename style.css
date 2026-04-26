@@ -310,12 +310,14 @@ body.mode-modland {
 /* ── mobile ────────────────────────────────────────── */
 @media (max-height: 400px) {
   #info { display: none; }
+  #ml-random, #btn-zip { display: none !important; }
 }
 
 @media (max-width: 600px) {
   body { font-size: 13px; }
   #player { padding: 8px 10px max(env(safe-area-inset-bottom), 8px) 10px; }
   #info { display: none; }
+  #ml-random, #btn-zip { display: none !important; }
   #filter-row { margin-bottom: 8px; gap: 6px; }
   #filter { padding: 6px 8px; }
   #filter-count { display: none; }
