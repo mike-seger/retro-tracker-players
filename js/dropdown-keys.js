@@ -43,7 +43,7 @@ export function registerDropdown({ btn, panel, saveState, restoreState }) {
   panel.addEventListener('keydown', (e) => {
     const items = getNavItems(panel);
     const focused = document.activeElement;
-    const idx = items.indexOf(focused);
+    const idx = items.findIndex(item => item === focused || item.contains(focused));
 
     switch (e.key) {
       case 'ArrowDown':
@@ -58,10 +58,12 @@ export function registerDropdown({ btn, panel, saveState, restoreState }) {
 
       case ' ': {
         e.preventDefault();
-        if (focused?.classList.contains('range-opt')) {
-          focused.click(); // range items handle their own selection + close
+        const item = items[idx];
+        if (item?.classList.contains('range-opt')) {
+          item.click();
         } else {
-          const cb = focused?.querySelector('input[type="checkbox"]');
+          const cb = item?.querySelector('input[type="checkbox"]') ??
+                     (focused?.type === 'checkbox' ? focused : null);
           if (cb) {
             cb.checked = !cb.checked;
             cb.dispatchEvent(new Event('change', { bubbles: true }));
@@ -72,8 +74,9 @@ export function registerDropdown({ btn, panel, saveState, restoreState }) {
 
       case 'Enter': {
         e.preventDefault();
-        if (focused?.classList.contains('range-opt')) {
-          focused.click(); // range item closes the panel itself
+        const item = items[idx];
+        if (item?.classList.contains('range-opt')) {
+          item.click();
         } else {
           panel.hidden = true;
         }
