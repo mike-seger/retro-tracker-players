@@ -127,8 +127,8 @@ export function updateMlButtons() {
   elMlAddAll.style.display = isMl && hasResults ? '' : 'none';
   elMlDelAll.style.display = isMl && S.modlandFiles.length > 0 ? '' : 'none';
   elMlRandom.style.display = isMl ? '' : 'none';
-  btnCopy.style.display    = isMl ? 'none' : '';
-  btnZip.style.display     = isMl ? 'none' : '';
+  btnCopy.style.display    = (isMl && hasResults) ? 'none' : '';
+  btnZip.style.display     = (isMl && hasResults) ? 'none' : '';
 }
 
 // ── modland search ────────────────────────────────────
