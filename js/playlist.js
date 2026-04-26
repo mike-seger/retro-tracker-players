@@ -107,8 +107,7 @@ export function buildPlaylist() {
     li.innerHTML =
       `<input type="checkbox" class="sel-cb" tabindex="-1"${checked}>` +
       `<span class="idx">${idxStr}</span>` +
-      (artist ? `<span class="artist">${esc(artist)}</span> ` : '') +
-      `<span class="name">${esc(displayName)}</span>` +
+      `<span class="name">${artist ? `<span class="artist">${esc(artist)}</span> ` : ''}${esc(displayName)}</span>` +
       `<button class="r-dl" title="Download">D</button>` +
       `<span class="ext">${esc(entry.ext)}</span>` +
       (S.searchMode === 'modland' && entry.url
