@@ -40,6 +40,17 @@ function showConfirm({ messageHtml, yesLabel, noLabel = 'Cancel', onConfirm }) {
       }
       return;
     }
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      e.preventDefault();
+      if (document.activeElement !== yesBtn && document.activeElement !== noBtn) {
+        yesBtn.focus();
+      } else if (document.activeElement === yesBtn) {
+        noBtn.focus();
+      } else {
+        yesBtn.focus();
+      }
+      return;
+    }
     if (e.key === 'Escape') {
       e.preventDefault();
       close();
