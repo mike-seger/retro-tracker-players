@@ -43,13 +43,7 @@ function ensureCompressor() {
   return _compressor;
 }
 
-function isMobile() {
-  return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
-    (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
-}
-
 function supportsWorklet() {
-  if (isMobile()) return false;
   return window.isSecureContext !== false && typeof AudioWorkletNode !== 'undefined';
 }
 

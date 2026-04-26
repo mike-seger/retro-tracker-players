@@ -63,7 +63,7 @@ body.mode-modland {
 #transport button {
   background: #222; color: #ccc; border: 1px solid #444; padding: 2px 8px;
   font: inherit; cursor: pointer; border-radius: 3px; font-size: 12px;
-  min-width: 26px; width: 36px; text-align: center;
+  min-width: 26px; text-align: center;
 }
 #transport button:hover { background: #333; }
 #transport button.active {
@@ -161,26 +161,26 @@ body.mode-modland {
   cursor: pointer; flex-shrink: 0;
 }
 
-#refine-inline {
-  display: flex; gap: 6px; align-items: center;
+#refine-row {
+  display: flex; gap: 6px; margin-bottom: 8px; flex-shrink: 0;
 }
-#refine-inline select {
+#refine-row select {
   background: #1a1a1a; color: #999; border: 1px solid #333;
   padding: 4px 8px; font: inherit; border-radius: 3px;
-  cursor: pointer; max-width: 130px;
+  cursor: pointer; max-width: 33%;
 }
-#refine-inline select:has(option:checked:not([value=""])) {
+#refine-row select:has(option:checked:not([value=""])) {
   color: #ccc; border-color: #555;
 }
 
 /* ── format multi-select ───────────────────────────── */
 #refine-format-wrap {
-  position: relative; flex-shrink: 0;
+  position: relative; max-width: 33%; flex-shrink: 0;
 }
 #refine-format-btn {
   background: #1a1a1a; color: #999; border: 1px solid #333;
   padding: 4px 8px; font: inherit; border-radius: 3px;
-  cursor: pointer; width: auto; text-align: left;
+  cursor: pointer; width: 100%; text-align: left;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 #refine-format-btn.active { color: #ccc; border-color: #555; }
@@ -217,14 +217,14 @@ body.mode-modland {
 
 
 /* ── selection toolbar ─────────────────────────────── */
-#sel-row { display: flex; align-items: center; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
-#sel-row > button {
+#sel-row { display: flex; align-items: center; gap: 6px; margin-bottom: 12px; }
+#sel-row button {
   background: #222; color: #ccc; border: 1px solid #444; padding: 2px 8px;
   font: inherit; cursor: pointer; border-radius: 3px; font-size: 12px;
   min-width: 26px; text-align: center;
 }
-#sel-row > button:hover { background: #333; }
-#sel-row > button:disabled { opacity: 0.45; cursor: not-allowed; }
+#sel-row button:hover { background: #333; }
+#sel-row button:disabled { opacity: 0.45; cursor: not-allowed; }
 #sel-count { color: #666; font-size: 12px; }
 .copied { color: #8f8 !important; }
 
@@ -273,8 +273,8 @@ body.mode-modland {
 }
 #playlist li.hidden { display: none; }
 #playlist li .idx { color: #555; margin-right: 6px; font-size: 12px; }
-#playlist li .name { flex: 1; overflow: hidden; text-overflow: ellipsis; text-transform: lowercase; direction: rtl; text-align: left; }
-#playlist li .artist { color: #888; text-transform: lowercase; }
+#playlist li .name { flex: 1; overflow: hidden; text-overflow: ellipsis; text-transform: lowercase; }
+#playlist li .artist { color: #888; margin-right: 0.5em; text-transform: lowercase; }
 #playlist li .ext {
   color: #666; font-size: 11px; margin-left: 8px; flex-shrink: 0;
   text-transform: uppercase; width: 3em; text-align: right;
@@ -308,19 +308,10 @@ body.mode-modland {
 }
 
 /* ── mobile ────────────────────────────────────────── */
-@media (max-height: 400px) {
-  #info { display: none; }
-  #ml-random, #btn-zip { display: none !important; }
-}
-
 @media (max-width: 600px) {
   body { font-size: 13px; }
   #player { padding: 8px 10px max(env(safe-area-inset-bottom), 8px) 10px; }
   #info { display: none; }
-  #ml-random, #btn-zip { display: none !important; }
-  #refine-inline { order: -1; width: 100%; }
-  #playlist li:hover { background: transparent; }
-  #playlist li .r-dl { display: none; }
   #filter-row { margin-bottom: 8px; gap: 6px; }
   #filter { padding: 6px 8px; }
   #filter-count { display: none; }
@@ -396,51 +387,3 @@ body.mode-modland {
   font-size: 15px; padding: 0 2px; line-height: 1;
 }
 .resume-toast-close:hover { color: #faa; }
-
-/* ── help button ────────────────────────────────── */
-#help-btn {
-  background: #222; border: 1px solid #444; border-radius: 3px;
-  color: #888; cursor: pointer; font: inherit; font-size: 13px;
-  padding: 2px 8px; line-height: 1.4; flex-shrink: 0;
-}
-#help-btn:hover { color: #ccc; border-color: #666; }
-#help-btn.active { color: #eee; border-color: #888; background: #333; }
-
-/* ── help overlay ───────────────────────────────── */
-#help-overlay {
-  position: absolute; inset: 0; background: #141414;
-  overflow-y: auto; z-index: 200; padding: 12px 16px 24px;
-  box-sizing: border-box;
-}
-#help-overlay[hidden] { display: none; }
-#help-close {
-  position: sticky; top: 0; float: right; margin-left: 12px;
-  background: #222; border: 1px solid #555; border-radius: 3px;
-  color: #888; cursor: pointer; font-size: 27px; line-height: 1;
-  padding: 2px 8px;
-}
-#help-close:hover { color: #faa; border-color: #faa; }
-#help-content {
-  max-width: 680px; margin: 0 auto; font-size: 13px;
-  line-height: 1.65; color: #bbb;
-}
-#help-content h1, #help-content h2, #help-content h3 {
-  color: #ddd; margin-top: 1.4em; margin-bottom: 0.4em;
-}
-#help-content h1 { font-size: 1.3em; }
-#help-content h2 { font-size: 1.1em; }
-#help-content h3 { font-size: 1em; }
-#help-content p { margin: 0.5em 0; }
-#help-content a { color: #8af; }
-#help-content code { background: #222; border-radius: 3px; padding: 1px 4px; font-size: 0.92em; }
-#help-content pre { background: #1a1a1a; border: 1px solid #333; border-radius: 4px;
-  padding: 10px 12px; overflow-x: auto; }
-#help-content pre code { background: none; padding: 0; }
-#help-content hr { border: none; border-top: 1px solid #333; margin: 1.5em 0; }
-#help-content ul, #help-content ol { padding-left: 1.4em; margin: 0.5em 0; }
-#help-content li { margin: 0.25em 0; }
-#help-content kbd {
-  display: inline-block; background: #222; border: 1px solid #555;
-  border-radius: 3px; padding: 1px 5px; font-size: 0.88em;
-  font-family: inherit; color: #ccc;
-}
