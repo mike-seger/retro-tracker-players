@@ -104,7 +104,8 @@ document.addEventListener('keydown', (e) => {
       break;
     }
 
-    case 'Backspace': {
+    case 'Backspace':
+    case 'Delete': {
       // In Modland list rows, Backspace mirrors the row [X] remove button.
       const delBtn = getActiveRow()?.querySelector('.r-del');
       if (delBtn) {
