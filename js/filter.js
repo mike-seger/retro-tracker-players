@@ -66,6 +66,18 @@ export function applyFilter() {
   elFilterCnt.textContent = (terms.length || foldersActive || artistsActive || fmtActive)
     ? `${visible} / ${files.length}` : '';
 
+  // Re-number visible rows relative to the displayed list
+  const pad = Math.max(2, String(visible || files.length).length);
+  let visIdx = 0;
+  for (let i = 0; i < items.length; i++) {
+    const span = items[i].querySelector('.idx');
+    if (!span) continue;
+    if (!items[i].classList.contains('hidden')) {
+      visIdx++;
+      span.textContent = String(visIdx).padStart(pad, '\u2007');
+    }
+  }
+
   persistContext();
 
   // Scroll the playing track into view after the DOM has reflowed.
