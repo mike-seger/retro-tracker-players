@@ -109,7 +109,7 @@ body.mode-modland {
 }
 #share-btn {
   background: #1a1a1a; color: #999; border: 1px solid #333;
-  padding: 4px 8px; font: inherit; border-radius: 3px;
+  padding: 4px 12px; font: inherit; border-radius: 3px;
   cursor: pointer; white-space: nowrap;
 }
 #share-btn:hover { color: #ccc; border-color: #555; }
@@ -144,7 +144,7 @@ body.mode-modland {
 #filter-count { color: #666; font-size: 12px; white-space: nowrap; }
 .ml-btn {
   background: #2a3a2a; color: #8a8; border: 1px solid #4a4; border-radius: 3px;
-  padding: 2px 8px; font: inherit; cursor: pointer; font-size: 12px; flex-shrink: 0;
+  padding: 4px 12px; font: inherit; cursor: pointer; font-size: 12px; flex-shrink: 0;
 }
 .ml-btn:hover { background: #3a4a3a; color: #afa; }
 #sel-row #ml-del-all {
@@ -157,7 +157,7 @@ body.mode-modland {
 #sel-row #ml-random:hover { background: #3a3a4a; color: #aaf; }
 #search-mode {
   background: #222; color: #ccc; border: 1px solid #444;
-  padding: 4px 8px; font: inherit; border-radius: 3px;
+  padding: 4px 12px; font: inherit; border-radius: 3px;
   cursor: pointer; flex-shrink: 0;
 }
 
@@ -166,7 +166,7 @@ body.mode-modland {
 }
 #refine-inline select {
   background: #1a1a1a; color: #999; border: 1px solid #333;
-  padding: 4px 8px; font: inherit; border-radius: 3px;
+  padding: 4px 12px; font: inherit; border-radius: 3px;
   cursor: pointer; max-width: 130px;
 }
 #refine-inline select:has(option:checked:not([value=""])) {
@@ -179,7 +179,7 @@ body.mode-modland {
 }
 #refine-format-btn {
   background: #222; color: #ccc; border: 1px solid #444;
-  padding: 2px 8px; font: inherit; font-size: 12px; border-radius: 3px;
+  padding: 4px 12px; font: inherit; font-size: 12px; border-radius: 3px;
   cursor: pointer; width: auto; text-align: center;
   white-space: nowrap;
 }
@@ -197,7 +197,7 @@ body.mode-modland {
 }
 #refine-folder-btn, #refine-artist-btn, #refine-range-btn {
   background: #222; color: #ccc; border: 1px solid #444;
-  padding: 2px 8px; font: inherit; font-size: 12px; border-radius: 3px;
+  padding: 4px 12px; font: inherit; font-size: 12px; border-radius: 3px;
   cursor: pointer; width: auto; text-align: center;
   white-space: nowrap;
 }
@@ -213,7 +213,7 @@ body.mode-modland {
 }
 .range-opt {
   display: flex; align-items: center; gap: 6px;
-  padding: 5px 10px; cursor: pointer;
+  padding: 5px 12px; cursor: pointer;
   white-space: nowrap; color: #ccc; font-size: 13px; line-height: 1.4;
   -webkit-user-select: none; user-select: none;
 }
@@ -221,7 +221,7 @@ body.mode-modland {
 .range-opt.selected { background: #2a3a2a; color: #8f8; }
 .fmt-opt {
   display: flex; align-items: center; gap: 6px;
-  padding: 5px 10px; cursor: pointer;
+  padding: 5px 12px; cursor: pointer;
   white-space: nowrap; color: #ccc; font-size: 13px; line-height: 1.4;
   -webkit-user-select: none; user-select: none;
 }
@@ -246,9 +246,9 @@ body.mode-modland {
 
 
 /* ── selection toolbar ─────────────────────────────── */
-#sel-row { display: flex; align-items: center; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+#sel-row { display: flex; align-items: center; gap: 9px; margin-bottom: 12px; flex-wrap: wrap; }
 #sel-row > button {
-  background: #222; color: #ccc; border: 1px solid #444; padding: 2px 8px;
+  background: #222; color: #ccc; border: 1px solid #444; padding: 4px 12px;
   font: inherit; cursor: pointer; border-radius: 3px; font-size: 12px;
   min-width: 26px; text-align: center;
 }
@@ -361,7 +361,7 @@ body.mode-modland {
   #player { padding: 8px 10px max(env(safe-area-inset-bottom), 8px) 10px; }
   #info { display: none; }
   #ml-random, #btn-zip { display: none !important; }
-  #refine-inline { order: -1; width: 100%; }
+  /* #refine-inline { order: -1; width: 100%; } */
   #playlist li:hover { background: transparent; }
   #filter-row { margin-bottom: 8px; gap: 6px; }
   #filter { padding: 6px 8px; }
@@ -422,7 +422,7 @@ body.mode-modland {
 #help-btn {
   background: #222; border: 1px solid #444; border-radius: 3px;
   color: #ccc; cursor: pointer; font: inherit; font-size: 12px;
-  padding: 2px 8px; flex-shrink: 0;
+  padding: 4px 12px; flex-shrink: 0;
 }
 #help-btn:hover { border-color: #666; }
 #help-btn.active { border-color: #888; background: #333; }
