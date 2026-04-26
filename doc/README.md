@@ -6,7 +6,7 @@ A browser-based player for classic tracker module formats (MOD, XM, S3M, IT, AHX
 
 ## Keyboard Shortcuts
 
-### Global
+### Playback & Navigation
 
 | Key | Action |
 |---|---|
@@ -39,6 +39,47 @@ A browser-based player for classic tracker module formats (MOD, XM, S3M, IT, AHX
 | <kbd>Esc</kbd> | Undo all changes since the dropdown opened and close |
 
 Opening a dropdown automatically closes any other open dropdown.
+
+### Toolbar
+
+| Key | Action |
+|---|---|
+| <kbd>S</kbd> | Share (copy deep-link URL) |
+| <kbd>C</kbd> | Copy selected file URLs to clipboard |
+| <kbd>Z</kbd> | Download selected tracks as ZIP |
+| <kbd>R</kbd> | Random (shuffle a slice of the index) |
+| <kbd>+</kbd> | Add all visible Modland results to saved list |
+| <kbd>-</kbd> | Delete all visible saved Modland tracks |
+| <kbd>F</kbd> | Open / close Folder filter |
+| <kbd>A</kbd> | Open / close Artist filter |
+| <kbd>T</kbd> | Open / close Format filter |
+| <kbd>?</kbd> | Open / close Help |
+| <kbd>X</kbd> | Clear active filter |
+
+### Modland Rows
+
+| Key | Action |
+|---|---|
+| <kbd>Enter</kbd> | Add focused search-result row to saved list |
+| <kbd>Backspace</kbd> / <kbd>Delete</kbd> | Remove focused saved-list row |
+
+### Dropdown Panels
+
+| Key | Action |
+|---|---|
+| <kbd>↑</kbd> / <kbd>↓</kbd> | Move focus between options |
+| <kbd>Space</kbd> | Toggle checkbox / select option |
+| <kbd>Enter</kbd> | Accept selection and close panel |
+| <kbd>Esc</kbd> | Undo changes and close panel |
+
+### Confirmation Dialogs
+
+| Key | Action |
+|---|---|
+| <kbd>Tab</kbd> / <kbd>Shift+Tab</kbd> | Cycle between Yes and No buttons |
+| <kbd>←</kbd> / <kbd>→</kbd> | Move between Yes and No buttons |
+| <kbd>Enter</kbd> | Activate focused button |
+| <kbd>Esc</kbd> | Cancel (same as No) |
 
 ---
 
