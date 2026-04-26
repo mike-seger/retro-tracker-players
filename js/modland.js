@@ -9,7 +9,7 @@ import { loadAndPlay } from './player.js';
 import { activeFiles, scrollIntoViewSmart, updateTrackPos, buildPlaylist } from './playlist.js';
 import { restoreSelection } from './selection.js';
 import { updateSelCount } from './selection.js';
-import { populateRangePanel, getRangeSkip, buildRangePanel } from './range-panel.js';
+import { getRangeSkip, buildRangePanel } from './range-panel.js';
 import { showDeleteConfirm } from './prompts.js';
 import * as remoteSearch from './remote-search.js';
 
