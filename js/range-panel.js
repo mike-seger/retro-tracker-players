@@ -50,6 +50,8 @@ export function buildRangePanel(total, pageSize = 200) {
 
 export function updateRangeBtn() {
   const sel = elRefineRangePanel.querySelector('.range-opt.selected');
+  const hasPages = elRefineRangePanel.querySelector('.range-opt') !== null;
+  elRefineRangeBtn.hidden = !hasPages;
   if (sel) {
     elRefineRangeBtn.textContent = sel.textContent;
     elRefineRangeBtn.classList.add('active');

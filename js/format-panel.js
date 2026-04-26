@@ -82,6 +82,7 @@ export function updateFormatBtn() {
   const active = S.selectedFormats.size > 0 && S.selectedFormats.size < S._allFormatOptions.size;
   elRefineFormatBtn.textContent = 'T';
   elRefineFormatBtn.classList.toggle('active', active);
+  elRefineFormatBtn.hidden = S._allFormatOptions.size === 0;
 }
 
 export function clearFormatFilter() {

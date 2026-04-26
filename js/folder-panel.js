@@ -80,6 +80,7 @@ export function updateFolderBtn() {
   const active = S.selectedFolders.size > 0 && S.selectedFolders.size < S._allFolderOptions.size;
   elRefineFolderBtn.textContent = 'F';
   elRefineFolderBtn.classList.toggle('active', active);
+  elRefineFolderBtn.hidden = S._allFolderOptions.size === 0;
 }
 
 export function clearFolderFilter() {

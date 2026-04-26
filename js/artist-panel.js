@@ -80,6 +80,7 @@ export function updateArtistBtn() {
   const active = S.selectedArtists.size > 0 && S.selectedArtists.size < S._allArtistOptions.size;
   elRefineArtistBtn.textContent = 'A';
   elRefineArtistBtn.classList.toggle('active', active);
+  elRefineArtistBtn.hidden = S._allArtistOptions.size === 0;
 }
 
 export function clearArtistFilter() {
