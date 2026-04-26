@@ -1,5 +1,5 @@
 // js/persistence.js — Persist filter context + play position to localStorage
-import { S, elFilter, elRefineFolder, elRefineArtist } from './state.js';
+import { S, elFilter } from './state.js';
 
 export function persistContext() {
   if (!S._appReady) return;
@@ -7,8 +7,8 @@ export function persistContext() {
     localStorage.setItem('app-context', JSON.stringify({
       mode:    S.searchMode,
       filter:  elFilter.value,
-      folder:  elRefineFolder.value,
-      artist:  elRefineArtist.value,
+      folders: [...S.selectedFolders],
+      artists: [...S.selectedArtists],
       formats: [...S.selectedFormats],
     }));
   } catch (_) {}

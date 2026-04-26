@@ -190,6 +190,35 @@ body.mode-modland {
   top: calc(100% + 2px); left: 0; min-width: 100%;
   box-shadow: 0 4px 12px rgba(0,0,0,0.5);
 }
+
+/* ── folder / artist / range multi-select panels ───── */
+.refine-panel-wrap {
+  position: relative; flex-shrink: 0;
+}
+#refine-folder-btn, #refine-artist-btn, #refine-range-btn {
+  background: #1a1a1a; color: #999; border: 1px solid #333;
+  padding: 4px 8px; font: inherit; border-radius: 3px;
+  cursor: pointer; width: auto; text-align: left;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+#refine-folder-btn.active, #refine-artist-btn.active, #refine-range-btn.active {
+  color: #ccc; border-color: #555;
+}
+#refine-folder-panel, #refine-artist-panel, #refine-range-panel {
+  position: absolute; z-index: 200;
+  background: #222; border: 1px solid #555; border-radius: 4px;
+  top: calc(100% + 2px); left: 0; min-width: 120px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  max-height: 300px; overflow-y: auto;
+}
+.range-opt {
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 10px; cursor: pointer;
+  white-space: nowrap; color: #ccc; font-size: 13px; line-height: 1.4;
+  -webkit-user-select: none; user-select: none;
+}
+.range-opt:hover { background: #333; }
+.range-opt.selected { background: #2a3a2a; color: #8f8; }
 .fmt-opt {
   display: flex; align-items: center; gap: 6px;
   padding: 5px 10px; cursor: pointer;
@@ -204,11 +233,11 @@ body.mode-modland {
   background: #333; cursor: pointer; flex-shrink: 0; position: relative;
 }
 .fmt-opt input[type="checkbox"]:checked {
-  background: var(--accent-bg); border-color: var(--accent-border);
+  background: #462; border-color: #8a4;
 }
 .fmt-opt input[type="checkbox"].indeterminate {
-  background: var(--accent-bg);
-  border-color: var(--accent-border);
+  background: #462;
+  border-color: #8a4;
   opacity: 0.55;
 }
 
@@ -240,12 +269,12 @@ body.mode-modland {
   position: relative;
 }
 #sel-bulk input[type="checkbox"]:checked {
-  background: var(--accent-bg);
-  border-color: var(--accent-border);
+  background: #462;
+  border-color: #8a4;
 }
 #sel-bulk input[type="checkbox"].indeterminate {
-  background: var(--accent-bg);
-  border-color: var(--accent-border);
+  background: #462;
+  border-color: #8a4;
   opacity: 0.55;
 }
 
@@ -315,8 +344,8 @@ body.mode-modland {
   position: relative;
 }
 #playlist li .sel-cb:checked {
-  background: var(--accent-bg);
-  border-color: var(--accent-border);
+  background: #462;
+  border-color: #8a4;
 }
 
 /* ── mobile ────────────────────────────────────────── */

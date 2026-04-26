@@ -1,7 +1,7 @@
 // js/filter.js — applyFilter + refine visibility
-import { S, elFilter, elFilterCnt, elRefineFolder, elRefineArtist,
-         elRefineFormatWrap, elRefineRange, elRefineArtist as _artist,
-         elList } from './state.js';
+import { S, elFilter, elFilterCnt,
+         elRefineFolderWrap, elRefineArtistWrap, elRefineRangeWrap,
+         elRefineFormatWrap, elList } from './state.js';
 import { extractArtist } from './utils.js';
 import { buildFormatPanel } from './format-panel.js';
 import { activeFiles } from './playlist.js';
@@ -10,9 +10,9 @@ import { scrollIntoViewSmart } from './playlist.js';
 
 export function applyFilter() {
   const raw = elFilter.value.trim();
-  const folderVal = elRefineFolder.value.toLowerCase();
-  const artistVal = elRefineArtist.value.toLowerCase();
   const terms = raw.toLowerCase().split(/\s+/).filter(Boolean);
+  const foldersActive = S.selectedFolders.size > 0 && S.selectedFolders.size < S._allFolderOptions.size;
+  const artistsActive = S.selectedArtists.size > 0 && S.selectedArtists.size < S._allArtistOptions.size;
   let visible = 0;
   const files = activeFiles();
   const items = elList.children;
@@ -25,18 +25,14 @@ export function applyFilter() {
       const entry = files[i];
       const name = entry ? entry.name.toLowerCase() : '';
       let nameMatch = terms.length === 0 || terms.every(t => name.includes(t));
-      if (nameMatch && folderVal) {
+      if (nameMatch && foldersActive) {
         const slash = name.lastIndexOf('/');
-        const ef = slash >= 0 ? name.substring(0, slash) : '';
-        nameMatch = folderVal.length === 1
-          ? (ef.length > 0 && ef[0] === folderVal)
-          : ef === folderVal;
+        const ef = slash >= 0 ? entry.name.substring(0, slash) : '';
+        nameMatch = S.selectedFolders.has(ef);
       }
-      if (nameMatch && artistVal) {
-        const a = entry ? extractArtist(entry).toLowerCase() : '';
-        nameMatch = artistVal.length === 1
-          ? (a.length > 0 && a[0] === artistVal)
-          : a === artistVal;
+      if (nameMatch && artistsActive) {
+        const a = entry ? extractArtist(entry) : '';
+        nameMatch = S.selectedArtists.has(a);
       }
       const typeMatch = !entry || !entry.playerId || S.enabledPlayers[entry.playerId] !== false;
       if (nameMatch && typeMatch && entry?.ext) availableFormats.add(entry.ext);
@@ -48,18 +44,14 @@ export function applyFilter() {
     const entry = files[i];
     const name = entry ? entry.name.toLowerCase() : '';
     let nameMatch = terms.length === 0 || terms.every(t => name.includes(t));
-    if (nameMatch && folderVal) {
+    if (nameMatch && foldersActive) {
       const slash = name.lastIndexOf('/');
-      const ef = slash >= 0 ? name.substring(0, slash) : '';
-      nameMatch = folderVal.length === 1
-        ? (ef.length > 0 && ef[0] === folderVal)
-        : ef === folderVal;
+      const ef = slash >= 0 ? entry.name.substring(0, slash) : '';
+      nameMatch = S.selectedFolders.has(ef);
     }
-    if (nameMatch && artistVal) {
-      const a = entry ? extractArtist(entry).toLowerCase() : '';
-      nameMatch = artistVal.length === 1
-        ? (a.length > 0 && a[0] === artistVal)
-        : a === artistVal;
+    if (nameMatch && artistsActive) {
+      const a = entry ? extractArtist(entry) : '';
+      nameMatch = S.selectedArtists.has(a);
     }
     if (nameMatch && S.selectedFormats.size > 0 && S.selectedFormats.size < S._allFormatOptions.size) {
       nameMatch = entry && S.selectedFormats.has(entry.ext);
@@ -71,7 +63,7 @@ export function applyFilter() {
   }
 
   const fmtActive = S.selectedFormats.size > 0 && S.selectedFormats.size < S._allFormatOptions.size;
-  elFilterCnt.textContent = (terms.length || folderVal || artistVal || fmtActive)
+  elFilterCnt.textContent = (terms.length || foldersActive || artistsActive || fmtActive)
     ? `${visible} / ${files.length}` : '';
 
   persistContext();
@@ -89,8 +81,8 @@ export function applyFilter() {
 
 export function updateRefineVisibility() {
   const isLocal = S.searchMode === 'local';
-  elRefineArtist.style.display = isLocal ? '' : 'none';
-  elRefineFolder.style.display = '';
-  elRefineRange.style.display  = isLocal ? 'none' : '';
+  elRefineFolderWrap.style.display = isLocal ? '' : 'none';
+  elRefineArtistWrap.style.display = isLocal ? '' : 'none';
+  elRefineRangeWrap.style.display  = isLocal ? 'none' : '';
   elRefineFormatWrap.style.display = '';
 }

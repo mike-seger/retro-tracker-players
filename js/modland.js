@@ -1,5 +1,5 @@
 // js/modland.js — Modland file management, search, random browse, mode helpers
-import { S, elFilter, elRefineFolder, elRefineRange, elFilterCnt,
+import { S, elFilter, elFilterCnt,
          elSelBulk, elMlAddAll, elMlDelAll, elMlRandom, elList,
          btnCopy, btnZip } from './state.js';
 import { esc, trackUrl, addLongPress, isMobile, parseTrackDisplay } from './utils.js';
@@ -9,7 +9,7 @@ import { loadAndPlay } from './player.js';
 import { activeFiles, scrollIntoViewSmart, updateTrackPos, buildPlaylist } from './playlist.js';
 import { restoreSelection } from './selection.js';
 import { updateSelCount } from './selection.js';
-import { populateRangeDropdown } from './refine.js';
+import { populateRangePanel, getRangeSkip, buildRangePanel } from './range-panel.js';
 import { showDeleteConfirm } from './prompts.js';
 import * as remoteSearch from './remote-search.js';
 
@@ -114,10 +114,8 @@ export function searchByArtist(artist) {
   import('./mode.js').then(m => {
     if (S.searchMode !== 'modland') m.switchMode('modland');
     const clean = artist.replace(/^-\s*/, '');
-    elFilter.value = '';
-    elRefineFolder.innerHTML = '<option value="">Folder</option>';
-    elRefineFolder.appendChild(new Option(clean, clean));
-    elRefineFolder.value = clean;
+    // Search using artist as path prefix (e.g. 'pulse/' finds all tracks in Pulse/ folder)
+    elFilter.value = clean + '/';
     doModlandSearch();
   });
 }
@@ -131,34 +129,25 @@ export function updateMlButtons() {
   elMlRandom.style.display = isMl ? '' : 'none';
   btnCopy.style.display    = isMl ? 'none' : '';
   btnZip.style.display     = isMl ? 'none' : '';
-  if (isMl && hasResults) elMlAddAll.textContent = 'Add all';
 }
 
 // ── modland search ────────────────────────────────────
 export function doModlandSearch() {
   S._randomBrowsing = false;
   const raw = elFilter.value.trim();
-  const folderVal = elRefineFolder.value;
-  const skip = parseInt(elRefineRange.value) || 0;
+  const skip = getRangeSkip();
 
-  if (raw.length < 2 && !folderVal) {
+  if (raw.length < 2) {
     S._lastSearchResults = [];
     S._inSearchResults = false;
     updateMlButtons();
-    populateRangeDropdown(0);
+    populateRangePanel(0);
     buildPlaylist();
     restoreSelection();
     return;
   }
 
-  let q;
-  if (folderVal) {
-    q = folderVal.length === 1
-      ? folderVal.toLowerCase() + (raw ? ' ' + raw : '')
-      : folderVal + '/' + (raw ? ' ' + raw : '');
-  } else {
-    q = raw;
-  }
+  const q = raw;
 
   if (!remoteSearch.isLoaded()) {
     elFilterCnt.textContent = 'loading…';
@@ -176,29 +165,7 @@ export function doModlandSearch() {
   S._lastSearchTotal = total;
   S._inSearchResults = true;
 
-  populateRangeDropdown(total);
-
-  // Populate folder dropdown from result folders
-  const prevFolder = elRefineFolder.value;
-  const folders = new Set();
-  for (const r of filtered) {
-    const s = r.name.lastIndexOf('/');
-    if (s >= 0) folders.add(r.name.substring(0, s));
-  }
-  elRefineFolder.innerHTML = '<option value="">Folder</option>';
-  const sortedFolders = [...folders].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
-  if (sortedFolders.length > 50) {
-    const letters = new Set(sortedFolders.map(f => f[0].toUpperCase()));
-    for (const ch of [...letters].sort()) elRefineFolder.appendChild(new Option(ch, ch));
-  } else {
-    for (const f of sortedFolders) elRefineFolder.appendChild(new Option(f, f));
-  }
-  if (prevFolder) {
-    if (![...elRefineFolder.options].some(o => o.value === prevFolder)) {
-      elRefineFolder.appendChild(new Option(prevFolder, prevFolder));
-    }
-    elRefineFolder.value = prevFolder;
-  }
+  populateRangePanel(total);
 
   // Populate format dropdown
   const formats = new Set();
@@ -311,13 +278,9 @@ export function doRandomBrowse(skip) {
   S._lastSearchTotal = total;
   S._inSearchResults = true;
 
-  // Populate range dropdown with pages of 1000
-  elRefineRange.innerHTML = '<option value="">Range</option>';
-  for (let i = 0; i < total; i += 1000) {
-    const end = Math.min(i + 1000, total);
-    elRefineRange.appendChild(new Option(`${i + 1}–${end}`, String(i)));
-  }
-  elRefineRange.value = String(skip);
+  // Populate range panel with pages of 1000
+  buildRangePanel(total, 1000);
+  S._currentRange = skip;
 
   const formats = new Set();
   for (const r of results) formats.add(r.ext.toUpperCase());
@@ -453,7 +416,7 @@ elMlRandom.addEventListener('click', () => {
   remoteSearch.reshuffle();
   S._randomBrowsing = true;
   elFilter.value = '';
-  elRefineFolder.value = '';
+  import('./range-panel.js').then(m => m.clearRangeFilter());
   import('./format-panel.js').then(m => m.clearFormatFilter());
   doRandomBrowse(0);
 });

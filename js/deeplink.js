@@ -1,5 +1,5 @@
 // js/deeplink.js — Deep link encode/decode and initial load
-import { S, elFilter, elRefineFolder, elRefineArtist } from './state.js';
+import { S, elFilter } from './state.js';
 import { trackUrl, extOf } from './utils.js';
 import { activeFiles, buildPlaylist, scrollIntoViewSmart, setFocus, highlightCurrent } from './playlist.js';
 import { loadAndPlay } from './player.js';
@@ -21,15 +21,20 @@ export function buildDeepLink(fullContext) {
   if (fullContext) {
     if (S.searchMode !== 'local') params.set('source', S.searchMode);
     if (elFilter.value.trim()) params.set('search', elFilter.value.trim());
-    if (elRefineFolder.value) params.set('folder', elRefineFolder.value);
-    if (elRefineArtist.value) params.set('artist', elRefineArtist.value);
+    if (S.selectedFolders.size > 0 && S.selectedFolders.size < S._allFolderOptions.size) {
+      params.set('folders', [...S.selectedFolders].join(','));
+    }
+    if (S.selectedArtists.size > 0 && S.selectedArtists.size < S._allArtistOptions.size) {
+      params.set('artists', [...S.selectedArtists].join(','));
+    }
     if (S.selectedFormats.size > 0 && S.selectedFormats.size < S._allFormatOptions.size) {
       params.set('formats', [...S.selectedFormats].join(','));
     }
   }
 
   const str = params.toString();
-  return str ? `${window.location.pathname}?${str}` : window.location.pathname;
+  const base = window.location.origin + window.location.pathname;
+  return str ? `${base}?${str}` : base;
 }
 
 // ── parse ──────────────────────────────────────────────
@@ -43,23 +48,25 @@ export function deepLinkFilters() {
   return {
     source:  params.get('source'),
     search:  params.get('search'),
-    folder:  params.get('folder'),
-    artist:  params.get('artist'),
+    folders: params.get('folders'),
+    artists: params.get('artists'),
     formats: params.get('formats'),
   };
 }
 
 export function applyDeepLinkFilters() {
   const f = deepLinkFilters();
-  if (!f.search && !f.folder && !f.artist && !f.formats) return;
+  if (!f.search && !f.folders && !f.artists && !f.formats) return;
   if (f.search) elFilter.value = f.search;
-  if (f.folder && [...elRefineFolder.options].some(o => o.value === f.folder)) {
-    elRefineFolder.value = f.folder;
+  if (f.folders) {
+    const fmts = new Set(f.folders.split(',').map(s => s.trim()));
+    S.selectedFolders = new Set([...fmts].filter(fm => S._allFolderOptions.has(fm)));
+    import('./folder-panel.js').then(m => { m.updateFolderBtn(); m.syncFolderCheckboxes(); });
   }
-  if (f.artist && S.searchMode === 'local') {
-    if ([...elRefineArtist.options].some(o => o.value === f.artist)) {
-      elRefineArtist.value = f.artist;
-    }
+  if (f.artists) {
+    const arts = new Set(f.artists.split(',').map(s => s.trim()));
+    S.selectedArtists = new Set([...arts].filter(a => S._allArtistOptions.has(a)));
+    import('./artist-panel.js').then(m => { m.updateArtistBtn(); m.syncArtistCheckboxes(); });
   }
   if (f.formats) {
     const fmts = new Set(f.formats.split(',').map(s => s.trim().toUpperCase()));
@@ -115,7 +122,30 @@ export async function loadDeepLinkedTrack() {
     return true;
   }
 
-  // Synthesize from URL
+  // If source=modland, run the full modland search so the track appears in context
+  const f = deepLinkFilters();
+  if (f.source === 'modland' && f.search) {
+    const { switchMode } = await import('./mode.js');
+    const { doModlandSearch } = await import('./modland.js');
+    const remoteSearch = await import('./remote-search.js').then(m => m.default || m);
+    switchMode('modland');
+    elFilter.value = f.search;
+    if (!remoteSearch.isLoaded()) await remoteSearch.loadIndex();
+    doModlandSearch();
+    // After search the list is in S._lastSearchResults
+    const ci = (S._lastSearchResults || []).findIndex(r => r.url === targetUrl);
+    if (ci >= 0) {
+      S.currentIdx = ci;
+      const curLi = document.getElementById('list').children[ci];
+      if (curLi) { curLi.classList.add('current'); scrollIntoViewSmart(curLi, true); }
+      const entry = S._lastSearchResults[ci];
+      const label = decodeURIComponent(entry.name).split('/').pop() || entry.name;
+      showDeepLinkPrompt(label, () => loadAndPlay(ci));
+      return true;
+    }
+  }
+
+  // Synthesize from URL (last resort — shows single result without context)
   const ext = extOf(targetUrl);
   const playerMap = { ahx: 'ahx', sid: 'jssid', mod: 'mod', xm: 'mod', s3m: 'mod', it: 'mod' };
   const playerId = playerMap[ext.toLowerCase()] || 'mod';

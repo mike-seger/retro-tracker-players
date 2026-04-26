@@ -1,10 +1,12 @@
 // js/mode.js — switchMode + per-mode context save/restore
-import { S, elFilter, elRefineFolder, elRefineArtist, elRefineRange,
-         elSearchMode, elSelBulk, elList } from './state.js';
+import { S, elFilter, elSearchMode, elSelBulk, elList } from './state.js';
 import { clearFormatFilter, updateFormatBtn, syncFormatCheckboxes } from './format-panel.js';
+import { clearFolderFilter, updateFolderBtn, syncFolderCheckboxes } from './folder-panel.js';
+import { clearArtistFilter, updateArtistBtn, syncArtistCheckboxes } from './artist-panel.js';
+import { clearRangeFilter } from './range-panel.js';
 import { buildPlaylist, scrollIntoViewSmart } from './playlist.js';
 import { applyFilter, updateRefineVisibility } from './filter.js';
-import { populateFolderDropdown, populateLocalArtistDropdown,
+import { populateFolderPanel, populateLocalArtistPanel,
          populateLocalFormatDropdown, localPlaceholder, modlandPlaceholder } from './refine.js';
 import { doModlandSearch, updateMlButtons } from './modland.js';
 import { persistContext } from './persistence.js';
@@ -14,27 +16,29 @@ import { trackUrl } from './utils.js';
 // ── context save/restore ──────────────────────────────
 export function saveLocalContext() {
   S._localCtx = {
-    filter:     elFilter.value,
-    folder:     elRefineFolder.value,
-    artist:     elRefineArtist.value,
-    formats:    new Set(S.selectedFormats),
-    currentIdx: S.currentIdx,
-    focusedIdx: S.focusedIdx,
+    filter:         elFilter.value,
+    selectedFolders: new Set(S.selectedFolders),
+    selectedArtists: new Set(S.selectedArtists),
+    formats:         new Set(S.selectedFormats),
+    currentIdx:      S.currentIdx,
+    focusedIdx:      S.focusedIdx,
   };
 }
 
 export function restoreLocalContext() {
   if (!S._localCtx) return;
   elFilter.value = S._localCtx.filter;
-  if (S._localCtx.folder &&
-      [...elRefineFolder.options].some(o => o.value === S._localCtx.folder)) {
-    elRefineFolder.value = S._localCtx.folder;
-  }
-  populateLocalArtistDropdown();
-  if (S._localCtx.artist &&
-      [...elRefineArtist.options].some(o => o.value === S._localCtx.artist)) {
-    elRefineArtist.value = S._localCtx.artist;
-  }
+  S.selectedFolders = new Set(
+    [...S._localCtx.selectedFolders].filter(f => S._allFolderOptions.has(f))
+  );
+  updateFolderBtn();
+  syncFolderCheckboxes();
+  populateLocalArtistPanel();
+  S.selectedArtists = new Set(
+    [...S._localCtx.selectedArtists].filter(a => S._allArtistOptions.has(a))
+  );
+  updateArtistBtn();
+  syncArtistCheckboxes();
   S.selectedFormats = new Set(
     [...S._localCtx.formats].filter(f => S._allFormatOptions.has(f))
   );
@@ -45,24 +49,16 @@ export function restoreLocalContext() {
 }
 
 export function saveModlandContext() {
-  const folderOpt = [...elRefineFolder.options].find(o => o.value === elRefineFolder.value);
   S._modlandCtx = {
-    filter:      elFilter.value,
-    folder:      elRefineFolder.value,
-    folderLabel: folderOpt ? folderOpt.text : elRefineFolder.value,
-    currentIdx:  S.currentIdx,
-    focusedIdx:  S.focusedIdx,
+    filter:     elFilter.value,
+    currentIdx: S.currentIdx,
+    focusedIdx: S.focusedIdx,
   };
 }
 
 export function restoreModlandContext() {
   if (!S._modlandCtx) return;
   elFilter.value = S._modlandCtx.filter;
-  elRefineFolder.innerHTML = '<option value="">Folder</option>';
-  if (S._modlandCtx.folder) {
-    elRefineFolder.appendChild(new Option(S._modlandCtx.folderLabel, S._modlandCtx.folder));
-    elRefineFolder.value = S._modlandCtx.folder;
-  }
   if (S._modlandCtx.currentIdx >= 0) S.currentIdx = S._modlandCtx.currentIdx;
   if (S._modlandCtx.focusedIdx >= 0) S.focusedIdx = S._modlandCtx.focusedIdx;
 }
@@ -76,27 +72,22 @@ export function restorePersistedContext() {
       switchMode(saved.mode);
     }
     if (saved.filter) elFilter.value = saved.filter;
-    if (saved.folder) {
-      const opt = [...elRefineFolder.options].find(o => o.value === saved.folder);
-      if (opt) {
-        elRefineFolder.value = saved.folder;
-      } else if (S.searchMode === 'modland') {
-        elRefineFolder.appendChild(new Option(saved.folder, saved.folder));
-        elRefineFolder.value = saved.folder;
-      }
+    if (saved.folders?.length && S.searchMode === 'local') {
+      S.selectedFolders = new Set(saved.folders.filter(f => S._allFolderOptions.has(f)));
+      updateFolderBtn();
+      syncFolderCheckboxes();
     }
-    if (saved.artist && S.searchMode === 'local') {
-      populateLocalArtistDropdown();
-      if ([...elRefineArtist.options].some(o => o.value === saved.artist)) {
-        elRefineArtist.value = saved.artist;
-      }
+    if (saved.artists?.length && S.searchMode === 'local') {
+      S.selectedArtists = new Set(saved.artists.filter(a => S._allArtistOptions.has(a)));
+      updateArtistBtn();
+      syncArtistCheckboxes();
     }
     if (saved.formats?.length && S.searchMode === 'local') {
       S.selectedFormats = new Set(saved.formats.filter(f => S._allFormatOptions.has(f)));
       updateFormatBtn();
       syncFormatCheckboxes();
     }
-    if (S.searchMode === 'modland' && (elFilter.value.trim().length >= 2 || elRefineFolder.value)) {
+    if (S.searchMode === 'modland' && elFilter.value.trim().length >= 2) {
       doModlandSearch();
     } else {
       applyFilter();
@@ -116,26 +107,25 @@ export function switchMode(mode) {
   updateRefineVisibility();
   elFilter.placeholder = mode === 'local' ? localPlaceholder() : modlandPlaceholder();
 
-  elRefineFolder.value = '';
-  elRefineArtist.value = '';
-  elRefineRange.value = '';
+  clearFolderFilter();
+  clearArtistFilter();
+  clearRangeFilter();
   clearFormatFilter();
   S.currentIdx = -1;
   S.focusedIdx = -1;
 
   if (mode === 'local') {
-    populateLocalArtistDropdown();
-    populateFolderDropdown();
+    populateFolderPanel();
+    populateLocalArtistPanel();
     populateLocalFormatDropdown();
     elSelBulk.style.display = '';
     restoreLocalContext();
   } else {
-    elRefineFolder.innerHTML = '<option value="">Folder</option>';
     import('./format-panel.js').then(m => m.buildFormatPanel([]));
     restoreModlandContext();
   }
 
-  if (mode === 'modland' && (elFilter.value.trim().length >= 2 || elRefineFolder.value)) {
+  if (mode === 'modland' && elFilter.value.trim().length >= 2) {
     doModlandSearch();
   } else {
     buildPlaylist();
@@ -156,3 +146,4 @@ export function switchMode(mode) {
 
   updateSelCount();
 }
+

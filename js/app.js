@@ -1,13 +1,15 @@
 // js/app.js — Thin init entry point; imports all modules and runs startup
 import * as remoteSearch from './remote-search.js';
-import { S, elFilter, elFilterClr, elSearchMode, elRefineFolder, elRefineArtist,
-         elRefineRange, elSelBulk, debugLog, elTransport } from './state.js';
+import { S, elFilter, elFilterClr, elSearchMode, elSelBulk, debugLog, elTransport } from './state.js';
 import { extOf, dbg, tlog } from './utils.js';
 import { setFormatChangeHandler, clearFormatFilter } from './format-panel.js';
+import { setFolderChangeHandler, clearFolderFilter } from './folder-panel.js';
+import { setArtistChangeHandler, clearArtistFilter } from './artist-panel.js';
+import { setRangeChangeHandler, getRangeSkip, clearRangeFilter } from './range-panel.js';
 import { buildPlaylist, rebuildMergedFiles, renderToggles, loadEnabledPlayers,
          activeFiles, highlightCurrent, setFocus, setPlaylistFontSize } from './playlist.js';
 import { applyFilter, updateRefineVisibility } from './filter.js';
-import { populateFolderDropdown, populateLocalArtistDropdown, populateLocalFormatDropdown,
+import { populateFolderPanel, populateLocalArtistPanel, populateLocalFormatDropdown,
          modlandPlaceholder, localPlaceholder } from './refine.js';
 import { restoreSelection, updateSelCount } from './selection.js';
 import { loadModlandTracks } from './modland.js';
@@ -25,14 +27,21 @@ import './doc-overlay.js';
 // ── format change callback — breaks format-panel ↔ filter circular dep ──
 setFormatChangeHandler(() => {
   if (S.searchMode === 'local') {
-    populateLocalArtistDropdown();
+    populateLocalArtistPanel();
     applyFilter();
   } else if (S._randomBrowsing) {
-    const skip = parseInt(elRefineRange.value, 10) || 0;
-    doRandomBrowse(skip);
+    doRandomBrowse(getRangeSkip());
   } else {
     doModlandSearch();
   }
+});
+
+// ── folder/artist/range change callbacks ─────────────────
+setFolderChangeHandler(() => { populateLocalArtistPanel(); applyFilter(); });
+setArtistChangeHandler(() => { applyFilter(); });
+setRangeChangeHandler(() => {
+  if (S._randomBrowsing) doRandomBrowse(getRangeSkip());
+  else doModlandSearch();
 });
 
 // ── debug log helpers ────────────────────────────────
@@ -132,7 +141,7 @@ elFilter.addEventListener('input', () => {
     clearTimeout(_searchTimer);
     _searchTimer = setTimeout(doModlandSearch, 150);
   } else {
-    populateLocalArtistDropdown();
+    populateLocalArtistPanel();
     applyFilter();
   }
 });
@@ -144,9 +153,9 @@ elFilter.addEventListener('keydown', (e) => {
 
 elFilterClr.addEventListener('click', () => {
   elFilter.value = '';
-  elRefineFolder.value = '';
-  elRefineArtist.value = '';
-  elRefineRange.value = '';
+  clearFolderFilter();
+  clearArtistFilter();
+  clearRangeFilter();
   clearFormatFilter();
   elFilter.dispatchEvent(new Event('input'));
   elFilter.focus();
@@ -204,8 +213,8 @@ elFilterClr.addEventListener('click', () => {
 
   renderToggles();
   rebuildMergedFiles();
-  populateLocalArtistDropdown();
-  populateFolderDropdown();
+  populateLocalArtistPanel();
+  populateFolderPanel();
   populateLocalFormatDropdown();
   updateRefineVisibility();
   buildPlaylist();

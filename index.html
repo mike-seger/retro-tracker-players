@@ -47,15 +47,24 @@
     <button id="btn-copy" title="Copy selected filenames to clipboard">C</button>
     <span id="sel-count"></span>
     <button id="btn-zip" title="Download selected tracks as ZIP">Z</button>
-    <button id="ml-add-all" class="ml-btn" style="display:none" title="Add all search results">Add all</button>
-    <button id="ml-del-all" class="ml-btn" style="display:none" title="Delete all modland tracks">Del all</button>
-    <button id="ml-random" class="ml-btn" style="display:none" title="Browse random tracks">Random</button>
+    <button id="ml-add-all" class="ml-btn ml-add" style="display:none" title="Add all search results">+</button>
+    <button id="ml-del-all" class="ml-btn" style="display:none" title="Delete all modland tracks">-</button>
+    <button id="ml-random" class="ml-btn" style="display:none" title="Browse random tracks">R</button>
     <div id="refine-inline">
-      <select id="refine-folder" title="Filter by folder"><option value="">Folder</option></select>
-      <select id="refine-artist" title="Filter by artist"><option value="">Artist</option></select>
-      <select id="refine-range" title="Result page"><option value="">Range</option></select>
+      <div id="refine-folder-wrap" class="refine-panel-wrap" title="Filter by folder">
+        <button id="refine-folder-btn" type="button">F</button>
+        <div id="refine-folder-panel" hidden></div>
+      </div>
+      <div id="refine-artist-wrap" class="refine-panel-wrap" title="Filter by artist">
+        <button id="refine-artist-btn" type="button">A</button>
+        <div id="refine-artist-panel" hidden></div>
+      </div>
+      <div id="refine-range-wrap" class="refine-panel-wrap" title="Result page">
+        <button id="refine-range-btn" type="button">1..N</button>
+        <div id="refine-range-panel" hidden></div>
+      </div>
       <div id="refine-format-wrap" title="Filter by format">
-        <button id="refine-format-btn" type="button">Format</button>
+        <button id="refine-format-btn" type="button">T</button>
         <div id="refine-format-panel" hidden></div>
       </div>
       <button id="help-btn" type="button" title="Help / About">?</button>

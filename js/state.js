@@ -27,6 +27,11 @@ export const S = {
   _debugTiming:      true,
   selectedFormats:   new Set(),
   _allFormatOptions: new Set(),
+  selectedFolders:   new Set(),
+  _allFolderOptions: new Set(),
+  selectedArtists:   new Set(),
+  _allArtistOptions: new Set(),
+  _currentRange:     0,
   _localCtx:         null,   // saved local filter context across mode switches
   _modlandCtx:       null,   // saved modland filter context across mode switches
   _localUrllistTracks: [],   // URL-based tracks from urllists.json
@@ -67,9 +72,15 @@ export const elBulkCb            = document.getElementById('sel-bulk-cb');
 export const elSelCount          = document.getElementById('sel-count');
 export const elList              = document.getElementById('playlist');
 export const elTrackPos          = document.getElementById('track-pos');
-export const elRefineFolder      = document.getElementById('refine-folder');
-export const elRefineArtist      = document.getElementById('refine-artist');
-export const elRefineRange       = document.getElementById('refine-range');
+export const elRefineFolderWrap  = document.getElementById('refine-folder-wrap');
+export const elRefineFolderBtn   = document.getElementById('refine-folder-btn');
+export const elRefineFolderPanel = document.getElementById('refine-folder-panel');
+export const elRefineArtistWrap  = document.getElementById('refine-artist-wrap');
+export const elRefineArtistBtn   = document.getElementById('refine-artist-btn');
+export const elRefineArtistPanel = document.getElementById('refine-artist-panel');
+export const elRefineRangeWrap   = document.getElementById('refine-range-wrap');
+export const elRefineRangeBtn    = document.getElementById('refine-range-btn');
+export const elRefineRangePanel  = document.getElementById('refine-range-panel');
 export const elRefineFormatWrap  = document.getElementById('refine-format-wrap');
 export const elRefineFormatBtn   = document.getElementById('refine-format-btn');
 export const elRefineFormatPanel = document.getElementById('refine-format-panel');

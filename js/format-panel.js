@@ -75,7 +75,7 @@ export function syncFormatCheckboxes() {
 
 export function updateFormatBtn() {
   const active = S.selectedFormats.size > 0 && S.selectedFormats.size < S._allFormatOptions.size;
-  elRefineFormatBtn.textContent = 'Format';
+  elRefineFormatBtn.textContent = 'T';
   elRefineFormatBtn.classList.toggle('active', active);
 }
 
