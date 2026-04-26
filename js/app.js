@@ -244,8 +244,10 @@ elFilterClr.addEventListener('click', () => {
                 }
               });
             if (localStorage.getItem('auto-resume') === '1') {
-              doResume();
-              showResumeToast(label);
+              // On iOS, AudioContext.resume() requires a user gesture. Defer the
+              // actual resume until the first tap/click so the activation window
+              // is alive when the engine initialises audio.
+              showResumeToast(label, doResume);
             } else {
               showResumePrompt(label, doResume);
             }

@@ -64,17 +64,35 @@ export function showResumePrompt(trackName, onConfirm) {
   overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
 }
 
-export function showResumeToast(trackName) {
+export function showResumeToast(trackName, onResume) {
   const toast = document.createElement('div');
   toast.className = 'resume-toast';
   toast.innerHTML =
-    `<span>&#9654; Resuming <em>${esc(trackName)}</em></span>` +
+    `<span>&#9654; Tap to resume <em>${esc(trackName)}</em></span>` +
     `<button class="resume-toast-close" title="Turn off auto-resume">&times;</button>`;
   document.body.appendChild(toast);
-  const timer = setTimeout(() => toast.remove(), 3000);
-  toast.querySelector('.resume-toast-close').addEventListener('click', () => {
-    clearTimeout(timer);
+
+  const dismiss = () => { clearTimeout(timer); toast.remove(); };
+
+  // Fire resume on the first tap anywhere so AudioContext.resume() is called
+  // inside a real user gesture on iOS Safari (activation window constraint).
+  const gestureEvents = ['pointerdown', 'touchstart', 'keydown'];
+  const onGesture = () => {
+    gestureEvents.forEach(t => document.removeEventListener(t, onGesture, true));
+    dismiss();
+    onResume?.();
+  };
+  gestureEvents.forEach(t => document.addEventListener(t, onGesture, { capture: true, once: true, passive: true }));
+
+  const timer = setTimeout(() => {
+    gestureEvents.forEach(t => document.removeEventListener(t, onGesture, true));
     toast.remove();
+  }, 8000);
+
+  toast.querySelector('.resume-toast-close').addEventListener('click', (e) => {
+    e.stopPropagation();
+    gestureEvents.forEach(t => document.removeEventListener(t, onGesture, true));
+    dismiss();
     localStorage.removeItem('auto-resume');
   });
 }
