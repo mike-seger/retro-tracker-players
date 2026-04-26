@@ -1,6 +1,7 @@
 // js/modland.js — Modland file management, search, random browse, mode helpers
 import { S, elFilter, elRefineFolder, elRefineRange, elFilterCnt,
-         elSelBulk, elMlAddAll, elMlDelAll, elMlRandom, elList } from './state.js';
+         elSelBulk, elMlAddAll, elMlDelAll, elMlRandom, elList,
+         btnCopy, btnZip } from './state.js';
 import { esc, trimDisplayPath, trackUrl, addLongPress } from './utils.js';
 import { SID_TRACK_PLAYER_ID } from './state.js';
 import { buildFormatPanel } from './format-panel.js';
@@ -128,6 +129,8 @@ export function updateMlButtons() {
   elMlAddAll.style.display = isMl && hasResults ? '' : 'none';
   elMlDelAll.style.display = isMl && S.modlandFiles.length > 0 ? '' : 'none';
   elMlRandom.style.display = isMl ? '' : 'none';
+  btnCopy.style.display    = isMl ? 'none' : '';
+  btnZip.style.display     = isMl ? 'none' : '';
   if (isMl && hasResults) elMlAddAll.textContent = 'Add all';
 }
 
