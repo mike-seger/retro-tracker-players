@@ -46,8 +46,8 @@ export const isMobile =
 
 // Parse a track entry into display parts for 2-line row rendering.
 // Returns { artist, title, folder } where:
-//   artist — left slot of line 1 (from filename dash-split, or path prefix when no dash)
-//   folder — right slot of line 1 (path prefix badge, only when artist came from filename dash)
+//   artist — left slot of line 1 (normalised; never empty — falls back to "unknown")
+//   folder — right slot of line 1 badge ("<root>" when entry has no path prefix)
 //   title  — main content of line 2 (filename without extension)
 export function parseTrackDisplay(entry) {
   const decoded = decodeURIComponent(entry.name);
@@ -56,9 +56,21 @@ export function parseTrackDisplay(entry) {
   const folder = rawFolder ? (trimDisplayPath(rawFolder) || rawFolder) : '';
   const baseName = slash >= 0 ? decoded.substring(slash + 1) : decoded;
 
+  // Normalise artist: empty or "- unknown" variants → "unknown"
+  const normArtist = s => {
+    const t = s.trim();
+    return (!t || /^-?\s*unknown$/i.test(t)) ? 'unknown' : t;
+  };
+  // Folder badge: "<root>" when entry lives at path root (no directory component)
+  const rootBadge = rawFolder ? folder : '<root>';
+
   // AHX: artist is always the path prefix; never split on dash
   if (entry.playerId === 'ahx') {
-    return { artist: folder, title: baseName.replace(/\.\w+$/i, '').replace(/_/g, ' '), folder: '' };
+    return {
+      artist: normArtist(folder),
+      title: baseName.replace(/\.\w+$/i, '').replace(/_/g, ' '),
+      folder: rawFolder ? '' : '<root>'
+    };
   }
 
   // Try splitting filename on " – " (en-dash) or " - " (hyphen)
@@ -67,14 +79,18 @@ export function parseTrackDisplay(entry) {
   const dashIdx = enDash >= 0 ? enDash : hyphen;
 
   if (dashIdx >= 0) {
-    // artist from filename left-of-dash; folder kept as badge
-    const artist = baseName.substring(0, dashIdx).replace(/_/g, ' ');
+    // artist from filename left-of-dash; folder badge from path prefix (or <root>)
+    const artistStr = baseName.substring(0, dashIdx).replace(/_/g, ' ');
     const title = baseName.substring(dashIdx + 3).replace(/\.\w+$/i, '').replace(/_/g, ' ');
-    return { artist, title, folder };
+    return { artist: normArtist(artistStr), title, folder: rootBadge };
   }
 
   // No dash: path prefix IS the artist — put it in artist slot, no folder badge
-  return { artist: folder, title: baseName.replace(/\.\w+$/i, '').replace(/_/g, ' '), folder: '' };
+  return {
+    artist: normArtist(folder),
+    title: baseName.replace(/\.\w+$/i, '').replace(/_/g, ' '),
+    folder: rawFolder ? '' : '<root>'
+  };
 }
 
 export function extractArtist(entry) {

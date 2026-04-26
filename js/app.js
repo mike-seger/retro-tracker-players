@@ -267,8 +267,7 @@ elFilterClr.addEventListener('click', () => {
     } catch (_) {}
   }
 
-  const savedSize = parseFloat(localStorage.getItem('playlist-font-size'));
-  if (savedSize) setPlaylistFontSize(savedSize);
+  setPlaylistFontSize(parseFloat(localStorage.getItem('playlist-font-size')) || 14);
 
   S._appReady = true;
 

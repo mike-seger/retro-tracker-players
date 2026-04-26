@@ -231,12 +231,12 @@ export function doModlandSearch() {
 
     li.classList.add('remote');
     li.innerHTML =
+      `<span class="idx"></span>` +
       `<div class="row-top">` +
-        (artist ? `<span class="artist">${esc(artist)}</span>` : '') +
+        `<span class="artist">${esc(artist)}</span>` +
         (folder ? `<span class="folder">${esc(folder)}</span>` : '') +
       `</div>` +
       `<div class="row-bot">` +
-        `<span class="idx"></span>` +
         `<span class="title">${esc(title)}</span>` +
         `<span class="ext">${esc(r.ext)}</span>` +
         (!isMobile ? `<button class="r-dl" title="Download">D</button>` : '') +
@@ -348,12 +348,12 @@ export function doRandomBrowse(skip) {
 
     li.classList.add('remote');
     li.innerHTML =
+      `<span class="idx"></span>` +
       `<div class="row-top">` +
-        (artist ? `<span class="artist">${esc(artist)}</span>` : '') +
+        `<span class="artist">${esc(artist)}</span>` +
         (folder ? `<span class="folder">${esc(folder)}</span>` : '') +
       `</div>` +
       `<div class="row-bot">` +
-        `<span class="idx"></span>` +
         `<span class="title">${esc(title)}</span>` +
         `<span class="ext">${esc(r.ext)}</span>` +
         (!isMobile ? `<button class="r-dl" title="Download">D</button>` : '') +

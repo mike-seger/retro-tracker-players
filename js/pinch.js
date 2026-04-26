@@ -17,6 +17,7 @@ function getTouchDist(touches) {
 
 elList.addEventListener('touchstart', (e) => {
   if (e.touches.length === 2) {
+    e.preventDefault(); // prevent iOS native page zoom during pinch
     pinchStartDist = getTouchDist(e.touches);
     pinchStartSize = getPlaylistFontSize();
     swipeTracking  = false;
@@ -25,10 +26,11 @@ elList.addEventListener('touchstart', (e) => {
     swipeStartY   = e.touches[0].clientY;
     swipeTracking = true;
   }
-}, { passive: true });
+}, { passive: false });
 
 elList.addEventListener('touchmove', (e) => {
   if (e.touches.length === 2) {
+    e.preventDefault(); // prevent iOS native page zoom during pinch
     swipeTracking = false;
     const dist = getTouchDist(e.touches);
     if (pinchStartDist === 0) return;

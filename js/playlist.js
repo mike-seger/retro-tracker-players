@@ -104,13 +104,13 @@ export function buildPlaylist() {
     if (entry.url) li.classList.add('remote');
 
     li.innerHTML =
+      `<span class="idx">${idxStr}</span>` +
       `<input type="checkbox" class="sel-cb" tabindex="-1"${checked}>` +
       `<div class="row-top">` +
-        (artist ? `<span class="artist">${esc(artist)}</span>` : '') +
+        `<span class="artist">${esc(artist)}</span>` +
         (folder ? `<span class="folder">${esc(folder)}</span>` : '') +
       `</div>` +
       `<div class="row-bot">` +
-        `<span class="idx">${idxStr}</span>` +
         `<span class="title">${esc(title)}</span>` +
         `<span class="ext">${esc(entry.ext)}</span>` +
         (!isMobile ? `<button class="r-dl" title="Download">D</button>` : '') +
