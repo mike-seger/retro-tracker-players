@@ -1,5 +1,6 @@
 // js/keyboard.js — Keyboard shortcuts + share button
-import { S, elFilter, elSearchMode, btnShare } from './state.js';
+import { S, elFilter, elSearchMode, btnShare, btnCopy, btnZip, elMlRandom,
+  elRefineFolderBtn, elRefineArtistBtn, elRefineFormatBtn, btnHelp, elFilterClr } from './state.js';
 import { scrub, playPrevNext } from './player.js';
 import { toggleSelect } from './selection.js';
 import { buildDeepLink } from './deeplink.js';
@@ -55,6 +56,16 @@ document.addEventListener('keydown', (e) => {
       }
       break;
     }
+
+    case 's': btnShare.click(); break;
+    case 'c': btnCopy?.click(); break;
+    case 'z': btnZip?.click(); break;
+    case 'r': if (elMlRandom.offsetParent !== null) elMlRandom.click(); break;
+    case 'f': if (!elRefineFolderBtn.hidden) elRefineFolderBtn.click(); break;
+    case 'a': if (!elRefineArtistBtn.hidden) elRefineArtistBtn.click(); break;
+    case 't': if (!elRefineFormatBtn.hidden) elRefineFormatBtn.click(); break;
+    case '?': e.preventDefault(); btnHelp.click(); break;
+    case 'x': elFilterClr?.click(); break;
   }
 });
 
