@@ -14,7 +14,7 @@ import { loadModlandTracks } from './modland.js';
 import { doModlandSearch, doRandomBrowse } from './modland.js';
 import { switchMode, restorePersistedContext } from './mode.js';
 import { loadDeepLinkedTrack, applyDeepLinkFilters } from './deeplink.js';
-import { showResumePrompt, showResumeToast } from './prompts.js';
+import { showResumePrompt } from './prompts.js';
 import { loadAndPlay } from './player.js';
 
 // Side-effect-only imports (register their own listeners)
@@ -154,6 +154,11 @@ elFilterClr.addEventListener('click', () => {
 
 // ── init ─────────────────────────────────────────────
 (async function init() {
+  // Emergency escape hatch: ?clear-resume removes any stale auto-resume flag
+  if (new URLSearchParams(location.search).has('clear-resume')) {
+    localStorage.removeItem('auto-resume');
+  }
+
   const resp = await fetch('players.json');
   S.players = await resp.json();
 
@@ -243,13 +248,17 @@ elFilterClr.addEventListener('click', () => {
                   S.engines[S.activeEngine].seekTo(resumePos);
                 }
               });
-            if (localStorage.getItem('auto-resume') === '1') {
-              // On iOS, AudioContext.resume() requires a user gesture. Defer the
-              // actual resume until the first tap/click so the activation window
-              // is alive when the engine initialises audio.
-              showResumeToast(label, doResume);
+            // iOS Safari requires AudioContext.resume() to be called inside a
+            // user gesture — auto-resuming silently at startup will always fail.
+            // So on iOS we always show the prompt (no auto-resume option).
+            // On desktop there is no such restriction: honour the auto-resume flag
+            // directly, or show the prompt with the checkbox so the user can set it.
+            const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+              (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
+            if (!isIOS && localStorage.getItem('auto-resume') === '1') {
+              doResume();
             } else {
-              showResumePrompt(label, doResume);
+              showResumePrompt(label, doResume, /* showAutoOption */ !isIOS);
             }
           }
         }

@@ -54,29 +54,35 @@ function supportsWorklet() {
 Wrapping them in `setTimeout`, `Promise.then` after a fetch, or module-startup code will
 silently fail on iOS.
 
-### 4. Never auto-play or auto-resume audio at startup without a gesture
+### 4. Never auto-play or auto-resume audio at startup without a gesture — iOS only
 Calling `loadAndPlay()` (or any function that leads to `AudioContext.resume()`) from the
 app init IIFE, a `DOMContentLoaded` handler, or any startup path that has no user gesture
 will silently fail on iOS.
 
-The auto-resume feature (`localStorage.getItem('auto-resume') === '1'`) was broken this way.
-The fix (`js/prompts.js` `showResumeToast`, commit `60f1d0a`) defers the resume callback
-until the **first user gesture** via a one-shot capture-phase listener:
+**Desktop** has no such restriction. The `auto-resume` localStorage flag is honoured
+directly on desktop: if set, `doResume()` is called at startup without a prompt.
+
+**iOS** must always defer to a user gesture. The fix (`js/app.js`, `js/prompts.js`) detects
+iOS and always shows `showResumePrompt` (a modal click = user gesture). The "Always resume
+automatically" checkbox is hidden on iOS because it cannot work there.
 
 ```js
-// js/prompts.js — pattern to use whenever audio must start at startup
-const gestureEvents = ['pointerdown', 'touchstart', 'keydown'];
-const onGesture = () => {
-  gestureEvents.forEach(t => document.removeEventListener(t, onGesture, true));
-  doResume(); // ← AudioContext.resume() now happens inside a real gesture
-};
-gestureEvents.forEach(t =>
-  document.addEventListener(t, onGesture, { capture: true, once: true, passive: true })
-);
+// js/app.js — resume branch pattern
+const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+  (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
+if (!isIOS && localStorage.getItem('auto-resume') === '1') {
+  doResume();          // desktop: fine to call directly
+} else {
+  showResumePrompt(label, doResume, /* showAutoOption */ !isIOS);
+}
 ```
 
-Show a visible prompt/toast so the user knows to tap. **Never call `loadAndPlay()` or
-`AudioContext.resume()` from startup code directly**, even if "auto" behaviour is intended.
+Emergency escape hatch: `?clear-resume` in the URL removes the `auto-resume` flag
+(handled at the top of `init()` in `js/app.js`).
+
+**Never** show a toast that defers resume to an arbitrary next tap — the user can't tell
+which tap will trigger it, and capturing all `pointerdown` events causes accidental
+side-effects (e.g. a tap on an unrelated button also starting audio).
 
 ### 5. If adding a new engine
 - Add its `import()` to the pre-warm block in `js/engines.js`.
