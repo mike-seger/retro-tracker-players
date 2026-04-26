@@ -10,7 +10,7 @@ import { activeFiles, scrollIntoViewSmart, updateTrackPos, buildPlaylist } from 
 import { restoreSelection } from './selection.js';
 import { updateSelCount } from './selection.js';
 import { getRangeSkip, buildRangePanel } from './range-panel.js';
-import { showDeleteConfirm } from './prompts.js';
+import { showAddConfirm, showDeleteConfirm } from './prompts.js';
 import * as remoteSearch from './remote-search.js';
 
 // ── helpers ───────────────────────────────────────────
@@ -388,12 +388,15 @@ export function doRandomBrowse(skip) {
 // ── ML button listeners ───────────────────────────────
 elMlAddAll.addEventListener('click', () => {
   if (S._lastSearchResults.length === 0) return;
-  addModlandTracks(S._lastSearchResults);
-  elFilter.value = '';
-  S._lastSearchResults = [];
-  updateMlButtons();
-  buildPlaylist();
-  restoreSelection();
+  const count = S._lastSearchResults.length;
+  showAddConfirm(count, () => {
+    addModlandTracks(S._lastSearchResults);
+    elFilter.value = '';
+    S._lastSearchResults = [];
+    updateMlButtons();
+    buildPlaylist();
+    restoreSelection();
+  });
 });
 
 elMlDelAll.addEventListener('click', () => {
