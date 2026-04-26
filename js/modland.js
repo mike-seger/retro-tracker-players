@@ -2,7 +2,7 @@
 import { S, elFilter, elRefineFolder, elRefineRange, elFilterCnt,
          elSelBulk, elMlAddAll, elMlDelAll, elMlRandom, elList,
          btnCopy, btnZip } from './state.js';
-import { esc, trimDisplayPath, trackUrl, addLongPress } from './utils.js';
+import { esc, trackUrl, addLongPress, isMobile, parseTrackDisplay } from './utils.js';
 import { SID_TRACK_PLAYER_ID } from './state.js';
 import { buildFormatPanel } from './format-panel.js';
 import { loadAndPlay } from './player.js';
@@ -225,31 +225,38 @@ export function doModlandSearch() {
     const li = document.createElement('li');
     li.dataset.idx = si;
     const slash = r.name.lastIndexOf('/');
-    const artist = slash >= 0 ? trimDisplayPath(r.name.substring(0, slash)) : '';
     const baseName = slash >= 0 ? r.name.substring(slash + 1) : r.name;
-    const displayName = baseName.replace(/\.\w+$/i, '').replace(/_/g, ' ');
+    const { artist, title, folder } = parseTrackDisplay(r);
     const isAdded = addedUrls.has(r.url);
 
     li.classList.add('remote');
     li.innerHTML =
-      `<span class="idx"></span>` +
-      (artist ? `<span class="artist">${esc(artist)}</span> ` : '') +
-      `<span class="name">${esc(displayName)}</span>` +
-      `<button class="r-dl" title="Download">D</button>` +
-      `<span class="ext">${esc(r.ext)}</span>` +
-      `<button class="r-add">${isAdded ? '✓' : '+'}</button>`;
+      `<div class="row-top">` +
+        (artist ? `<span class="artist">${esc(artist)}</span>` : '') +
+        (folder ? `<span class="folder">${esc(folder)}</span>` : '') +
+      `</div>` +
+      `<div class="row-bot">` +
+        `<span class="idx"></span>` +
+        `<span class="title">${esc(title)}</span>` +
+        `<span class="ext">${esc(r.ext)}</span>` +
+        (!isMobile ? `<button class="r-dl" title="Download">D</button>` : '') +
+        `<button class="r-add">${isAdded ? '✓' : '+'}</button>` +
+      `</div>`;
 
     if (isAdded) li.classList.add('added');
 
-    li.querySelector('.r-dl').addEventListener('click', (ev) => {
-      ev.stopPropagation();
-      const a = document.createElement('a');
-      a.href = r.url;
-      a.download = baseName || r.name;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-    });
+    const dlBtn = li.querySelector('.r-dl');
+    if (dlBtn) {
+      dlBtn.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        const a = document.createElement('a');
+        a.href = r.url;
+        a.download = baseName || r.name;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      });
+    }
 
     li.querySelector('.r-add').addEventListener('click', (ev) => {
       ev.stopPropagation();
@@ -265,12 +272,13 @@ export function doModlandSearch() {
       loadAndPlay(si);
     });
 
-    if (artist) {
+    const searchArtist = artist || folder;
+    if (searchArtist) {
       li.addEventListener('dblclick', (ev) => {
         if (ev.target.classList.contains('r-add') || ev.target.classList.contains('r-dl')) return;
-        searchByArtist(artist);
+        searchByArtist(searchArtist);
       });
-      addLongPress(li, () => searchByArtist(artist));
+      addLongPress(li, () => searchByArtist(searchArtist));
     }
 
     elList.appendChild(li);
@@ -334,31 +342,38 @@ export function doRandomBrowse(skip) {
     const li = document.createElement('li');
     li.dataset.idx = si;
     const slash = r.name.lastIndexOf('/');
-    const artist = slash >= 0 ? trimDisplayPath(r.name.substring(0, slash)) : '';
     const baseName = slash >= 0 ? r.name.substring(slash + 1) : r.name;
-    const displayName = baseName.replace(/\.\w+$/i, '').replace(/_/g, ' ');
+    const { artist, title, folder } = parseTrackDisplay(r);
     const isAdded = addedUrls.has(r.url);
 
     li.classList.add('remote');
     li.innerHTML =
-      `<span class="idx"></span>` +
-      (artist ? `<span class="artist">${esc(artist)}</span> ` : '') +
-      `<span class="name">${esc(displayName)}</span>` +
-      `<button class="r-dl" title="Download">D</button>` +
-      `<span class="ext">${esc(r.ext)}</span>` +
-      `<button class="r-add">${isAdded ? '✓' : '+'}</button>`;
+      `<div class="row-top">` +
+        (artist ? `<span class="artist">${esc(artist)}</span>` : '') +
+        (folder ? `<span class="folder">${esc(folder)}</span>` : '') +
+      `</div>` +
+      `<div class="row-bot">` +
+        `<span class="idx"></span>` +
+        `<span class="title">${esc(title)}</span>` +
+        `<span class="ext">${esc(r.ext)}</span>` +
+        (!isMobile ? `<button class="r-dl" title="Download">D</button>` : '') +
+        `<button class="r-add">${isAdded ? '✓' : '+'}</button>` +
+      `</div>`;
 
     if (isAdded) li.classList.add('added');
 
-    li.querySelector('.r-dl').addEventListener('click', (ev) => {
-      ev.stopPropagation();
-      const a = document.createElement('a');
-      a.href = r.url;
-      a.download = baseName || r.name;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-    });
+    const dlBtn = li.querySelector('.r-dl');
+    if (dlBtn) {
+      dlBtn.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        const a = document.createElement('a');
+        a.href = r.url;
+        a.download = baseName || r.name;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      });
+    }
 
     li.querySelector('.r-add').addEventListener('click', (ev) => {
       ev.stopPropagation();
@@ -374,12 +389,13 @@ export function doRandomBrowse(skip) {
       loadAndPlay(si);
     });
 
-    if (artist) {
+    const searchArtist = artist || folder;
+    if (searchArtist) {
       li.addEventListener('dblclick', (ev) => {
         if (ev.target.classList.contains('r-add') || ev.target.classList.contains('r-dl')) return;
-        searchByArtist(artist);
+        searchByArtist(searchArtist);
       });
-      addLongPress(li, () => searchByArtist(artist));
+      addLongPress(li, () => searchByArtist(searchArtist));
     }
 
     elList.appendChild(li);

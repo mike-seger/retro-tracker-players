@@ -1,6 +1,6 @@
 // js/playlist.js — Playlist rendering, scroll helpers, file list management
 import { S, elList, elTrackPos, elSelBulk, elFilter, elInfo } from './state.js';
-import { esc, trimDisplayPath, extOf, trackUrl, extractArtist, addLongPress } from './utils.js';
+import { esc, extOf, trackUrl, addLongPress, isMobile, parseTrackDisplay } from './utils.js';
 // Note: circular imports below (filter.js ↔ playlist.js, etc.) are safe —
 // all cross-module calls happen inside function bodies, never at eval time.
 import { applyFilter } from './filter.js';
@@ -96,9 +96,8 @@ export function buildPlaylist() {
 
     const decodedName = decodeURIComponent(entry.name);
     const slash = decodedName.lastIndexOf('/');
-    const artist = slash >= 0 ? trimDisplayPath(decodedName.substring(0, slash)) : '';
     const baseName = slash >= 0 ? decodedName.substring(slash + 1) : decodedName;
-    const displayName = baseName.replace(/\.\w+$/i, '').replace(/_/g, ' ');
+    const { artist, title, folder } = parseTrackDisplay(entry);
     const idxStr = String(i + 1).padStart(pad, '\u2007');
     const checked = sel.has(i) ? ' checked' : '';
 
@@ -106,23 +105,32 @@ export function buildPlaylist() {
 
     li.innerHTML =
       `<input type="checkbox" class="sel-cb" tabindex="-1"${checked}>` +
-      `<span class="idx">${idxStr}</span>` +
-      `<span class="name">${artist ? `<span class="artist">${esc(artist)}</span> ` : ''}${esc(displayName)}</span>` +
-      `<button class="r-dl" title="Download">D</button>` +
-      `<span class="ext">${esc(entry.ext)}</span>` +
-      (S.searchMode === 'modland' && entry.url
-        ? `<button class="r-del" title="Remove">&times;</button>` : '');
+      `<div class="row-top">` +
+        (artist ? `<span class="artist">${esc(artist)}</span>` : '') +
+        (folder ? `<span class="folder">${esc(folder)}</span>` : '') +
+      `</div>` +
+      `<div class="row-bot">` +
+        `<span class="idx">${idxStr}</span>` +
+        `<span class="title">${esc(title)}</span>` +
+        `<span class="ext">${esc(entry.ext)}</span>` +
+        (!isMobile ? `<button class="r-dl" title="Download">D</button>` : '') +
+        (S.searchMode === 'modland' && entry.url
+          ? `<button class="r-del" title="Remove">&times;</button>` : '') +
+      `</div>`;
 
-    li.querySelector('.r-dl').addEventListener('click', (ev) => {
-      ev.stopPropagation();
-      const url = trackUrl(entry);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = baseName || entry.name;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-    });
+    const dlBtn = li.querySelector('.r-dl');
+    if (dlBtn) {
+      dlBtn.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        const url = trackUrl(entry);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = baseName || entry.name;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      });
+    }
 
     li.querySelector('.sel-cb').addEventListener('change', (ev) => {
       ev.stopPropagation();
@@ -144,26 +152,20 @@ export function buildPlaylist() {
       loadAndPlay(i);
     });
 
-    if (S.searchMode === 'modland' && artist) {
+    if (S.searchMode === 'modland' && (artist || folder)) {
+      const searchArtist = artist || folder;
       li.addEventListener('dblclick', (ev) => {
         if (ev.target.classList.contains('sel-cb') ||
             ev.target.classList.contains('r-del') ||
             ev.target.classList.contains('r-dl')) return;
-        searchByArtist(artist);
+        searchByArtist(searchArtist);
       });
-      addLongPress(li, () => searchByArtist(artist));
+      addLongPress(li, () => searchByArtist(searchArtist));
     } else if (S.searchMode === 'local') {
-      const folder = decodedName.includes('/')
-        ? decodedName.substring(0, decodedName.lastIndexOf('/'))
-        : '';
       const goToArtist = () => {
-        let a = extractArtist(entry);
-        if (!a && folder) {
-          const fseg = folder.lastIndexOf('/');
-          a = fseg >= 0 ? folder.substring(fseg + 1) : folder;
-        }
-        if (!a) return;
-        searchByArtist(a);
+        const sa = artist || folder;
+        if (!sa) return;
+        searchByArtist(sa);
       };
       li.addEventListener('dblclick', (ev) => {
         if (ev.target.classList.contains('sel-cb') ||

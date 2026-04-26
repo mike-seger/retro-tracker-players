@@ -258,9 +258,13 @@ body.mode-modland {
   border: 1px solid #333;
 }
 #playlist li {
-  padding: 4px 10px; cursor: pointer; border-bottom: 1px solid #1a1a1a;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  display: flex; align-items: center;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+  border-bottom: 1px solid #1a1a1a;
 }
 #playlist li:hover { background: var(--hover-bg); }
 #playlist li.current {
@@ -271,35 +275,42 @@ body.mode-modland {
   outline: 1px solid var(--accent);
   outline-offset: -1px;
 }
-#playlist li.hidden { display: none; }
-#playlist li .idx { color: #555; margin-right: 6px; font-size: 12px; }
-#playlist li .name { flex: 1; overflow: hidden; text-overflow: ellipsis; text-transform: lowercase; direction: rtl; text-align: left; }
-#playlist li .artist { color: #888; text-transform: lowercase; }
-#playlist li .ext {
-  color: #666; font-size: 11px; margin-left: 8px; flex-shrink: 0;
-  text-transform: uppercase; width: 3em; text-align: right;
+#playlist li.hidden { display: none !important; }
+#playlist li .sel-cb { grid-row: 1 / 3; align-self: center; }
+#playlist li .row-top,
+#playlist li .row-bot {
+  display: flex; align-items: center; gap: 5px; min-width: 0;
 }
+#playlist li .row-top { align-items: baseline; }
+.artist { flex: 0.7; font-size: 12px; color: #888; text-transform: lowercase;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.folder { flex: 0.3; font-size: 11px; color: #555; text-transform: lowercase; text-align: right;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex-shrink: 0; min-width: 0; margin-left: auto; }
+.title  { flex: 1; font-size: 12px; color: #ddd; text-transform: lowercase;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.idx    { font-size: 12px; color: #555; flex-shrink: 0; min-width: 2ch; text-align: right; }
+.ext    { color: #555; font-size: 11px; text-transform: uppercase; flex-shrink: 0; margin-left: auto; }
 #playlist li .r-dl {
   background: #2a2a3a; border: 1px solid #44a; border-radius: 3px; color: #88a;
-  cursor: pointer; font-size: 12px; padding: 0 5px; margin-left: 6px; flex-shrink: 0; line-height: 1;
+  cursor: pointer; font-size: 12px; padding: 0 5px; flex-shrink: 0; line-height: 1;
 }
 #playlist li .r-dl:hover { background: #3a3a4a; color: #aaf; }
-#playlist li.remote .name { font-style: italic; }
+#playlist li.remote .title { font-style: italic; }
 #playlist li .r-add {
   background: #2a3a2a; color: #8a8; border: 1px solid #4a4; border-radius: 3px;
-  padding: 0 6px; margin-left: 8px; cursor: pointer; font-size: 13px; flex-shrink: 0;
+  padding: 0 6px; margin-left: 4px; cursor: pointer; font-size: 13px; flex-shrink: 0;
 }
 #playlist li .r-add:hover { background: #3a4a3a; color: #afa; }
 #playlist li.added .r-add { background: #333 !important; color: #666 !important; border-color: #555 !important; cursor: default !important; }
 #playlist li .r-del {
   background: #3a2222; border: 1px solid #644; border-radius: 3px; color: #c88; cursor: pointer;
-  font-size: 12px; padding: 0 4px; margin-left: 6px; flex-shrink: 0; line-height: 1;
+  font-size: 12px; padding: 0 4px; margin-left: 4px; flex-shrink: 0; line-height: 1;
 }
 #playlist li .r-del:hover { background: #4a2a2a; color: #faa; }
 #playlist li .sel-cb {
   appearance: none; -webkit-appearance: none;
   width: 14px; height: 14px; border: 1px solid #555; border-radius: 2px;
-  background: #222; margin-right: 8px; cursor: pointer; flex-shrink: 0;
+  background: #222; cursor: pointer; flex-shrink: 0;
   position: relative;
 }
 #playlist li .sel-cb:checked {
@@ -320,7 +331,6 @@ body.mode-modland {
   #ml-random, #btn-zip { display: none !important; }
   #refine-inline { order: -1; width: 100%; }
   #playlist li:hover { background: transparent; }
-  #playlist li .r-dl { display: none; }
   #filter-row { margin-bottom: 8px; gap: 6px; }
   #filter { padding: 6px 8px; }
   #filter-count { display: none; }
