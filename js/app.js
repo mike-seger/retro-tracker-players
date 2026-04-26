@@ -196,8 +196,9 @@ elFilterClr.addEventListener('click', () => {
         if (!Array.isArray(urls)) continue;
         for (const url of urls) {
           try {
-            const safeUrl = encodeURI(decodeURI(url));
-            const segments = new URL(safeUrl).pathname.split('/').map(decodeURIComponent);
+            const parsed = new URL(url);
+            const segments = parsed.pathname.split('/').map(decodeURIComponent);
+            const safeUrl = parsed.origin + segments.map((s, i) => i === 0 ? s : encodeURIComponent(s)).join('/');
             const fileName = segments[segments.length - 1];
             let artistSeg = segments.length >= 2 ? segments[segments.length - 2] : '';
             if (/^coop-/i.test(artistSeg) && segments.length >= 3) artistSeg = segments[segments.length - 3];
