@@ -1,5 +1,8 @@
 // js/folder-panel.js — Folder multi-select dropdown panel
 import { S, elRefineFolderBtn, elRefineFolderPanel } from './state.js';
+import { openDropdown, registerDropdown } from './dropdown-keys.js';
+
+let _savedFolders = null;
 
 let _onFolderChange = null;
 export function setFolderChangeHandler(fn) { _onFolderChange = fn; }
@@ -20,6 +23,7 @@ export function buildFolderPanel(folders) {
 
   const master = document.createElement('label');
   master.className = 'fmt-opt fmt-master';
+  master.tabIndex = -1;
   const masterCb = document.createElement('input');
   masterCb.type = 'checkbox';
   masterCb.value = '__master__';
@@ -38,6 +42,7 @@ export function buildFolderPanel(folders) {
   for (const f of sorted) {
     const label = document.createElement('label');
     label.className = 'fmt-opt';
+    label.tabIndex = -1;
     const cb = document.createElement('input');
     cb.type = 'checkbox';
     cb.value = f;
@@ -92,7 +97,22 @@ export function clearFolderFilter() {
 // ── event listeners ───────────────────────────────────
 elRefineFolderBtn.addEventListener('click', (e) => {
   e.stopPropagation();
-  elRefineFolderPanel.hidden = !elRefineFolderPanel.hidden;
+  openDropdown(elRefineFolderBtn, elRefineFolderPanel);
+});
+
+registerDropdown({
+  btn: elRefineFolderBtn,
+  panel: elRefineFolderPanel,
+  saveState: () => { _savedFolders = new Set(S.selectedFolders); },
+  restoreState: () => {
+    if (_savedFolders !== null) {
+      S.selectedFolders = _savedFolders;
+      _savedFolders = null;
+      updateFolderBtn();
+      syncFolderCheckboxes();
+      _onFolderChange?.();
+    }
+  },
 });
 
 document.addEventListener('click', () => { elRefineFolderPanel.hidden = true; });

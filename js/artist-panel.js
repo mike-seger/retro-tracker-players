@@ -1,5 +1,8 @@
 // js/artist-panel.js — Artist multi-select dropdown panel
 import { S, elRefineArtistBtn, elRefineArtistPanel } from './state.js';
+import { openDropdown, registerDropdown } from './dropdown-keys.js';
+
+let _savedArtists = null;
 
 let _onArtistChange = null;
 export function setArtistChangeHandler(fn) { _onArtistChange = fn; }
@@ -20,6 +23,7 @@ export function buildArtistPanel(artists) {
 
   const master = document.createElement('label');
   master.className = 'fmt-opt fmt-master';
+  master.tabIndex = -1;
   const masterCb = document.createElement('input');
   masterCb.type = 'checkbox';
   masterCb.value = '__master__';
@@ -38,6 +42,7 @@ export function buildArtistPanel(artists) {
   for (const a of sorted) {
     const label = document.createElement('label');
     label.className = 'fmt-opt';
+    label.tabIndex = -1;
     const cb = document.createElement('input');
     cb.type = 'checkbox';
     cb.value = a;
@@ -92,7 +97,22 @@ export function clearArtistFilter() {
 // ── event listeners ───────────────────────────────────
 elRefineArtistBtn.addEventListener('click', (e) => {
   e.stopPropagation();
-  elRefineArtistPanel.hidden = !elRefineArtistPanel.hidden;
+  openDropdown(elRefineArtistBtn, elRefineArtistPanel);
+});
+
+registerDropdown({
+  btn: elRefineArtistBtn,
+  panel: elRefineArtistPanel,
+  saveState: () => { _savedArtists = new Set(S.selectedArtists); },
+  restoreState: () => {
+    if (_savedArtists !== null) {
+      S.selectedArtists = _savedArtists;
+      _savedArtists = null;
+      updateArtistBtn();
+      syncArtistCheckboxes();
+      _onArtistChange?.();
+    }
+  },
 });
 
 document.addEventListener('click', () => { elRefineArtistPanel.hidden = true; });

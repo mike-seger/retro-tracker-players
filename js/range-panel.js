@@ -1,5 +1,8 @@
 // js/range-panel.js — Range single-select panel (modland result pages)
 import { S, elRefineRangeBtn, elRefineRangePanel } from './state.js';
+import { openDropdown, registerDropdown } from './dropdown-keys.js';
+
+let _savedRange = null;
 
 let _onRangeChange = null;
 export function setRangeChangeHandler(fn) { _onRangeChange = fn; }
@@ -32,6 +35,7 @@ export function buildRangePanel(total, pageSize = 200) {
     div.className = 'range-opt fmt-opt';
     div.textContent = `${i + 1}–${end}`;
     div.dataset.skip = String(i);
+    div.tabIndex = -1;
     if (i === S._currentRange) div.classList.add('selected');
     div.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -72,7 +76,24 @@ export function clearRangeFilter() {
 // ── event listeners ───────────────────────────────────
 elRefineRangeBtn.addEventListener('click', (e) => {
   e.stopPropagation();
-  elRefineRangePanel.hidden = !elRefineRangePanel.hidden;
+  openDropdown(elRefineRangeBtn, elRefineRangePanel);
+});
+
+registerDropdown({
+  btn: elRefineRangeBtn,
+  panel: elRefineRangePanel,
+  saveState: () => { _savedRange = S._currentRange; },
+  restoreState: () => {
+    if (_savedRange !== null) {
+      S._currentRange = _savedRange;
+      _savedRange = null;
+      for (const el of elRefineRangePanel.querySelectorAll('.range-opt')) {
+        el.classList.toggle('selected', parseInt(el.dataset.skip, 10) === S._currentRange);
+      }
+      updateRangeBtn();
+      _onRangeChange?.();
+    }
+  },
 });
 
 document.addEventListener('click', () => { elRefineRangePanel.hidden = true; });

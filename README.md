@@ -45,6 +45,8 @@ The unified player loads three engines on demand:
 
 ## Keyboard Shortcuts
 
+### Global
+
 | Key | Action |
 |-----|--------|
 | `Space` | Play / Pause |
@@ -55,7 +57,29 @@ The unified player loads three engines on demand:
 | `Enter` | Play focused track |
 | `Shift+Enter` | Toggle selection on focused track |
 | `/` | Focus the search/filter box |
-| `Esc` | Blur search box / close help |
+| `s` | Share / copy link |
+| `c` | Copy selected filenames to clipboard |
+| `z` | Download selected tracks as ZIP |
+| `r` | Random Modland track (when visible) |
+| `f` | Toggle Folder filter dropdown |
+| `a` | Toggle Artist filter dropdown |
+| `t` | Toggle Format/Type filter dropdown |
+| `?` | Help overlay |
+| `x` | Clear search filter |
+| `Esc` | Blur search box / close help / close dropdown |
+
+> Shortcuts are suppressed while the cursor is inside a text input, select, or textarea.
+
+### Inside a Dropdown (F / A / T / Range)
+
+| Key | Action |
+|-----|--------|
+| `↑` / `↓` | Navigate between items (wraps) |
+| `Space` | Toggle focused checkbox; select focused range entry |
+| `Enter` | Accept selection and close dropdown |
+| `Esc` | Undo all changes since the dropdown opened and close |
+
+Opening a dropdown automatically closes any other open dropdown.
 
 ## Selection & Export
 

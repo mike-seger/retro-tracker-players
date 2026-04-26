@@ -1,5 +1,8 @@
 // js/format-panel.js — Format multi-select dropdown widget
 import { S, elRefineFormatBtn, elRefineFormatPanel } from './state.js';
+import { openDropdown, registerDropdown } from './dropdown-keys.js';
+
+let _savedFormats = null;
 
 // Set by app.js after all modules are loaded, to avoid circular import at eval time.
 let _onFormatChange = null;
@@ -22,6 +25,7 @@ export function buildFormatPanel(formats) {
 
   const master = document.createElement('label');
   master.className = 'fmt-opt fmt-master';
+  master.tabIndex = -1;
   const masterCb = document.createElement('input');
   masterCb.type = 'checkbox';
   masterCb.value = '__master__';
@@ -40,6 +44,7 @@ export function buildFormatPanel(formats) {
   for (const fmt of sorted) {
     const label = document.createElement('label');
     label.className = 'fmt-opt';
+    label.tabIndex = -1;
     const cb = document.createElement('input');
     cb.type = 'checkbox';
     cb.value = fmt;
@@ -94,7 +99,22 @@ export function clearFormatFilter() {
 // ── event listeners ───────────────────────────────────
 elRefineFormatBtn.addEventListener('click', (e) => {
   e.stopPropagation();
-  elRefineFormatPanel.hidden = !elRefineFormatPanel.hidden;
+  openDropdown(elRefineFormatBtn, elRefineFormatPanel);
+});
+
+registerDropdown({
+  btn: elRefineFormatBtn,
+  panel: elRefineFormatPanel,
+  saveState: () => { _savedFormats = new Set(S.selectedFormats); },
+  restoreState: () => {
+    if (_savedFormats !== null) {
+      S.selectedFormats = _savedFormats;
+      _savedFormats = null;
+      updateFormatBtn();
+      syncFormatCheckboxes();
+      _onFormatChange?.();
+    }
+  },
 });
 
 document.addEventListener('click', () => {
