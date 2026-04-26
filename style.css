@@ -319,6 +319,7 @@ body.mode-modland {
   #info { display: none; }
   #ml-random, #btn-zip { display: none !important; }
   #refine-inline { order: -1; width: 100%; }
+  #playlist li:hover { background: transparent; }
   #filter-row { margin-bottom: 8px; gap: 6px; }
   #filter { padding: 6px 8px; }
   #filter-count { display: none; }
