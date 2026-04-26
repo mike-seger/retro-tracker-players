@@ -1,6 +1,19 @@
 // js/engines.js — Lazy engine loading + management
 import { S, FIXED_VOLUME, SID_TRACK_PLAYER_ID, SID_ENGINE_PLAYER_ID } from './state.js';
 
+// Pre-warm all engine modules into the browser's module registry at startup.
+// On iOS Safari, a dynamic import() that triggers a network fetch (cache miss)
+// breaks the "user activation" window required for AudioContext.resume().
+// Loading the modules here (before any user gesture) ensures the first play's
+// import() resolves from the module registry (microtask only, no I/O),
+// keeping the user activation alive through to AudioContext.resume().
+Promise.all([
+  import('../engines/mod/engine.js'),
+  import('../engines/ahx/engine.js'),
+  import('../engines/jssid/engine.js'),
+  import('../engines/websid/engine.js'),
+]).catch(() => {});
+
 // Set by player.js to break the circular dep at module evaluation time.
 let _advanceTrack = null;
 export function setAdvanceTrackCallback(fn) { _advanceTrack = fn; }
