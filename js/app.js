@@ -251,14 +251,15 @@ elFilterClr.addEventListener('click', () => {
             // iOS Safari requires AudioContext.resume() to be called inside a
             // user gesture — auto-resuming silently at startup will always fail.
             // So on iOS we always show the prompt (no auto-resume option).
+            // iOS and Android both require AudioContext.resume() inside a user gesture.
             // On desktop there is no such restriction: honour the auto-resume flag
             // directly, or show the prompt with the checkbox so the user can set it.
-            const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+            const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
               (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
-            if (!isIOS && localStorage.getItem('auto-resume') === '1') {
+            if (!isMobile && localStorage.getItem('auto-resume') === '1') {
               doResume();
             } else {
-              showResumePrompt(label, doResume, /* showAutoOption */ !isIOS);
+              showResumePrompt(label, doResume, /* showAutoOption */ !isMobile);
             }
           }
         }

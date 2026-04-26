@@ -54,26 +54,26 @@ function supportsWorklet() {
 Wrapping them in `setTimeout`, `Promise.then` after a fetch, or module-startup code will
 silently fail on iOS.
 
-### 4. Never auto-play or auto-resume audio at startup without a gesture — iOS only
+### 4. Never auto-play or auto-resume audio at startup without a gesture — mobile only
 Calling `loadAndPlay()` (or any function that leads to `AudioContext.resume()`) from the
 app init IIFE, a `DOMContentLoaded` handler, or any startup path that has no user gesture
-will silently fail on iOS.
+will silently fail on **iOS and Android** (both enforce the user-activation constraint).
 
 **Desktop** has no such restriction. The `auto-resume` localStorage flag is honoured
 directly on desktop: if set, `doResume()` is called at startup without a prompt.
 
-**iOS** must always defer to a user gesture. The fix (`js/app.js`, `js/prompts.js`) detects
-iOS and always shows `showResumePrompt` (a modal click = user gesture). The "Always resume
-automatically" checkbox is hidden on iOS because it cannot work there.
+**iOS and Android** must always defer to a user gesture. The fix (`js/app.js`, `js/prompts.js`) detects
+mobile and always shows `showResumePrompt` (a modal click = user gesture). The "Always resume
+automatically" checkbox is hidden on mobile because it cannot work there.
 
 ```js
 // js/app.js — resume branch pattern
-const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
   (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
-if (!isIOS && localStorage.getItem('auto-resume') === '1') {
+if (!isMobile && localStorage.getItem('auto-resume') === '1') {
   doResume();          // desktop: fine to call directly
 } else {
-  showResumePrompt(label, doResume, /* showAutoOption */ !isIOS);
+  showResumePrompt(label, doResume, /* showAutoOption */ !isMobile);
 }
 ```
 
