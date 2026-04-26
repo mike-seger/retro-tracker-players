@@ -71,6 +71,8 @@ export function registerDropdown({ btn, panel, saveState, restoreState }) {
           if (cb) {
             cb.checked = !cb.checked;
             cb.dispatchEvent(new Event('change', { bubbles: true }));
+            // Refocus item — sync() rewrites checkbox states and can lose focus
+            setTimeout(() => item?.focus(), 0);
           }
         }
         break;
