@@ -68,7 +68,7 @@ export function showResumeToast(trackName, onResume) {
   const toast = document.createElement('div');
   toast.className = 'resume-toast';
   toast.innerHTML =
-    `<span>&#9654; Tap to resume <em>${esc(trackName)}</em></span>` +
+    `<button class="resume-toast-play" title="Resume playback">&#9654; Tap to resume <em>${esc(trackName)}</em></button>` +
     `<button class="resume-toast-close" title="Turn off auto-resume">&times;</button>`;
   document.body.appendChild(toast);
 
@@ -77,24 +77,35 @@ export function showResumeToast(trackName, onResume) {
   // Fire resume on the first tap anywhere so AudioContext.resume() is called
   // inside a real user gesture on iOS Safari (activation window constraint).
   const closeBtn = toast.querySelector('.resume-toast-close');
+  const playBtn  = toast.querySelector('.resume-toast-play');
+
+  const removeGestureListeners = () =>
+    gestureEvents.forEach(t => document.removeEventListener(t, onGesture, true));
 
   const gestureEvents = ['pointerdown', 'touchstart', 'keydown'];
   const onGesture = (e) => {
-    // If the user tapped the × button, let its own click handler do the cleanup.
-    if (e.target === closeBtn || closeBtn.contains(e.target)) return;
-    gestureEvents.forEach(t => document.removeEventListener(t, onGesture, true));
+    // Let the × button's own click handler handle that tap.
+    if (closeBtn.contains(e.target)) return;
+    removeGestureListeners();
     dismiss();
     onResume?.();
   };
   gestureEvents.forEach(t => document.addEventListener(t, onGesture, { capture: true, passive: true }));
 
   const timer = setTimeout(() => {
-    gestureEvents.forEach(t => document.removeEventListener(t, onGesture, true));
+    removeGestureListeners();
     toast.remove();
   }, 8000);
 
+  // Play button is also a direct target (belt-and-suspenders for the gesture listener).
+  playBtn.addEventListener('click', () => {
+    removeGestureListeners();
+    dismiss();
+    onResume?.();
+  });
+
   closeBtn.addEventListener('click', () => {
-    gestureEvents.forEach(t => document.removeEventListener(t, onGesture, true));
+    removeGestureListeners();
     dismiss();
     localStorage.removeItem('auto-resume');
   });
