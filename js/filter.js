@@ -4,7 +4,7 @@ import { S, elFilter, elFilterCnt,
          elRefineFormatWrap, elList } from './state.js';
 import { extractArtist } from './utils.js';
 import { buildFormatPanel } from './format-panel.js';
-import { activeFiles } from './playlist.js';
+import { activeFiles, updateTrackPos, highlightCurrent, setFocus } from './playlist.js';
 import { persistContext } from './persistence.js';
 import { scrollIntoViewSmart } from './playlist.js';
 
@@ -77,6 +77,36 @@ export function applyFilter() {
       span.textContent = String(visIdx).padStart(pad, '\u2007');
     }
   }
+
+  // Keep current/focus anchored to visible rows after filters change.
+  if (S.currentIdx >= 0) {
+    const cur = items[S.currentIdx];
+    const currentHidden = !cur || cur.classList.contains('hidden');
+    if (currentHidden) {
+      let nextIdx = -1;
+      for (let i = S.currentIdx; i < items.length; i++) {
+        if (!items[i].classList.contains('hidden')) { nextIdx = i; break; }
+      }
+      if (nextIdx < 0) {
+        for (let i = S.currentIdx - 1; i >= 0; i--) {
+          if (!items[i].classList.contains('hidden')) { nextIdx = i; break; }
+        }
+      }
+
+      S.currentIdx = nextIdx;
+      highlightCurrent();
+
+      if (nextIdx >= 0) {
+        setFocus(nextIdx);
+      } else {
+        const prevFocus = elList.querySelector('li.focused');
+        if (prevFocus) prevFocus.classList.remove('focused');
+        S.focusedIdx = -1;
+      }
+    }
+  }
+
+  updateTrackPos();
 
   persistContext();
 

@@ -188,7 +188,21 @@ export function buildPlaylist() {
 export function updateTrackPos() {
   const files = activeFiles();
   if (S.currentIdx >= 0 && S.currentIdx < files.length) {
-    elTrackPos.textContent = `${S.currentIdx + 1}/${files.length}`;
+    const items = elList.children;
+    let visibleTotal = 0;
+    let visiblePos = 0;
+
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].classList.contains('hidden')) continue;
+      visibleTotal++;
+      if (i === S.currentIdx) visiblePos = visibleTotal;
+    }
+
+    if (visibleTotal > 0) {
+      elTrackPos.textContent = visiblePos > 0 ? `${visiblePos} / ${visibleTotal}` : `- / ${visibleTotal}`;
+    } else {
+      elTrackPos.textContent = '-/-';
+    }
   } else {
     elTrackPos.textContent = '-/-';
   }
