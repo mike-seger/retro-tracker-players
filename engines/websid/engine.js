@@ -22,6 +22,8 @@ let _durationSec = 300;
 let _posUnit = 'unknown';   // 'samples' | 'ms' | 'sec' | 'unknown'
 let _currentUrl = null;
 let _seekSerial = 0;
+let _loadGen = 0;
+let _aborted = false;
 
 function debugSeek(...args) {
   if (!window.__WEB_SID_DEBUG_SEEK) return;
@@ -229,6 +231,8 @@ export async function init() {
 
 export async function load(url) {
   await init();
+  const gen = ++_loadGen;
+  _aborted = false;
 
   debugSeek('debug enabled');
   _currentUrl = url;
@@ -255,6 +259,8 @@ export async function load(url) {
   });
 
   await ensureAudioContextRunning(ScriptNodePlayer);
+  if (gen !== _loadGen) throw new Error('load superseded');
+  if (_aborted) throw new Error('load aborted');
   kickPlayback();
 
   const p = currentPlayer();
@@ -285,6 +291,7 @@ export async function load(url) {
 }
 
 export function pause() {
+  _aborted = true;
   currentPlayer()?.pause?.();
 }
 

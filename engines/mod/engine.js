@@ -13,6 +13,8 @@ const CHIPTUNE2_BASES = [
 let player = null;
 let audioCtx = null;
 let _onEnd = null;
+let _loadGen = 0;
+let _aborted = false;
 let _ready = false;
 let _playing = false;
 let _ended = false;
@@ -340,6 +342,7 @@ export async function init() {
 
 export async function load(url) {
   await init();
+  const gen = ++_loadGen;
   const engineLabel = _useV2 ? 'chiptune2 (v2)' : 'chiptune3 (v3)';
 
   if (player) player.stop();
@@ -347,6 +350,7 @@ export async function load(url) {
 
   _ended = false;
   _playing = false;
+  _aborted = false;
   _currentTime = 0;
   _duration = 0;
   _meta = null;
@@ -369,6 +373,8 @@ export async function load(url) {
           if (_v2PendingReject === reject) _v2PendingReject = null;
           clearTimeout(timer);
 
+          if (gen !== _loadGen) { reject(new Error('load superseded')); return; }
+          if (_aborted) { reject(new Error('load aborted')); return; }
           player.play(buffer);
           resumeContext();
           routeV2NodeToOutput();
@@ -414,6 +420,8 @@ export async function load(url) {
   });
 
   if (player.gain) player.gain.gain.value = _volume;
+  if (gen !== _loadGen) throw new Error('load superseded');
+  if (_aborted) throw new Error('load aborted');
   player.play(buffer);
   _playing = true;
 
@@ -437,6 +445,7 @@ export async function load(url) {
 }
 
 export function pause() {
+  _aborted = true;
   if (!player || !_playing) return;
   if (_useV2) {
     player.currentPlayingNode?.pause();

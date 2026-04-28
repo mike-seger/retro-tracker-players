@@ -6,6 +6,8 @@ let _compressor = null;
 let _analyser = null;
 let _connected = false;
 let _silenceTimer = null;
+let _loadGen = 0;
+let _aborted = false;
 
 function loadScript(src) {
   return new Promise((resolve, reject) => {
@@ -65,9 +67,13 @@ async function resumeContext() {
 }
 
 export async function load(url) {
+  const gen = ++_loadGen;
+  _aborted = false;
   await resumeContext();
   return new Promise((resolve) => {
     player.setloadcallback(() => {
+      if (gen !== _loadGen) { pause(); resolve({ fields: [], duration: 0 }); return; }
+      if (_aborted) { pause(); resolve({ fields: [], duration: 0 }); return; }
       player.setmodel(player.getprefmodel());
       player.playcont();
       // Auto-advance if jsSID produces no audio (unsupported RSID files)
@@ -96,7 +102,7 @@ export async function load(url) {
   });
 }
 
-export function pause()  { if (player) player.pause(); }
+export function pause()  { _aborted = true; if (player) player.pause(); }
 export async function resume() { if (player) { await resumeContext(); player.playcont(); } }
 export function seekTo(s) { if (player) player.seekTo(s); }
 export function getTime() { return player ? player.getplaytime() : 0; }

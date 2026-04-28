@@ -3,6 +3,8 @@ const BASE = 'engines/ahx/';
 let master = null;
 let song = null;
 let _onEnd = null;
+let _loadGen = 0;
+let _aborted = false;
 let gainNode = null;
 let compressor = null;
 let volume = 1;
@@ -21,6 +23,8 @@ export async function init() {
 }
 
 export async function load(url) {
+  const gen = ++_loadGen;
+  _aborted = false;
   if (!master) master = AHXMaster();
 
   // Stop current
@@ -31,6 +35,8 @@ export async function load(url) {
   song = new AHXSong();
   return new Promise((resolve) => {
     song.LoadSong(url, () => {
+      if (gen !== _loadGen) { pause(); resolve({ fields: [], duration: 0 }); return; }
+      if (_aborted) { pause(); resolve({ fields: [], duration: 0 }); return; }
       const mult = song.SpeedMultiplier || 1;
       const estSeconds = Math.ceil(song.PositionNr * song.TrackLength * 6 / (50 * mult));
 
@@ -54,6 +60,7 @@ export async function load(url) {
 }
 
 export function pause() {
+  _aborted = true;
   if (master?.AudioNode) {
     try { master.AudioNode.disconnect(); } catch (_) {}
   }

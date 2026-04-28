@@ -37,7 +37,12 @@ setFormatChangeHandler(() => {
 });
 
 // ── folder/artist/range change callbacks ─────────────────
-setFolderChangeHandler(() => { populateLocalArtistPanel(); applyFilter(); });
+setFolderChangeHandler(() => {
+  S.selectedArtists = new Set();
+  S.selectedFormats = new Set();
+  populateLocalArtistPanel();
+  applyFilter();
+});
 setArtistChangeHandler(() => { applyFilter(); });
 setRangeChangeHandler(() => {
   if (S._randomBrowsing) doRandomBrowse(getRangeSkip());
