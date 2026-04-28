@@ -261,7 +261,7 @@ body.mode-modland {
   min-width: 26px; text-align: center;
 }
 #sel-row > button:hover { background: #333; }
-#sel-row > button:disabled { opacity: 0.45; cursor: not-allowed; }
+#sel-row > button:disabled { opacity: 0.45; }
 #sel-row #ml-add-all { background: #2a3a2a; color: #8a8; border-color: #4a4; }
 #sel-row #ml-add-all:hover { background: #3a4a3a; color: #afa; }
 #sel-count { color: #666; font-size: 12px; }

@@ -6,15 +6,39 @@ A browser-based player for classic tracker module formats (MOD, XM, S3M, IT, AHX
 
 ## Keyboard Shortcuts
 
+### Global
+
 | Key | Action |
 |---|---|
 | <kbd>Space</kbd> | Play / Pause |
-| <kbd>←</kbd> / <kbd>→</kbd> | Seek back / forward 5 s |
 | <kbd>↑</kbd> / <kbd>↓</kbd> | Previous / next track |
+| <kbd>←</kbd> / <kbd>→</kbd> | Seek back / forward 5 s |
 | <kbd>Enter</kbd> | Play focused track |
 | <kbd>Shift+Enter</kbd> | Toggle selection on focused track |
-| <kbd>/</kbd> | Jump to search box |
-| <kbd>Esc</kbd> | Close help / blur search |
+| <kbd>/</kbd> | Focus the search / filter box |
+| <kbd>s</kbd> | Share / copy link |
+| <kbd>c</kbd> | Copy selected filenames to clipboard |
+| <kbd>z</kbd> | Download selected tracks as ZIP |
+| <kbd>r</kbd> | Random Modland track (Modland mode) |
+| <kbd>f</kbd> | Toggle Folder filter dropdown |
+| <kbd>a</kbd> | Toggle Artist filter dropdown |
+| <kbd>t</kbd> | Toggle Format / Type filter dropdown |
+| <kbd>x</kbd> | Clear search filter |
+| <kbd>?</kbd> | Help overlay |
+| <kbd>Esc</kbd> | Blur search / close help / close dropdown |
+
+> Shortcuts are suppressed while the cursor is inside a text input, select, or textarea.
+
+### Inside a Dropdown (F / A / T / Range)
+
+| Key | Action |
+|---|---|
+| <kbd>↑</kbd> / <kbd>↓</kbd> | Navigate between items (wraps) |
+| <kbd>Space</kbd> | Toggle focused checkbox; select focused range entry |
+| <kbd>Enter</kbd> | Accept selection and close dropdown |
+| <kbd>Esc</kbd> | Undo all changes since the dropdown opened and close |
+
+Opening a dropdown automatically closes any other open dropdown.
 
 ---
 
@@ -32,15 +56,17 @@ Type at least 2 characters in the search box, or pick a folder from the dropdown
 - **Add all**: save all current search results to your list.
 - **Random**: browse a random shuffled slice of the full index.
 - **Del all**: remove visible tracks from your list (with confirmation).
+- Double-tap or long-press a track to search Modland for that artist.
 
 ---
 
 ## Selection & Export
 
 - Click the **checkbox** at the far left of any track to select it.
-- Use the **bulk checkbox** (top-left of the list) to select all / none / restore previous selection.
-- **C** button: copy selected file URLs to clipboard.
-- **Z** button: download selected tracks as a **.zip** archive (with a `urllist.json` for remote tracks).
+- Use <kbd>Enter</kbd> / <kbd>Shift+Enter</kbd> to play or toggle selection on the focused track.
+- Use the **bulk checkbox** (top-left of the list) to cycle: all → none → restore previous selection.
+- **C** button: copy selected file links to clipboard (double-quoted, comma-separated).
+- **Z** button: download selected tracks as a **.zip** archive (remote tracks include a `urllist.json`).
 
 ---
 
@@ -48,6 +74,14 @@ Type at least 2 characters in the search box, or pick a folder from the dropdown
 
 The **S** (share) button generates a URL that encodes the current track and filter state.  
 Sharing or bookmarking this URL lets you jump straight back to the same track and context.
+
+| Parameter | Description | Example |
+|---|---|---|
+| `play` | URL of the track to load | `play=engines/mod/files/…` |
+| `source` | Pre-select source mode | `source=modland` |
+| `folder` | Pre-select the Folder dropdown | `folder=trance` |
+| `artist` | Pre-select the Artist dropdown | `artist=dct2` |
+| `search` | Pre-fill the search / filter input | `search=trance` |
 
 ---
 

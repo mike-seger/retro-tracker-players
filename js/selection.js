@@ -63,6 +63,8 @@ export function updateSelCount() {
   }
   btnCopy.disabled = n === 0;
   btnZip.disabled = n === 0;
+  btnCopy.title = n === 0 ? 'Select tracks first to copy file links' : 'Copy selected file links to clipboard';
+  btnZip.title = n === 0 ? 'Select tracks first to download as ZIP' : 'Download selected tracks as ZIP';
   syncBulkState();
 }
 
@@ -164,9 +166,10 @@ btnCopy.addEventListener('click', () => {
   const csv = Array.from(sel).sort((a, b) => a - b)
     .map(i => {
       const f = files[i];
-      return f.url || `engines/${f.playerId}/files/${f.name}`;
+      const link = f.url || `engines/${f.playerId}/files/${f.name}`;
+      return `"${link}"`;
     })
-    .join('\n');
+    .join(',\n');
   navigator.clipboard.writeText(csv).then(() => {
     btnCopy.classList.add('copied');
     setTimeout(() => btnCopy.classList.remove('copied'), 1500);
