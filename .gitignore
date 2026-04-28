@@ -2,3 +2,4 @@
 /.vscode
 .DS_Store
 remote-mods.txt.gz
+node_modules

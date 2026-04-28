@@ -1,0 +1,312 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-04-28T23:07:27.387Z",
+  "sourceUrl": "http://127.0.0.1:63706/index.html?play=https%3A%2F%2Fmodland.com%2Fpub%2Fmodules%2FFasttracker%25202%2F-%2520unknown%2Feagle%2520trance.xm&folders=trance",
+  "screenshotPath": "doc/elements-view.png",
+  "viewport": {
+    "width": 640,
+    "height": 480
+  },
+  "stats": {
+    "total": 31,
+    "controls": 14,
+    "information": 17
+  },
+  "elements": [
+    {
+      "key": "information-engine-label",
+      "name": "Engine label",
+      "category": "information",
+      "xpath": "//span[@aria-label='Engine label']",
+      "humanXPath": "html > body > div#player > div#info > div.info-field > span.label",
+      "notes": "text-match",
+      "tag": "span"
+    },
+    {
+      "key": "information-engine-value",
+      "name": "Engine value",
+      "category": "information",
+      "xpath": "//span[@aria-label='Engine value']",
+      "humanXPath": "html > body > div#player > div#info > div.info-field > span.val",
+      "notes": "",
+      "tag": "span"
+    },
+    {
+      "key": "information-tracker-label",
+      "name": "Tracker label",
+      "category": "information",
+      "xpath": "//span[@aria-label='Tracker label']",
+      "humanXPath": "html > body > div#player > div#info > div.info-field > span.label",
+      "notes": "text-match",
+      "tag": "span"
+    },
+    {
+      "key": "information-tracker-value",
+      "name": "Tracker value",
+      "category": "information",
+      "xpath": "//span[@aria-label='Tracker value']",
+      "humanXPath": "html > body > div#player > div#info > div.info-field > span.val",
+      "notes": "",
+      "tag": "span"
+    },
+    {
+      "key": "information-title-label",
+      "name": "Title label",
+      "category": "information",
+      "xpath": "//span[@aria-label='Title label']",
+      "humanXPath": "html > body > div#player > div#info > div.info-field > span.label",
+      "notes": "text-match",
+      "tag": "span"
+    },
+    {
+      "key": "information-title-value",
+      "name": "Title value",
+      "category": "information",
+      "xpath": "//span[@aria-label='Title value']",
+      "humanXPath": "html > body > div#player > div#info > div.info-field > span.val",
+      "notes": "",
+      "tag": "span"
+    },
+    {
+      "key": "information-type-label",
+      "name": "Type label",
+      "category": "information",
+      "xpath": "//span[@aria-label='Type label']",
+      "humanXPath": "html > body > div#player > div#info > div.info-field > span.label",
+      "notes": "text-match",
+      "tag": "span"
+    },
+    {
+      "key": "information-type-value",
+      "name": "Type value",
+      "category": "information",
+      "xpath": "//span[@aria-label='Type value']",
+      "humanXPath": "html > body > div#player > div#info > div.info-field > span.val",
+      "notes": "",
+      "tag": "span"
+    },
+    {
+      "key": "share-btn",
+      "name": "Share / copy link",
+      "category": "control",
+      "xpath": "//*[@id='share-btn']",
+      "humanXPath": "#share-btn",
+      "notes": "control-match; text-match",
+      "tag": "button",
+      "id": "share-btn"
+    },
+    {
+      "key": "filter",
+      "name": "Search tracks …",
+      "category": "control",
+      "xpath": "//*[@id='filter']",
+      "humanXPath": "#filter",
+      "notes": "control-match; text-match",
+      "tag": "input",
+      "id": "filter"
+    },
+    {
+      "key": "search-mode",
+      "name": "Search local or modland",
+      "category": "control",
+      "xpath": "//*[@id='search-mode']",
+      "humanXPath": "#search-mode",
+      "notes": "control-match; text-match",
+      "tag": "select",
+      "id": "search-mode"
+    },
+    {
+      "key": "filter-count",
+      "name": "Tracks found / total",
+      "category": "information",
+      "xpath": "//*[@id='filter-count']",
+      "humanXPath": "#filter-count",
+      "notes": "text-match",
+      "tag": "span",
+      "id": "filter-count"
+    },
+    {
+      "key": "btn-copy",
+      "name": "Copy selected track links to clipboard",
+      "category": "control",
+      "xpath": "//*[@id='btn-copy']",
+      "humanXPath": "#btn-copy",
+      "notes": "control-match; text-match",
+      "tag": "button",
+      "id": "btn-copy"
+    },
+    {
+      "key": "btn-zip",
+      "name": "Download selected tracks as ZIP",
+      "category": "control",
+      "xpath": "//*[@id='btn-zip']",
+      "humanXPath": "#btn-zip",
+      "notes": "control-match; text-match",
+      "tag": "button",
+      "id": "btn-zip"
+    },
+    {
+      "key": "refine-folder-btn",
+      "name": "Select track group",
+      "category": "control",
+      "xpath": "//*[@id='refine-folder-btn']",
+      "humanXPath": "#refine-folder-btn",
+      "notes": "control-match; text-match",
+      "tag": "button",
+      "id": "refine-folder-btn"
+    },
+    {
+      "key": "refine-artist-btn",
+      "name": "Select artist",
+      "category": "control",
+      "xpath": "//*[@id='refine-artist-btn']",
+      "humanXPath": "#refine-artist-btn",
+      "notes": "control-match; text-match",
+      "tag": "button",
+      "id": "refine-artist-btn"
+    },
+    {
+      "key": "refine-format-btn",
+      "name": "Select format",
+      "category": "control",
+      "xpath": "//*[@id='refine-format-btn']",
+      "humanXPath": "#refine-format-btn",
+      "notes": "control-match; text-match",
+      "tag": "button",
+      "id": "refine-format-btn"
+    },
+    {
+      "key": "help-btn",
+      "name": "Help / About",
+      "category": "control",
+      "xpath": "//*[@id='help-btn']",
+      "humanXPath": "#help-btn",
+      "notes": "control-match; text-match",
+      "tag": "button",
+      "id": "help-btn"
+    },
+    {
+      "key": "track-pos",
+      "name": "Track number / total found",
+      "category": "information",
+      "xpath": "//*[@id='track-pos']",
+      "humanXPath": "#track-pos",
+      "notes": "text-match",
+      "tag": "span",
+      "id": "track-pos"
+    },
+    {
+      "key": "sel-bulk-cb",
+      "name": "Toggle all, none, or restore track selection",
+      "category": "control",
+      "xpath": "//*[@id='sel-bulk-cb']",
+      "humanXPath": "#sel-bulk-cb",
+      "notes": "control-match; text-match",
+      "tag": "input",
+      "id": "sel-bulk-cb"
+    },
+    {
+      "key": "information-track-artist",
+      "name": "Track artist",
+      "category": "information",
+      "xpath": "/html[1]/body[1]/div[1]/ul[1]/li[147]/div[1]/span[1]",
+      "humanXPath": "body > div#player > ul#playlist > li.remote > div.row-top > span.artist",
+      "notes": "text-match",
+      "tag": "span"
+    },
+    {
+      "key": "information-track-group",
+      "name": "Track group",
+      "category": "information",
+      "xpath": "/html[1]/body[1]/div[1]/ul[1]/li[147]/div[1]/span[2]",
+      "humanXPath": "body > div#player > ul#playlist > li.remote > div.row-top > span.folder",
+      "notes": "text-match",
+      "tag": "span"
+    },
+    {
+      "key": "information-track-index",
+      "name": "Track index",
+      "category": "information",
+      "xpath": "/html[1]/body[1]/div[1]/ul[1]/li[147]/span[1]",
+      "humanXPath": "html > body > div#player > ul#playlist > li.remote > span.idx",
+      "notes": "text-match",
+      "tag": "span"
+    },
+    {
+      "key": "control-track-selector-checkbox",
+      "name": "Track selector checkbox",
+      "category": "control",
+      "xpath": "/html[1]/body[1]/div[1]/ul[1]/li[147]/input[1]",
+      "humanXPath": "html > body > div#player > ul#playlist > li.remote > input.sel-cb",
+      "notes": "control-match; text-match",
+      "tag": "input"
+    },
+    {
+      "key": "information-track-title",
+      "name": "Track title",
+      "category": "information",
+      "xpath": "/html[1]/body[1]/div[1]/ul[1]/li[147]/div[2]/span[1]",
+      "humanXPath": "body > div#player > ul#playlist > li.remote > div.row-bot > span.title",
+      "notes": "text-match",
+      "tag": "span"
+    },
+    {
+      "key": "information-track-format",
+      "name": "Track format",
+      "category": "information",
+      "xpath": "/html[1]/body[1]/div[1]/ul[1]/li[147]/div[2]/span[2]",
+      "humanXPath": "body > div#player > ul#playlist > li.remote > div.row-bot > span.ext",
+      "notes": "text-match",
+      "tag": "span"
+    },
+    {
+      "key": "control-down-track",
+      "name": "Down track",
+      "category": "control",
+      "xpath": "/html[1]/body[1]/div[1]/ul[1]/li[147]/div[2]/button[1]",
+      "humanXPath": "body > div#player > ul#playlist > li.remote > div.row-bot > button.r-dl",
+      "notes": "control-match; text-match",
+      "tag": "button"
+    },
+    {
+      "key": "btn-play",
+      "name": "Play / Pause",
+      "category": "control",
+      "xpath": "//*[@id='btn-play']",
+      "humanXPath": "#btn-play",
+      "notes": "control-match",
+      "tag": "button",
+      "id": "btn-play"
+    },
+    {
+      "key": "time",
+      "name": "Track Time",
+      "category": "information",
+      "xpath": "//*[@id='time']",
+      "humanXPath": "#time",
+      "notes": "text-match",
+      "tag": "span",
+      "id": "time"
+    },
+    {
+      "key": "duration",
+      "name": "Track Length",
+      "category": "information",
+      "xpath": "//*[@id='duration']",
+      "humanXPath": "#duration",
+      "notes": "",
+      "tag": "span",
+      "id": "duration"
+    },
+    {
+      "key": "seek",
+      "name": "Track seekbar",
+      "category": "control",
+      "xpath": "//*[@id='seek']",
+      "humanXPath": "#seek",
+      "notes": "control-match; text-match",
+      "tag": "input",
+      "id": "seek"
+    }
+  ]
+}

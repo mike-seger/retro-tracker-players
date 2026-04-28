@@ -104,16 +104,16 @@ export function buildPlaylist() {
     if (entry.url) li.classList.add('remote');
 
     li.innerHTML =
-      `<span class="idx">${idxStr}</span>` +
-      `<input type="checkbox" class="sel-cb" tabindex="-1"${checked}>` +
+      `<span class="idx" aria-label="Track index">${idxStr}</span>` +
+      `<input type="checkbox" class="sel-cb" tabindex="-1" aria-label="Track selector checkbox"${checked}>` +
       `<div class="row-top">` +
-        `<span class="artist">${esc(artist)}</span>` +
-        (folder ? `<span class="folder">${esc(folder)}</span>` : '') +
+        `<span class="artist" aria-label="Track artist">${esc(artist)}</span>` +
+        (folder ? `<span class="folder" aria-label="Track group">${esc(folder)}</span>` : '') +
       `</div>` +
       `<div class="row-bot">` +
-        `<span class="title">${esc(title)}</span>` +
-        `<span class="ext">${esc(entry.ext)}</span>` +
-        (!isMobile ? `<button class="r-dl" title="Download">D</button>` : '') +
+        `<span class="title" aria-label="Track title">${esc(title)}</span>` +
+        `<span class="ext" aria-label="Track format">${esc(entry.ext)}</span>` +
+        (!isMobile ? `<button class="r-dl" title="Down track" aria-label="Down track">D</button>` : '') +
         (S.searchMode === 'modland' && entry.url
           ? `<button class="r-del" title="Remove">&times;</button>` : '') +
       `</div>`;

@@ -4,12 +4,19 @@ A browser-based player for classic tracker module formats (MOD, XM, S3M, IT, AHX
 
 ---
 
+## User Interface
+
+![Annotated user interface map](doc/elements-view.png)
+
+The screenshot is generated from `doc/elements.json` and annotated with zero-padded row numbers.
+Use **User Interface Highlighter** below to open the live inspector; the table under the button lists **No**, **Name**, and **Selector** in the same order.
+
 ## Keyboard Shortcuts
 
 ### Playback & Navigation
 
 | Key | Action |
-|---|---|
+|:-----|:-----|
 | <kbd>Space</kbd> | Play / Pause |
 | <kbd>↑</kbd> / <kbd>↓</kbd> | Previous / next track |
 | <kbd>←</kbd> / <kbd>→</kbd> | Seek back / forward 5 s |
@@ -32,7 +39,7 @@ A browser-based player for classic tracker module formats (MOD, XM, S3M, IT, AHX
 ### Inside a Dropdown (F / A / T / Range)
 
 | Key | Action |
-|---|---|
+|:-----|:-----|
 | <kbd>↑</kbd> / <kbd>↓</kbd> | Navigate between items (wraps) |
 | <kbd>Space</kbd> | Toggle focused checkbox; select focused range entry |
 | <kbd>Enter</kbd> | Accept selection and close dropdown |
@@ -43,7 +50,7 @@ Opening a dropdown automatically closes any other open dropdown.
 ### Toolbar
 
 | Key | Action |
-|---|---|
+|:-----|:-----|
 | <kbd>S</kbd> | Share (copy deep-link URL) |
 | <kbd>C</kbd> | Copy selected file URLs to clipboard |
 | <kbd>Z</kbd> | Download selected tracks as ZIP |
@@ -59,14 +66,14 @@ Opening a dropdown automatically closes any other open dropdown.
 ### Modland Rows
 
 | Key | Action |
-|---|---|
+|:-----|:-----|
 | <kbd>Enter</kbd> | Add focused search-result row to saved list |
 | <kbd>Backspace</kbd> / <kbd>Delete</kbd> | Remove focused saved-list row |
 
 ### Dropdown Panels
 
 | Key | Action |
-|---|---|
+|:-----|:-----|
 | <kbd>↑</kbd> / <kbd>↓</kbd> | Move focus between options |
 | <kbd>Space</kbd> | Toggle checkbox / select option |
 | <kbd>Enter</kbd> | Accept selection and close panel |
@@ -75,7 +82,7 @@ Opening a dropdown automatically closes any other open dropdown.
 ### Confirmation Dialogs
 
 | Key | Action |
-|---|---|
+|:-----|:-----|
 | <kbd>Tab</kbd> / <kbd>Shift+Tab</kbd> | Cycle between Yes and No buttons |
 | <kbd>←</kbd> / <kbd>→</kbd> | Move between Yes and No buttons |
 | <kbd>Enter</kbd> | Activate focused button |
@@ -117,7 +124,7 @@ The **S** (share) button generates a URL that encodes the current track and filt
 Sharing or bookmarking this URL lets you jump straight back to the same track and context.
 
 | Parameter | Description | Example |
-|---|---|---|
+|:-----|:-----|:-----|
 | `play` | URL of the track to load | `play=engines/mod/files/…` |
 | `source` | Pre-select source mode | `source=modland` |
 | `folder` | Pre-select the Folder dropdown | `folder=trance` |
@@ -129,7 +136,7 @@ Sharing or bookmarking this URL lets you jump straight back to the same track an
 ## Touch Gestures
 
 | Gesture | Action |
-|---|---|
+|:-----|:-----|
 | Swipe left on playlist | Next track |
 | Swipe right on playlist | Previous track |
 | Pinch on playlist | Resize track list font |

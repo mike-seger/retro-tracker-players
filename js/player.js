@@ -7,6 +7,25 @@ import { activeFiles, highlightCurrent, setFocus, updateTrackPos,
          getVisibleIndices, alignInfoValueColumn, scrollIntoViewSmart } from './playlist.js';
 import { setAdvanceTrackCallback } from './engines.js';
 
+function renderInfoFields(fields) {
+  elInfo.innerHTML = fields.map((f) =>
+    `<div class="info-field">` +
+    `<span class="label" aria-label="${esc(f.label)} label" title="Copy ${esc(f.label)}" data-copy="${esc(f.value)}" data-ui-doc="1">${esc(f.label)}:&nbsp;</span>` +
+    `<span class="val" aria-label="${esc(f.label)} value" data-ui-doc="1">${esc(f.value)}</span>` +
+    `</div>`
+  ).join('');
+  alignInfoValueColumn();
+}
+
+function renderInfoStatus(engineValue) {
+  renderInfoFields([
+    { label: 'Engine', value: engineValue || '—' },
+    { label: 'Title', value: '—' },
+    { label: 'Type', value: '—' },
+    { label: 'Tracker', value: '—' },
+  ]);
+}
+
 // ── load + play ───────────────────────────────────────
 export async function loadAndPlay(idx) {
   const seq = ++S._loadSeq;
@@ -24,7 +43,7 @@ export async function loadAndPlay(idx) {
     engine = await ensureEngine(entry.playerId);
   } catch (e) {
     console.error('engine init failed:', entry.playerId, e);
-    elInfo.innerHTML = '<div class="label">Engine init failed: ' + esc(String(e)) + '</div>';
+    renderInfoStatus(`Engine init failed: ${String(e)}`);
     return;
   }
   if (seq !== S._loadSeq) { engine.pause(); return; }
@@ -45,7 +64,7 @@ export async function loadAndPlay(idx) {
   elSeek.value = 0;
   elTime.textContent = '0:00';
   elDur.textContent = '—';
-  elInfo.innerHTML = '<div class="label">Loading…</div>';
+  renderInfoStatus('Loading…');
   highlightCurrent();
   setFocus(idx);
   updateTransportUI();
@@ -53,13 +72,7 @@ export async function loadAndPlay(idx) {
 
   const applyMeta = (result) => {
     if (S._loadSeq !== seq) return;
-    elInfo.innerHTML = result.fields.map(f =>
-      `<div class="info-field">` +
-      `<span class="label" title="Copy ${esc(f.label)}" data-copy="${esc(f.value)}">${esc(f.label)}:&nbsp;</span>` +
-      `<span class="val">${esc(f.value)}</span>` +
-      `</div>`
-    ).join('');
-    alignInfoValueColumn();
+    renderInfoFields(result.fields);
     elSeek.max = result.duration || 300;
     elDur.textContent = fmtTime(result.duration || 300);
   };
@@ -81,7 +94,7 @@ export async function loadAndPlay(idx) {
   } catch (e) {
     if (seq !== S._loadSeq) { try { engine?.pause(); } catch (_) {} return; }
     console.error('Failed to load', url, e);
-    elInfo.innerHTML = '<div class="label">Error loading track</div>';
+    renderInfoStatus('Error loading track');
   }
 
   if (S._debugTiming) tlog(`[T] total ${(performance.now() - t0).toFixed(0)}ms`);

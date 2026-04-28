@@ -18,7 +18,24 @@
 <body>
 
 <div id="player">
-  <div id="info"></div>
+  <div id="info" style="--info-label-col: 63px;">
+    <div class="info-field">
+      <span class="label" aria-label="Engine label" title="Copy Engine" data-copy="—" data-ui-doc="1">Engine:&nbsp;</span>
+      <span class="val" aria-label="Engine value" data-ui-doc="1">—</span>
+    </div>
+    <div class="info-field">
+      <span class="label" aria-label="Title label" title="Copy Title" data-copy="—" data-ui-doc="1">Title:&nbsp;</span>
+      <span class="val" aria-label="Title value" data-ui-doc="1">—</span>
+    </div>
+    <div class="info-field">
+      <span class="label" aria-label="Type label" title="Copy Type" data-copy="—" data-ui-doc="1">Type:&nbsp;</span>
+      <span class="val" aria-label="Type value" data-ui-doc="1">—</span>
+    </div>
+    <div class="info-field">
+      <span class="label" aria-label="Tracker label" title="Copy Tracker" data-copy="—" data-ui-doc="1">Tracker:&nbsp;</span>
+      <span class="val" aria-label="Tracker value" data-ui-doc="1">—</span>
+    </div>
+  </div>
 
   <div id="filter-row">
     <span id="share-wrap">
@@ -30,21 +47,21 @@
       </div>
     </span>
     <span id="filter-wrap">
-      <input type="text" id="filter" placeholder="Filter tracks…">
+      <input type="text" id="filter" placeholder="Filter tracks…" aria-label="Search tracks …">
       <button id="filter-clear" type="button" aria-label="Clear">X</button>
     </span>
-    <select id="search-mode">
+    <select id="search-mode" aria-label="Search local or modland">
       <option value="local">local</option>
       <option value="modland">modland</option>
     </select>
-    <span id="filter-count"></span>
+    <span id="filter-count" aria-label="Tracks found / total"></span>
   </div>
 
   <div id="sel-row">
     <span id="sel-bulk" title="Toggle all, none, or restore previous selection">
-      <input type="checkbox" id="sel-bulk-cb" aria-label="Toggle all, none, or restore selection">
+      <input type="checkbox" id="sel-bulk-cb" aria-label="Toggle all, none, or restore track selection">
     </span>
-    <button id="btn-copy" title="Copy selected file links to clipboard">C</button>
+    <button id="btn-copy" title="Copy selected track links to clipboard">C</button>
     <span id="sel-count"></span>
     <button id="btn-zip" title="Download selected tracks as ZIP">Z</button>
     <button id="ml-add-all" class="ml-btn ml-add" style="display:none" title="Add all search results">+</button>
@@ -52,11 +69,11 @@
     <button id="ml-random" class="ml-btn" style="display:none" title="Browse random tracks">R</button>
     <div id="refine-inline">
       <div id="refine-folder-wrap" class="refine-panel-wrap" title="Filter by folder">
-        <button id="refine-folder-btn" type="button">F</button>
+        <button id="refine-folder-btn" type="button" aria-label="Select track group">F</button>
         <div id="refine-folder-panel" hidden></div>
       </div>
       <div id="refine-artist-wrap" class="refine-panel-wrap" title="Filter by artist">
-        <button id="refine-artist-btn" type="button">A</button>
+        <button id="refine-artist-btn" type="button" aria-label="Select artist">A</button>
         <div id="refine-artist-panel" hidden></div>
       </div>
       <div id="refine-range-wrap" class="refine-panel-wrap" title="Result page">
@@ -64,21 +81,21 @@
         <div id="refine-range-panel" hidden></div>
       </div>
       <div id="refine-format-wrap" title="Filter by format">
-        <button id="refine-format-btn" type="button">T</button>
+        <button id="refine-format-btn" type="button" aria-label="Select format">T</button>
         <div id="refine-format-panel" hidden></div>
       </div>
       <button id="help-btn" type="button" title="Help / About">?</button>
     </div>
-    <span id="track-pos"></span>
+    <span id="track-pos" aria-label="Track number / total found"></span>
   </div>
 
-  <ul id="playlist"></ul>
+  <ul id="playlist" data-ui-container="track-list"></ul>
 
   <div id="transport">
     <button id="btn-play" title="Play / Pause">&#9654;</button>
-    <span class="time" id="time">0:00</span>
-    <input type="range" id="seek" min="0" max="300" value="0" step="1">
-    <span class="time" id="duration">—</span>
+    <span class="time" id="time" aria-label="Track Time">0:00</span>
+    <input type="range" id="seek" min="0" max="300" value="0" step="1" aria-label="Track seekbar">
+    <span class="time" id="duration" aria-label="Track Length">—</span>
   </div>
   <pre id="debug-log" hidden></pre>
 

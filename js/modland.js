@@ -203,15 +203,15 @@ export function doModlandSearch() {
 
     li.classList.add('remote');
     li.innerHTML =
-      `<span class="idx"></span>` +
+      `<span class="idx" aria-label="Track index"></span>` +
       `<div class="row-top">` +
-        `<span class="artist">${esc(artist)}</span>` +
-        (folder ? `<span class="folder">${esc(folder)}</span>` : '') +
+        `<span class="artist" aria-label="Track artist">${esc(artist)}</span>` +
+        (folder ? `<span class="folder" aria-label="Track group">${esc(folder)}</span>` : '') +
       `</div>` +
       `<div class="row-bot">` +
-        `<span class="title">${esc(title)}</span>` +
-        `<span class="ext">${esc(r.ext)}</span>` +
-        (!isMobile ? `<button class="r-dl" title="Download">D</button>` : '') +
+        `<span class="title" aria-label="Track title">${esc(title)}</span>` +
+        `<span class="ext" aria-label="Track format">${esc(r.ext)}</span>` +
+        (!isMobile ? `<button class="r-dl" title="Down track" aria-label="Down track">D</button>` : '') +
         `<button class="r-add">${isAdded ? '✓' : '+'}</button>` +
       `</div>`;
 

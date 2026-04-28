@@ -20,7 +20,7 @@ Then open [localhost:8080](http://localhost:8080/) in your browser. All engines 
 The unified player loads three engines on demand:
 
 | Engine | Format | Description |
-|--------|--------|-------------|
+|:----------|:----------|:---------------|
 | **jsSID** | .sid | Pure-JS MOS 6510 CPU + SID chip emulator — three-voice synthesis, ring modulation, filters |
 | **AHX** | .ahx | Abyss' Highest eXperience — four-voice Amiga wavetable synthesizer |
 | **MOD** | .mod .xm .s3m .it | Classic tracker formats via libopenmpt |
@@ -48,7 +48,7 @@ The unified player loads three engines on demand:
 ### Global
 
 | Key | Action |
-|-----|--------|
+|:-------|:----------|
 | `Space` | Play / Pause |
 | `↑` | Previous track |
 | `↓` | Next track |
@@ -73,7 +73,7 @@ The unified player loads three engines on demand:
 ### Inside a Dropdown (F / A / T / Range)
 
 | Key | Action |
-|-----|--------|
+|:-------|:----------|
 | `↑` / `↓` | Navigate between items (wraps) |
 | `Space` | Toggle focused checkbox; select focused range entry |
 | `Enter` | Accept selection and close dropdown |
@@ -107,7 +107,7 @@ Switch the source selector to **modland** to search the full Modland catalog (in
 The **S** (Share) button generates a URL encoding the current track and filter state. All parameters are optional and can be combined freely.
 
 | Parameter | Description | Example |
-|-----------|-------------|---------|
+|:-------------|:---------------|:-----------|
 | `play` | URL of the track to load | `play=engines/mod/files/trance/dct2%20-%20SP-TIME.IT` |
 | `source` | Pre-select source mode (`local` or `modland`) | `source=modland` |
 | `folder` | Pre-select the Folder dropdown | `folder=trance` |
@@ -129,6 +129,31 @@ index.html?source=modland&search=purple motion
 ## Help
 
 Press **?** in the toolbar (or see [doc/index.html](doc/index.html)) for the in-app help overlay.
+
+## UI Elements Extractor
+
+Use the extractor script to generate a machine-readable UI element inventory with stable XPath locators and human-readable paths.
+
+Install extractor dependencies from `scripts/`:
+
+```bash
+cd scripts
+npm install
+npx playwright install chromium
+cd ..
+```
+
+```bash
+node scripts/extract-ui-elements.mjs --url "http://127.0.0.1:63706/index.html?play=https%3A%2F%2Fmodland.com%2Fpub%2Fmodules%2FImpulsetracker%2FMysterium%2Ftrancension-the%2520voyage.it&folders=trance"
+```
+
+Optional flags:
+- `--out doc/elements.json` writes output to a custom path.
+- `--wait-ms 1200` waits extra time for dynamic UI state before extraction.
+- `--width 1366 --height 900` sets the analyzed viewport size.
+- `--window-size 640x1024` sets viewport in one argument.
+- `--screenshot doc/elements-view.png` saves the analyzed view image.
+- `--keep-modals` keeps modal overlays (no auto-dismiss before capture).
 
 ## Tech
 
