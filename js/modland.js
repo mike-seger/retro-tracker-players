@@ -211,7 +211,7 @@ export function doModlandSearch() {
       `<div class="row-bot">` +
         `<span class="title" aria-label="Track title">${esc(title)}</span>` +
         `<span class="ext" aria-label="Track format">${esc(r.ext)}</span>` +
-        (!isMobile ? `<button class="r-dl" title="Down track" aria-label="Down track">D</button>` : '') +
+        (!isMobile ? `<button class="r-dl" title="Download track" aria-label="Download track">D</button>` : '') +
         `<button class="r-add">${isAdded ? '✓' : '+'}</button>` +
       `</div>`;
 

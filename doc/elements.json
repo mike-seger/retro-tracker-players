@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-04-28T23:07:27.387Z",
+  "generatedAt": "2026-04-28T23:21:25.045Z",
   "sourceUrl": "http://127.0.0.1:63706/index.html?play=https%3A%2F%2Fmodland.com%2Fpub%2Fmodules%2FFasttracker%25202%2F-%2520unknown%2Feagle%2520trance.xm&folders=trance",
   "screenshotPath": "doc/elements-view.png",
   "viewport": {
@@ -260,8 +260,8 @@
       "tag": "span"
     },
     {
-      "key": "control-down-track",
-      "name": "Down track",
+      "key": "control-download-track",
+      "name": "Download track",
       "category": "control",
       "xpath": "/html[1]/body[1]/div[1]/ul[1]/li[147]/div[2]/button[1]",
       "humanXPath": "body > div#player > ul#playlist > li.remote > div.row-bot > button.r-dl",

@@ -1,0 +1,47 @@
+#ui-doc-number-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2147483646;
+}
+
+.ui-doc-number-bubble {
+  position: fixed;
+  --tip-h: 9px;
+  min-width: 28px;
+  height: 28px;
+  border-radius: 14px;
+  padding: 0 8px;
+  background: #1d6dff;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font: 700 13px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  letter-spacing: 0.02em;
+  transform: translate(-50%, calc(-100% - var(--tip-h)));
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+}
+
+.ui-doc-number-bubble::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: calc(-1 * var(--tip-h) + 1px);
+  width: 16px;
+  height: var(--tip-h);
+  transform: translateX(-50%);
+  background: #1d6dff;
+  clip-path: polygon(50% 100%, 0 0, 100% 0);
+}
+
+.ui-doc-number-bubble.below {
+  transform: translate(-50%, var(--tip-h));
+}
+
+.ui-doc-number-bubble.below::after {
+  top: calc(-1 * var(--tip-h) + 1px);
+  bottom: auto;
+  clip-path: polygon(50% 0, 0 100%, 100% 100%);
+}

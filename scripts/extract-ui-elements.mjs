@@ -7,6 +7,16 @@ import { fileURLToPath } from 'node:url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, '..');
+const docStylesPath = path.join(repoRoot, 'doc', 'styles.css');
+
+function loadDocStyles() {
+  try {
+    return fs.readFileSync(docStylesPath, 'utf8');
+  } catch (_) {
+    // Keep extractor resilient if styles are temporarily missing.
+    return '';
+  }
+}
 
 function parseArgs(argv) {
   const defaultOut = path.join(repoRoot, 'doc', 'elements.json');
@@ -120,7 +130,7 @@ async function ensureInfoMetadataReady(page) {
   await page.waitForTimeout(700);
 }
 
-async function annotateElementsForScreenshot(page, rows) {
+async function annotateElementsForScreenshot(page, rows, docStyles) {
   const digits = Math.max(2, String(rows.length).length);
   const markers = rows.map((r, idx) => ({
     label: String(idx + 1).padStart(digits, '0'),
@@ -128,57 +138,15 @@ async function annotateElementsForScreenshot(page, rows) {
     isControl: !!r.isControl,
   }));
 
-  await page.evaluate((items) => {
+  await page.evaluate((payload) => {
+    const items = Array.isArray(payload?.items) ? payload.items : [];
+    const cssText = String(payload?.cssText || '');
     document.getElementById('ui-doc-number-style')?.remove();
     document.getElementById('ui-doc-number-overlay')?.remove();
 
     const style = document.createElement('style');
     style.id = 'ui-doc-number-style';
-    style.textContent = `
-      #ui-doc-number-overlay {
-        position: fixed;
-        inset: 0;
-        pointer-events: none;
-        z-index: 2147483646;
-      }
-      .ui-doc-number-bubble {
-        position: fixed;
-        --tip-h: 9px;
-        min-width: 28px;
-        height: 28px;
-        border-radius: 14px;
-        padding: 0 8px;
-        background: #1d6dff;
-        color: #ffffff;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.35);
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        font: 700 13px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-        letter-spacing: 0.02em;
-        transform: translate(-50%, calc(-100% - var(--tip-h)));
-        text-shadow: 0 1px 0 rgba(0,0,0,0.35);
-      }
-      .ui-doc-number-bubble::after {
-        content: '';
-        position: absolute;
-        left: 50%;
-        bottom: calc(-1 * var(--tip-h) + 1px);
-        width: 16px;
-        height: var(--tip-h);
-        transform: translateX(-50%);
-        background: #1d6dff;
-        clip-path: polygon(50% 100%, 0 0, 100% 0);
-      }
-      .ui-doc-number-bubble.below {
-        transform: translate(-50%, var(--tip-h));
-      }
-      .ui-doc-number-bubble.below::after {
-        top: calc(-1 * var(--tip-h) + 1px);
-        bottom: auto;
-        clip-path: polygon(50% 0, 0 100%, 100% 100%);
-      }
-    `;
+    style.textContent = String(cssText || '');
     document.head.appendChild(style);
 
     const layer = document.createElement('div');
@@ -257,7 +225,7 @@ async function annotateElementsForScreenshot(page, rows) {
     });
 
     document.body.appendChild(layer);
-  }, markers);
+  }, { items: markers, cssText: docStyles });
 }
 
 async function main() {
@@ -268,6 +236,7 @@ async function main() {
   }
 
   const { chromium } = await loadPlaywright();
+  const docStyles = loadDocStyles();
   const browser = await chromium.launch({ headless: true });
 
   try {
@@ -510,7 +479,7 @@ async function main() {
         };
       });
 
-    await annotateElementsForScreenshot(page, raw);
+    await annotateElementsForScreenshot(page, raw, docStyles);
     fs.mkdirSync(path.dirname(args.screenshot), { recursive: true });
     await page.screenshot({ path: args.screenshot, fullPage: false });
 

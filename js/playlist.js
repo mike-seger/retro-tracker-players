@@ -113,7 +113,7 @@ export function buildPlaylist() {
       `<div class="row-bot">` +
         `<span class="title" aria-label="Track title">${esc(title)}</span>` +
         `<span class="ext" aria-label="Track format">${esc(entry.ext)}</span>` +
-        (!isMobile ? `<button class="r-dl" title="Down track" aria-label="Down track">D</button>` : '') +
+        (!isMobile ? `<button class="r-dl" title="Download track" aria-label="Download track">D</button>` : '') +
         (S.searchMode === 'modland' && entry.url
           ? `<button class="r-del" title="Remove">&times;</button>` : '') +
       `</div>`;
