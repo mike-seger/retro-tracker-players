@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-04-28T23:21:25.045Z",
-  "sourceUrl": "http://127.0.0.1:63706/index.html?play=https%3A%2F%2Fmodland.com%2Fpub%2Fmodules%2FFasttracker%25202%2F-%2520unknown%2Feagle%2520trance.xm&folders=trance",
+  "generatedAt": "2026-04-29T15:03:36.808Z",
+  "sourceUrl": "http://127.0.0.1:5500/index.html?play=https%3A%2F%2Fmodland.com%2Fpub%2Fmodules%2FFasttracker%25202%2F-%2520unknown%2Feagle%2520trance.xm&folders=trance",
   "screenshotPath": "doc/elements-view.png",
   "viewport": {
     "width": 640,
@@ -209,7 +209,7 @@
       "key": "information-track-artist",
       "name": "Track artist",
       "category": "information",
-      "xpath": "/html[1]/body[1]/div[1]/ul[1]/li[147]/div[1]/span[1]",
+      "xpath": "/html[1]/body[1]/div[1]/ul[1]/li[163]/div[1]/span[1]",
       "humanXPath": "body > div#player > ul#playlist > li.remote > div.row-top > span.artist",
       "notes": "text-match",
       "tag": "span"
@@ -218,7 +218,7 @@
       "key": "information-track-group",
       "name": "Track group",
       "category": "information",
-      "xpath": "/html[1]/body[1]/div[1]/ul[1]/li[147]/div[1]/span[2]",
+      "xpath": "/html[1]/body[1]/div[1]/ul[1]/li[163]/div[1]/span[2]",
       "humanXPath": "body > div#player > ul#playlist > li.remote > div.row-top > span.folder",
       "notes": "text-match",
       "tag": "span"
@@ -227,7 +227,7 @@
       "key": "information-track-index",
       "name": "Track index",
       "category": "information",
-      "xpath": "/html[1]/body[1]/div[1]/ul[1]/li[147]/span[1]",
+      "xpath": "/html[1]/body[1]/div[1]/ul[1]/li[163]/span[1]",
       "humanXPath": "html > body > div#player > ul#playlist > li.remote > span.idx",
       "notes": "text-match",
       "tag": "span"
@@ -236,7 +236,7 @@
       "key": "control-track-selector-checkbox",
       "name": "Track selector checkbox",
       "category": "control",
-      "xpath": "/html[1]/body[1]/div[1]/ul[1]/li[147]/input[1]",
+      "xpath": "/html[1]/body[1]/div[1]/ul[1]/li[163]/input[1]",
       "humanXPath": "html > body > div#player > ul#playlist > li.remote > input.sel-cb",
       "notes": "control-match; text-match",
       "tag": "input"
@@ -245,7 +245,7 @@
       "key": "information-track-title",
       "name": "Track title",
       "category": "information",
-      "xpath": "/html[1]/body[1]/div[1]/ul[1]/li[147]/div[2]/span[1]",
+      "xpath": "/html[1]/body[1]/div[1]/ul[1]/li[163]/div[2]/span[1]",
       "humanXPath": "body > div#player > ul#playlist > li.remote > div.row-bot > span.title",
       "notes": "text-match",
       "tag": "span"
@@ -254,7 +254,7 @@
       "key": "information-track-format",
       "name": "Track format",
       "category": "information",
-      "xpath": "/html[1]/body[1]/div[1]/ul[1]/li[147]/div[2]/span[2]",
+      "xpath": "/html[1]/body[1]/div[1]/ul[1]/li[163]/div[2]/span[2]",
       "humanXPath": "body > div#player > ul#playlist > li.remote > div.row-bot > span.ext",
       "notes": "text-match",
       "tag": "span"
@@ -263,7 +263,7 @@
       "key": "control-download-track",
       "name": "Download track",
       "category": "control",
-      "xpath": "/html[1]/body[1]/div[1]/ul[1]/li[147]/div[2]/button[1]",
+      "xpath": "/html[1]/body[1]/div[1]/ul[1]/li[163]/div[2]/button[1]",
       "humanXPath": "body > div#player > ul#playlist > li.remote > div.row-bot > button.r-dl",
       "notes": "control-match; text-match",
       "tag": "button"

@@ -1,4 +1,4 @@
-# Retro Tracker Players — Help
+# ReTrap — Help
 
 A browser-based player for classic tracker module formats (MOD, XM, S3M, IT, AHX, SID) with local file lists and Modland search.
 

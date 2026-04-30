@@ -1,8 +1,8 @@
-# Retro Tracker Players
+# ReTrap
 
 A single-page browser-based chiptune player covering the golden age of demoscene music — from C64 SID chips to Amiga tracker modules. No installs, no plugins, no nonsense. Just open a browser and press play.
 
-Demo: [Retro Tracker Players](https://mike-seger.github.io/retro-tracker-players/)
+Demo: [ReTrap](https://mike-seger.github.io/retro-tracker-players/)
 
 ## Quick Start
 
