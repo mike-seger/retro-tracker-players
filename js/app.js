@@ -138,7 +138,55 @@ window.addEventListener('error', (e) => dbg('[ERR] ' + e.message + ' @ ' + e.fil
 window.addEventListener('unhandledrejection', (e) => dbg('[REJ] ' + e.reason));
 
 // ── mode + filter event listeners ────────────────────
-elSearchMode.addEventListener('change', () => switchMode(elSearchMode.value));
+const elSearchModeWrap = document.getElementById('search-mode-wrap');
+const elSearchModePanel = document.getElementById('search-mode-panel');
+
+function positionSearchModePanel() {
+  if (elSearchModePanel.hidden) return;
+
+  // Reset before measurement so each open/resize starts from canonical placement.
+  elSearchModePanel.style.transform = '';
+
+  const pad = 4;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const rect = elSearchModePanel.getBoundingClientRect();
+
+  let dx = 0;
+  let dy = 0;
+
+  if (rect.right > vw - pad) dx = (vw - pad) - rect.right;
+  if (rect.left + dx < pad) dx += pad - (rect.left + dx);
+
+  if (rect.bottom > vh - pad) dy = (vh - pad) - rect.bottom;
+  if (rect.top + dy < pad) dy += pad - (rect.top + dy);
+
+  elSearchModePanel.style.transform = `translate(${Math.round(dx)}px, ${Math.round(dy)}px)`;
+}
+
+elSearchMode.addEventListener('click', () => {
+  if (elSearchModePanel.hidden) {
+    elSearchModePanel.querySelectorAll('.src-opt').forEach(o =>
+      o.classList.toggle('selected', o.dataset.value === S.searchMode));
+    elSearchModePanel.hidden = false;
+    requestAnimationFrame(positionSearchModePanel);
+    return;
+  }
+  elSearchModePanel.hidden = true;
+});
+document.querySelectorAll('.src-opt').forEach(opt => {
+  opt.addEventListener('click', () => {
+    elSearchModePanel.hidden = true;
+    switchMode(opt.dataset.value);
+  });
+});
+document.addEventListener('click', (e) => {
+  if (!elSearchModePanel.hidden && !elSearchModeWrap.contains(e.target)) {
+    elSearchModePanel.hidden = true;
+  }
+});
+
+window.addEventListener('resize', positionSearchModePanel);
 
 let _searchTimer = 0;
 elFilter.addEventListener('input', () => {

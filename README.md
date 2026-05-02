@@ -169,3 +169,4 @@ Optional flags:
 - [ModTube * Modland Webplayer & Research Tools](https://modtu.be/)
 - [PlayMOD online player for various chiptune collections](https://www.wothke.ch/playmod/index.php)
 - [Bassoon Fasttracker 2 Editor](https://www.stef.be/bassoontracker/)
+- [Chip Player JS](https://chiptune.app/)

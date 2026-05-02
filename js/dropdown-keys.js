@@ -122,5 +122,5 @@ export function registerDropdown({ btn, panel, saveState, restoreState }) {
 }
 
 function getNavItems(panel) {
-  return [...panel.querySelectorAll('.fmt-opt, .range-opt')];
+  return [...panel.querySelectorAll('.fmt-opt, .range-opt, .src-opt')];
 }

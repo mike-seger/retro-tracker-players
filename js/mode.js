@@ -101,7 +101,8 @@ export function switchMode(mode) {
   else if (S.searchMode === 'modland') saveModlandContext();
 
   S.searchMode = mode;
-  elSearchMode.value = mode;
+  elSearchMode.textContent = mode === 'local' ? 'Lo' : 'Ml';
+  elSearchMode.dataset.value = mode;
   document.body.classList.toggle('mode-modland', mode === 'modland');
   updateMlButtons();
   updateRefineVisibility();

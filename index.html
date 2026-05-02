@@ -50,10 +50,14 @@
       <input type="text" id="filter" placeholder="Filter tracks…" aria-label="Search tracks …">
       <button id="filter-clear" type="button" aria-label="Clear">X</button>
     </span>
-    <select id="search-mode" aria-label="Search local or modland">
-      <option value="local">local</option>
-      <option value="modland">modland</option>
-    </select>
+    <div id="search-mode-wrap" class="refine-panel-wrap">
+      <button id="search-mode-btn" type="button" title="Source">Lo</button>
+      <div id="search-mode-panel" hidden>
+        <div class="panel-title">Source</div>
+        <div class="src-opt" tabindex="0" data-value="local">Local</div>
+        <div class="src-opt" tabindex="0" data-value="modland">Modland</div>
+      </div>
+    </div>
     <span id="filter-count" aria-label="Tracks found / total"></span>
   </div>
 

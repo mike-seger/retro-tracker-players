@@ -155,11 +155,29 @@ body.mode-modland {
   background: #2a2a3a; color: #88f; border-color: #448;
 }
 #sel-row #ml-random:hover { background: #3a3a4a; color: #aaf; }
-#search-mode {
-  background: #222; color: #ccc; border: 1px solid #444;
-  padding: 4px 12px; font: inherit; border-radius: 3px;
-  cursor: pointer; flex-shrink: 0;
+#search-mode-wrap {
+  position: relative; flex-shrink: 0;
 }
+#search-mode-btn {
+  background: #2a2a3a; color: #88f; border: 1px solid #448;
+  padding: 4px 8px; font: inherit; font-size: 12px; border-radius: 3px;
+  cursor: pointer; min-width: 2.2em; text-align: center; white-space: nowrap;
+}
+#search-mode-btn:hover { background: #3a3a4a; color: #aaf; }
+#search-mode-panel {
+  position: absolute; z-index: 200;
+  background: #222; border: 1px solid #555; border-radius: 4px;
+  top: calc(100% + 2px); left: 0; min-width: 100px;
+  max-width: calc(100vw - 8px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+.src-opt {
+  padding: 5px 12px; cursor: pointer;
+  white-space: nowrap; color: #ccc; font-size: 13px; line-height: 1.4;
+  -webkit-user-select: none; user-select: none;
+}
+.src-opt:hover, .src-opt:focus { background: #333; outline: none; }
+.src-opt.selected { background: #2a2a3a; color: #aaf; }
 
 #refine-inline {
   display: flex; gap: 6px; align-items: center;
@@ -359,6 +377,10 @@ body.mode-modland {
 }
 
 /* ── mobile ────────────────────────────────────────── */
+@media (max-width: 349px) {
+  #track-pos { display: none; }
+}
+
 @media (max-height: 400px) {
   #info { display: none; }
   #ml-random, #btn-zip { display: none !important; }
