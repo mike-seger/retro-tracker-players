@@ -1,6 +1,7 @@
 {
     "acid": [
         "https://modland.com/pub/modules/Protracker/Dano/aural-acid.mod",
+        "https://modland.com/pub/modules/Fasttracker%202/Beldoroon/coop-Voogi/indust%20riez%208kbit.xm",
         "https://modland.com/pub/modules/Fasttracker%202/De%20La%20Moi/tracid.xm",
         "https://modland.com/pub/modules/Fasttracker%202/DJ%20Ice/everybody%20needs%20303.xm",
         "https://modland.com/pub/modules/Fasttracker%202/DJ%20Ice/his%20master's%20acid.xm",
@@ -57,7 +58,6 @@
         "https://modland.com/pub/modules/Fasttracker%202/Biotic/x%20-%20t%20-%20rush.xm",
         "https://modland.com/pub/modules/Impulsetracker/Cadra/fuse.it",
         "https://modland.com/pub/modules/Fasttracker%202/Illusion/coop-Swallow/oat%20meal.xm",
-        "https://modland.com/pub/modules/Fasttracker%202/Beldoroon/coop-Voogi/indust%20riez%208kbit.xm",
         "https://modland.com/pub/modules/Fasttracker 2/CyberC/javlahelvetesfanskap.xm",
         "https://modland.com/pub/modules/Fasttracker 2/Madbit/wizardry.xm",
         "https://modland.com/pub/modules/Protracker/Massage/videodark.mod",
@@ -73,7 +73,6 @@
         "https://modland.com/pub/modules/Fasttracker 2/Scirocco/unreal2 scirreal mix.xm",
         "https://modland.com/pub/modules/Protracker/TowerX/vertigo.mod",
         "https://modland.com/pub/modules/Fasttracker 2/Traymuss/scene 2000.xm",
-        "https://modland.com/pub/modules/Impulsetracker/Xcalibur/the quest for the ardesy.it",
         "https://modland.com/pub/modules/Fasttracker 2/Zantac/power slide.xm"
     ],
     "jazz": [
@@ -298,6 +297,7 @@
         "https://modland.com/pub/modules/Impulsetracker/Xplore/xtrance%20remix.it",
         "https://modland.com/pub/modules/Impulsetracker/Yero/running%20between%20diamonds%202-trance%20mix.it",
         "https://modland.com/pub/modules/Protracker/Zany/progressive-attack.mod",
+        "https://modland.com/pub/modules/Impulsetracker/Xcalibur/the quest for the ardesy.it",
         "https://modland.com/pub/modules/Fasttracker%202/Zenith/i'm%20gonna%20trance%20u.xm"
     ],
     "unsorted": [
