@@ -18,7 +18,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font: 700 13px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font: 700 13px/1 system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
   letter-spacing: 0.02em;
   transform: translate(-50%, calc(-100% - var(--tip-h)));
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
@@ -59,4 +59,19 @@
   height: 16px;
   transform: translateY(-50%);
   clip-path: polygon(100% 50%, 0 0, 0 100%);
+}
+
+.ui-doc-number-bubble.side-left {
+  transform: translate(var(--tip-h), -50%);
+}
+
+.ui-doc-number-bubble.side-left::after {
+  top: 50%;
+  left: calc(-1 * var(--tip-h) + 1px);
+  right: auto;
+  bottom: auto;
+  width: var(--tip-h);
+  height: 16px;
+  transform: translateY(-50%);
+  clip-path: polygon(0 50%, 100% 0, 100% 100%);
 }

@@ -193,6 +193,7 @@ async function annotateElementsForScreenshot(page, rows, docStyles) {
 
     const layer = document.createElement('div');
     layer.id = 'ui-doc-number-overlay';
+    document.body.appendChild(layer);
 
     function resolveNode(xpath) {
       try {
@@ -252,94 +253,116 @@ async function annotateElementsForScreenshot(page, rows, docStyles) {
       return false;
     }
 
-    items.forEach((m) => {
+    // Build enriched item list with geometry so we can do two passes.
+    const enriched = items.map((m) => {
       const node = resolveNode(m.xpath);
-      if (!(node instanceof Element)) return;
-
+      if (!(node instanceof Element)) return null;
       const rect = node.getBoundingClientRect();
-      if (rect.width <= 0 || rect.height <= 0) return;
-
+      if (rect.width <= 0 || rect.height <= 0) return null;
       const tRect = !m.isControl ? textBounds(node) : null;
       const eff = (tRect && tRect.width > 0 && tRect.height > 0) ? tRect : rect;
-      const isInfoMeta = !m.isControl && !!node.closest('#info .info-field');
+      const isInfoMeta = !!node.closest('#info .info-field');
       const isWide = isInfoMeta || (eff.width >= 72 && eff.width >= (eff.height * 2.0));
+      return { m, eff, isWide };
+    });
 
-      const anchorX = eff.left + (eff.width / 2);
-      const anchorY = isWide ? (eff.top + (eff.height / 2)) : eff.top;
+    // Two-pass placement: narrow first so wide elements can avoid them.
+    const passOrder = [false, true]; // narrow pass, then wide pass
+    passOrder.forEach((wantWide) => {
+      enriched.forEach((item) => {
+        if (!item) return;
+        const { m, eff, isWide } = item;
+        if (isWide !== wantWide) return;
 
-      const top0 = Math.round(Math.max(8, Math.min(window.innerHeight - 8, anchorY)));
-      const left0 = Math.round(Math.max(8, Math.min(window.innerWidth - 8, anchorX)));
-      const bubble = document.createElement('span');
-      bubble.className = 'ui-doc-number-bubble';
-      if (isWide) {
-        bubble.classList.add('side-right');
-      } else {
-        const needBelow = eff.top < 48;
-        if (needBelow) bubble.classList.add('below');
-      }
-      bubble.textContent = m.label;
+        const anchorX = eff.left + (eff.width / 2);
+        const anchorY = isWide ? (eff.top + (eff.height / 2)) : eff.top;
 
-      const setPos = (x, y) => {
-        bubble.style.left = `${Math.round(x)}px`;
-        bubble.style.top = `${Math.round(y)}px`;
-        return bubble.getBoundingClientRect();
-      };
-
-      layer.appendChild(bubble);
-
-      let chosen = null;
-      if (isWide) {
-        // Wide elements: try shifting right first, then left, else fallback to default.
-        const rightCandidates = [];
-        const leftCandidates = [];
-        for (let step = 1; step <= 10; step++) {
-          const dx = step * 24;
-          rightCandidates.push({ x: Math.min(window.innerWidth - 8, left0 + dx), y: top0 });
-          leftCandidates.push({ x: Math.max(8, left0 - dx), y: top0 });
+        const top0 = Math.round(Math.max(8, Math.min(window.innerHeight - 8, anchorY)));
+        const left0 = Math.round(Math.max(8, Math.min(window.innerWidth - 8, anchorX)));
+        const bubble = document.createElement('span');
+        bubble.className = 'ui-doc-number-bubble';
+        if (!isWide) {
+          const needBelow = eff.top < 48;
+          if (needBelow) bubble.classList.add('below');
         }
+        bubble.textContent = m.label;
 
-        const tryCandidates = (arr) => {
-          for (const c of arr) {
+        const setSide = (side) => {
+          bubble.classList.remove('side-right', 'side-left');
+          if (side) bubble.classList.add(side);
+        };
+
+        const setPos = (x, y) => {
+          bubble.style.left = `${Math.round(x)}px`;
+          bubble.style.top = `${Math.round(y)}px`;
+          return bubble.getBoundingClientRect();
+        };
+
+        layer.appendChild(bubble);
+
+        let chosen = null;
+        if (isWide) {
+          // Wide elements: try right-shift first using left-pointing tip, then left-shift.
+          const rightCandidates = [];
+          const leftCandidates = [];
+          for (let step = 0; step <= 10; step++) {
+            const dx = step * 24;
+            rightCandidates.push({ x: Math.min(eff.right - 8, left0 + dx), y: top0, side: 'side-left' });
+            leftCandidates.push({ x: Math.max(eff.left + 8, left0 - dx), y: top0, side: 'side-right' });
+          }
+
+          const withinElementX = (r) => r.left >= (eff.left - 1) && r.right <= (eff.right + 1);
+
+          const tryCandidates = (arr) => {
+            for (const c of arr) {
+              setSide(c.side);
+              const r = setPos(c.x, c.y);
+              const inside = r.left >= 0 && r.top >= 0 && r.right <= window.innerWidth && r.bottom <= window.innerHeight;
+              if (!inside) continue;
+              if (!withinElementX(r)) continue;
+              if (!collides(r)) return r;
+            }
+            return null;
+          };
+
+          chosen = tryCandidates(rightCandidates) || tryCandidates(leftCandidates);
+          if (!chosen) {
+            // Fallback: keep horizontal and inside the referenced element, even if overlap is unavoidable.
+            setSide('side-left');
+            let fallback = setPos(left0, top0);
+            if (!withinElementX(fallback)) {
+              setSide('side-right');
+              fallback = setPos(left0, top0);
+            }
+            chosen = fallback;
+          }
+        } else {
+          const candidates = [{ x: left0, y: top0 }];
+          // Non-wide elements keep top/below behavior, then nudge to avoid overlaps.
+          for (let step = 1; step <= 6; step++) {
+            const dy = step * 16;
+            candidates.push({ x: left0, y: Math.min(window.innerHeight - 8, top0 + dy) });
+            candidates.push({ x: left0, y: Math.max(8, top0 - dy) });
+          }
+
+          for (const c of candidates) {
             const r = setPos(c.x, c.y);
             const inside = r.left >= 0 && r.top >= 0 && r.right <= window.innerWidth && r.bottom <= window.innerHeight;
             if (!inside) continue;
-            if (!collides(r)) return r;
+            if (!collides(r)) {
+              chosen = r;
+              break;
+            }
           }
-          return null;
-        };
 
-        chosen = tryCandidates(rightCandidates) || tryCandidates(leftCandidates);
-        if (!chosen) {
-          chosen = setPos(left0, top0);
-        }
-      } else {
-        const candidates = [{ x: left0, y: top0 }];
-        // Non-wide elements keep top/below behavior, then nudge to avoid overlaps.
-        for (let step = 1; step <= 6; step++) {
-          const dy = step * 16;
-          candidates.push({ x: left0, y: Math.min(window.innerHeight - 8, top0 + dy) });
-          candidates.push({ x: left0, y: Math.max(8, top0 - dy) });
-        }
-
-        for (const c of candidates) {
-          const r = setPos(c.x, c.y);
-          const inside = r.left >= 0 && r.top >= 0 && r.right <= window.innerWidth && r.bottom <= window.innerHeight;
-          if (!inside) continue;
-          if (!collides(r)) {
-            chosen = r;
-            break;
+          if (!chosen) {
+            chosen = setPos(left0, top0);
           }
         }
 
-        if (!chosen) {
-          chosen = setPos(left0, top0);
-        }
-      }
-
-      placedRects.push(chosen);
+        placedRects.push(chosen);
+      });
     });
-
-    document.body.appendChild(layer);
   }, { items: markers, cssText: docStyles });
 }
 
