@@ -1,17 +1,16 @@
 // js/mode.js — switchMode + per-mode context save/restore
-import { S, elFilter, elSearchMode, elSelBulk, elList } from './state.js';
+import { S, elFilter, elSearchMode, elSelBulk } from './state.js';
 import { clearFormatFilter, updateFormatBtn, syncFormatCheckboxes } from './format-panel.js';
 import { clearFolderFilter, updateFolderBtn, syncFolderCheckboxes } from './folder-panel.js';
 import { clearArtistFilter, updateArtistBtn, syncArtistCheckboxes } from './artist-panel.js';
 import { clearRangeFilter } from './range-panel.js';
-import { buildPlaylist, scrollIntoViewSmart } from './playlist.js';
+import { buildPlaylist, syncPlayingTrackByUrl } from './playlist.js';
 import { applyFilter, updateRefineVisibility } from './filter.js';
 import { populateFolderPanel, populateLocalArtistPanel,
          populateLocalFormatDropdown, localPlaceholder, modlandPlaceholder } from './refine.js';
 import { doModlandSearch, updateMlButtons } from './modland.js';
 import { persistContext } from './persistence.js';
 import { restoreSelection, updateSelCount } from './selection.js';
-import { trackUrl } from './utils.js';
 
 // ── context save/restore ──────────────────────────────
 export function saveLocalContext() {
@@ -133,17 +132,10 @@ export function switchMode(mode) {
     restoreSelection();
   }
 
-  // Scroll playing track into view after DOM settles
-  setTimeout(() => {
-    const files = S.searchMode === 'local' ? S.mergedFiles : S.modlandFiles;
-    if (S._playingUrl && files.length) {
-      const idx = files.findIndex(e => (e.url || trackUrl(e)) === S._playingUrl);
-      if (idx >= 0 && elList.children[idx]) {
-        elList.children[idx].classList.add('current');
-        scrollIntoViewSmart(elList.children[idx], true);
-      }
-    }
-  }, 0);
+  // Re-anchor to the currently playing track in the newly displayed list.
+  requestAnimationFrame(() => {
+    syncPlayingTrackByUrl('switchMode');
+  });
 
   updateSelCount();
 }

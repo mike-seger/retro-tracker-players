@@ -4,7 +4,7 @@ import { S, elFilter, elFilterCnt,
          elRefineFormatWrap, elList } from './state.js';
 import { extractArtist } from './utils.js';
 import { buildFormatPanel } from './format-panel.js';
-import { activeFiles, updateTrackPos, highlightCurrent, setFocus } from './playlist.js';
+import { activeFiles, updateTrackPos, highlightCurrent, setFocus, syncPlayingTrackByUrl } from './playlist.js';
 import { persistContext } from './persistence.js';
 import { scrollIntoViewSmart } from './playlist.js';
 
@@ -78,8 +78,16 @@ export function applyFilter() {
     }
   }
 
-  // Keep current/focus anchored to visible rows after filters change.
+  // First try to re-anchor by currently playing URL after list/filter changes.
+  const syncedIdx = syncPlayingTrackByUrl('applyFilter');
+
+  // Fallback: keep current/focus anchored by index if URL is not visible.
   if (S.currentIdx >= 0) {
+    if (syncedIdx >= 0) {
+      updateTrackPos();
+      persistContext();
+      return;
+    }
     const cur = items[S.currentIdx];
     const currentHidden = !cur || cur.classList.contains('hidden');
     if (currentHidden) {

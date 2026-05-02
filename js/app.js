@@ -24,6 +24,10 @@ import './keyboard.js';
 import './pinch.js';
 import './doc-overlay.js';
 
+// Global debug toggle for URL-based playing-track re-anchor logs.
+const DEBUG_TRACK_REANCHOR_LOG = false;
+S._debugTrackReanchor = DEBUG_TRACK_REANCHOR_LOG;
+
 // ── format change callback — breaks format-panel ↔ filter circular dep ──
 setFormatChangeHandler(() => {
   if (S.searchMode === 'local') {

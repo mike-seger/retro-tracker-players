@@ -3,7 +3,7 @@
 <!-- AUTO:DOC_META:START -->
 | Version | Updated |
 |:--|:--|
-| 0.9.6-1-2 | 2026-05-02 21:20 |
+| 0.9.6-1-3 | 2026-05-02 21:21 |
 <!-- AUTO:DOC_META:END -->
 
 
@@ -61,6 +61,10 @@ The unified player loads three engines on demand:
 - **Track cache** — fetched files are stored in the Cache API and served as blob URLs on repeat plays
 - **Fully offline** — serve locally, no internet required after initial setup (except Modland search)
 - **Modular engines** — each format lives under `engines/<id>/engine.js`; add a new format by dropping in an `engine.js` and `filelist.json`
+
+## Debugging
+
+- **Playing-track re-anchor logs** — toggle `DEBUG_TRACK_REANCHOR_LOG` in `js/app.js` to enable/disable URL-based list re-anchor diagnostics globally.
 
 ## Links
 - [ModTube * Modland Webplayer & Research Tools](https://modtu.be/)

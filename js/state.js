@@ -25,6 +25,7 @@ export const S = {
   bulkRestoreSelection: new Set(),
   suppressBulkSnapshot: false,
   _debugTiming:      true,
+  _debugTrackReanchor: false,
   selectedFormats:   new Set(),
   _allFormatOptions: new Set(),
   selectedFolders:   new Set(),

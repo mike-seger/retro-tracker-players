@@ -1,6 +1,6 @@
 // js/playlist.js — Playlist rendering, scroll helpers, file list management
 import { S, elList, elTrackPos, elSelBulk, elFilter, elInfo } from './state.js';
-import { esc, extOf, trackUrl, addLongPress, isMobile, parseTrackDisplay } from './utils.js';
+import { esc, extOf, trackUrl, addLongPress, isMobile, parseTrackDisplay, toAbsoluteUrl, dbg } from './utils.js';
 // Note: circular imports below (filter.js ↔ playlist.js, etc.) are safe —
 // all cross-module calls happen inside function bodies, never at eval time.
 import { applyFilter } from './filter.js';
@@ -250,6 +250,40 @@ export function setFocus(idx) {
     li.classList.add('focused');
     scrollIntoViewSmart(li);
   }
+}
+
+// Re-anchor current/focus by the playing URL after list content changes.
+// Returns the matched index, or -1 when no visible match exists.
+export function syncPlayingTrackByUrl(reason = 'unknown') {
+  const log = (msg) => {
+    if (S._debugTrackReanchor) dbg(`[R] ${msg}`);
+  };
+
+  const files = activeFiles();
+  if (!S._playingUrl || files.length === 0) {
+    if (S._playingUrl) log(`${reason}: skip (no active files)`);
+    return -1;
+  }
+
+  const target = toAbsoluteUrl(S._playingUrl);
+  const idx = files.findIndex((e) => toAbsoluteUrl(e.url || trackUrl(e)) === target);
+  if (idx < 0) {
+    log(`${reason}: no URL match in displayed list`);
+    return -1;
+  }
+
+  const li = elList.children[idx];
+  if (!li || li.classList.contains('hidden')) {
+    log(`${reason}: URL matched idx ${idx}, but row is not visible`);
+    return -1;
+  }
+
+  S.currentIdx = idx;
+  highlightCurrent();
+  setFocus(idx);
+  scrollIntoViewSmart(li, true);
+  log(`${reason}: synced to idx ${idx + 1}`);
+  return idx;
 }
 
 export function getVisibleIndices() {

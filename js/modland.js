@@ -6,7 +6,7 @@ import { esc, trackUrl, addLongPress, isMobile, parseTrackDisplay } from './util
 import { SID_TRACK_PLAYER_ID } from './state.js';
 import { buildFormatPanel } from './format-panel.js';
 import { loadAndPlay } from './player.js';
-import { activeFiles, scrollIntoViewSmart, updateTrackPos, buildPlaylist } from './playlist.js';
+import { activeFiles, updateTrackPos, buildPlaylist, syncPlayingTrackByUrl } from './playlist.js';
 import { restoreSelection } from './selection.js';
 import { updateSelCount } from './selection.js';
 import { getRangeSkip, buildRangePanel } from './range-panel.js';
@@ -182,8 +182,6 @@ export function doModlandSearch() {
     : filtered;
   S._lastSearchResults = displayed;
 
-  const playingUrl = S._playingUrl;
-
   elList.innerHTML = '';
   const addedUrls = new Set(S.modlandFiles.map(t => t.url));
 
@@ -256,18 +254,7 @@ export function doModlandSearch() {
     elList.appendChild(li);
   }
 
-  S.currentIdx = -1;
-  if (playingUrl) {
-    const ci = displayed.findIndex(r => r.url === playingUrl);
-    if (ci >= 0) {
-      S.currentIdx = ci;
-      const curLi = elList.children[ci];
-      if (curLi) {
-        curLi.classList.add('current');
-        scrollIntoViewSmart(curLi, true);
-      }
-    }
-  }
+  syncPlayingTrackByUrl('doModlandSearch');
   updateTrackPos();
   updateMlButtons();
 }
@@ -295,8 +282,6 @@ export function doRandomBrowse(skip) {
     ? results.filter(r => S.selectedFormats.has(r.ext.toUpperCase()))
     : results;
   S._lastSearchResults = displayed;
-
-  const playingUrl = S._playingUrl;
 
   elList.innerHTML = '';
   const addedUrls = new Set(S.modlandFiles.map(t => t.url));
@@ -369,18 +354,7 @@ export function doRandomBrowse(skip) {
     elList.appendChild(li);
   }
 
-  S.currentIdx = -1;
-  if (playingUrl) {
-    const ci = displayed.findIndex(r => r.url === playingUrl);
-    if (ci >= 0) {
-      S.currentIdx = ci;
-      const curLi = elList.children[ci];
-      if (curLi) {
-        curLi.classList.add('current');
-        scrollIntoViewSmart(curLi, true);
-      }
-    }
-  }
+  syncPlayingTrackByUrl('doRandomBrowse');
   updateTrackPos();
   updateMlButtons();
 }
