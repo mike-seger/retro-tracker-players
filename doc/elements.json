@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-02T17:11:57.760Z",
+  "generatedAt": "2026-05-02T17:49:03.982Z",
   "sourceUrl": "http://127.0.0.1:8080/index.html",
   "screenshotPath": "doc/elements-view.png",
   "viewport": {
@@ -28,7 +28,7 @@
       "category": "information",
       "xpath": "//span[@aria-label='Engine value']",
       "humanXPath": "html > body > div#player > div#info > div.info-field > span.val",
-      "notes": "",
+      "notes": "text-match",
       "tag": "span"
     },
     {
@@ -46,7 +46,7 @@
       "category": "information",
       "xpath": "//span[@aria-label='Tracker value']",
       "humanXPath": "html > body > div#player > div#info > div.info-field > span.val",
-      "notes": "",
+      "notes": "text-match",
       "tag": "span"
     },
     {
@@ -64,7 +64,7 @@
       "category": "information",
       "xpath": "//span[@aria-label='Title value']",
       "humanXPath": "html > body > div#player > div#info > div.info-field > span.val",
-      "notes": "",
+      "notes": "text-match",
       "tag": "span"
     },
     {
@@ -82,7 +82,7 @@
       "category": "information",
       "xpath": "//span[@aria-label='Type value']",
       "humanXPath": "html > body > div#player > div#info > div.info-field > span.val",
-      "notes": "",
+      "notes": "text-match",
       "tag": "span"
     },
     {
@@ -200,7 +200,7 @@
       "name": "Track artist",
       "category": "information",
       "xpath": "/html[1]/body[1]/div[1]/ul[1]/li[1]/div[1]/span[1]",
-      "humanXPath": "body > div#player > ul#playlist > li > div.row-top > span.artist",
+      "humanXPath": "body > div#player > ul#playlist > li.current > div.row-top > span.artist",
       "notes": "text-match",
       "tag": "span"
     },
@@ -209,7 +209,7 @@
       "name": "Track group",
       "category": "information",
       "xpath": "/html[1]/body[1]/div[1]/ul[1]/li[1]/div[1]/span[2]",
-      "humanXPath": "body > div#player > ul#playlist > li > div.row-top > span.folder",
+      "humanXPath": "body > div#player > ul#playlist > li.current > div.row-top > span.folder",
       "notes": "text-match",
       "tag": "span"
     },
@@ -218,7 +218,7 @@
       "name": "Track index",
       "category": "information",
       "xpath": "/html[1]/body[1]/div[1]/ul[1]/li[1]/span[1]",
-      "humanXPath": "html > body > div#player > ul#playlist > li > span.idx",
+      "humanXPath": "html > body > div#player > ul#playlist > li.current > span.idx",
       "notes": "text-match",
       "tag": "span"
     },
@@ -227,7 +227,7 @@
       "name": "Track selector checkbox",
       "category": "control",
       "xpath": "/html[1]/body[1]/div[1]/ul[1]/li[1]/input[1]",
-      "humanXPath": "html > body > div#player > ul#playlist > li > input.sel-cb",
+      "humanXPath": "html > body > div#player > ul#playlist > li.current > input.sel-cb",
       "notes": "control-match; text-match",
       "tag": "input"
     },
@@ -236,7 +236,7 @@
       "name": "Track title",
       "category": "information",
       "xpath": "/html[1]/body[1]/div[1]/ul[1]/li[1]/div[2]/span[1]",
-      "humanXPath": "body > div#player > ul#playlist > li > div.row-bot > span.title",
+      "humanXPath": "body > div#player > ul#playlist > li.current > div.row-bot > span.title",
       "notes": "text-match",
       "tag": "span"
     },
@@ -245,7 +245,7 @@
       "name": "Track format",
       "category": "information",
       "xpath": "/html[1]/body[1]/div[1]/ul[1]/li[1]/div[2]/span[2]",
-      "humanXPath": "body > div#player > ul#playlist > li > div.row-bot > span.ext",
+      "humanXPath": "body > div#player > ul#playlist > li.current > div.row-bot > span.ext",
       "notes": "text-match",
       "tag": "span"
     },
@@ -254,7 +254,7 @@
       "name": "Download track",
       "category": "control",
       "xpath": "/html[1]/body[1]/div[1]/ul[1]/li[1]/div[2]/button[1]",
-      "humanXPath": "body > div#player > ul#playlist > li > div.row-bot > button.r-dl",
+      "humanXPath": "body > div#player > ul#playlist > li.current > div.row-bot > button.r-dl",
       "notes": "control-match; text-match",
       "tag": "button"
     },
@@ -284,7 +284,7 @@
       "category": "information",
       "xpath": "//*[@id='duration']",
       "humanXPath": "#duration",
-      "notes": "",
+      "notes": "text-match",
       "tag": "span",
       "id": "duration"
     },

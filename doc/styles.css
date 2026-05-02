@@ -45,3 +45,18 @@
   bottom: auto;
   clip-path: polygon(50% 0, 0 100%, 100% 100%);
 }
+
+.ui-doc-number-bubble.side-right {
+  transform: translate(calc(-100% - var(--tip-h)), -50%);
+}
+
+.ui-doc-number-bubble.side-right::after {
+  top: 50%;
+  left: auto;
+  right: calc(-1 * var(--tip-h) + 1px);
+  bottom: auto;
+  width: var(--tip-h);
+  height: 16px;
+  transform: translateY(-50%);
+  clip-path: polygon(100% 50%, 0 0, 0 100%);
+}

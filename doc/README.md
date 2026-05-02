@@ -3,7 +3,7 @@
 <!-- AUTO:DOC_META:START -->
 | Version | Updated |
 |:--|:--|
-| d54e655 | 2026-05-02 19:11 |
+| 7aa54fc | 2026-05-02 19:49 |
 <!-- AUTO:DOC_META:END -->
 
 
@@ -41,13 +41,13 @@ Description of the UI elements from the screenshot.
 | 17 | Help / About | #help-btn |
 | 18 | Track number / total found | #track-pos |
 | 19 | Toggle all, none, or restore track selection | #sel-bulk-cb |
-| 20 | Track artist | body > div#player > ul#playlist > li > div.row-top > span.artist |
-| 21 | Track group | body > div#player > ul#playlist > li > div.row-top > span.folder |
-| 22 | Track index | html > body > div#player > ul#playlist > li > span.idx |
-| 23 | Track selector checkbox | html > body > div#player > ul#playlist > li > input.sel-cb |
-| 24 | Track title | body > div#player > ul#playlist > li > div.row-bot > span.title |
-| 25 | Track format | body > div#player > ul#playlist > li > div.row-bot > span.ext |
-| 26 | Download track | body > div#player > ul#playlist > li > div.row-bot > button.r-dl |
+| 20 | Track artist | body > div#player > ul#playlist > li.current > div.row-top > span.artist |
+| 21 | Track group | body > div#player > ul#playlist > li.current > div.row-top > span.folder |
+| 22 | Track index | html > body > div#player > ul#playlist > li.current > span.idx |
+| 23 | Track selector checkbox | html > body > div#player > ul#playlist > li.current > input.sel-cb |
+| 24 | Track title | body > div#player > ul#playlist > li.current > div.row-bot > span.title |
+| 25 | Track format | body > div#player > ul#playlist > li.current > div.row-bot > span.ext |
+| 26 | Download track | body > div#player > ul#playlist > li.current > div.row-bot > button.r-dl |
 | 27 | Play / Pause | #btn-play |
 | 28 | Track Time | #time |
 | 29 | Track Length | #duration |
