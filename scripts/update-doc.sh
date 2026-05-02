@@ -4,10 +4,17 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 README_PATH="${REPO_ROOT}/doc/README.md"
+ROOT_README_PATH="${REPO_ROOT}/README.md"
 ELEMENTS_PATH="${REPO_ROOT}/doc/elements.json"
+PLAIN_SHOT_REL="doc/app-screensot.png"
 
 if [[ ! -f "${README_PATH}" ]]; then
   echo "Missing file: ${README_PATH}" >&2
+  exit 1
+fi
+
+if [[ ! -f "${ROOT_README_PATH}" ]]; then
+  echo "Missing file: ${ROOT_README_PATH}" >&2
   exit 1
 fi
 
@@ -49,7 +56,7 @@ else
   done
 fi
 
-node "${REPO_ROOT}/scripts/extract-ui-elements.mjs" --url "${base_url}" --wait-ms 1200
+node "${REPO_ROOT}/scripts/extract-ui-elements.mjs" --url "${base_url}" --wait-ms 1200 --plain-screenshot "${REPO_ROOT}/${PLAIN_SHOT_REL}"
 
 cat > "${meta_tmp}" <<EOF
 <!-- AUTO:DOC_META:START -->
@@ -149,8 +156,50 @@ sync_ui_image_line() {
   mv "${work_tmp}" "${file}"
 }
 
+sync_app_image_line() {
+  local file="$1"
+  local image_path="$2"
+
+  if grep -qE '^[[:space:]]*![[]ReTrap app screenshot[]]\([^)]*\)[[:space:]]*$' "${file}"; then
+    awk -v img="${image_path}" '
+      BEGIN { replaced = 0 }
+      {
+        if ($0 ~ /^[[:space:]]*![[]ReTrap app screenshot[]]\([^)]*\)[[:space:]]*$/) {
+          if (!replaced) {
+            print "![ReTrap app screenshot](" img ")"
+            replaced = 1
+          }
+          next
+        }
+        print
+      }
+    ' "${file}" > "${work_tmp}"
+  else
+    awk -v img="${image_path}" '
+      BEGIN { inserted = 0 }
+      {
+        print
+        if (!inserted && $0 ~ /^Demo:[[:space:]]/) {
+          print ""
+          print "![ReTrap app screenshot](" img ")"
+          inserted = 1
+        }
+      }
+      END {
+        if (!inserted) {
+          print ""
+          print "![ReTrap app screenshot](" img ")"
+        }
+      }
+    ' "${file}" > "${work_tmp}"
+  fi
+
+  mv "${work_tmp}" "${file}"
+}
+
 normalize_title "${README_PATH}"
 sync_ui_image_line "${README_PATH}" "${screenshot_rel}"
+sync_app_image_line "${ROOT_README_PATH}" "${PLAIN_SHOT_REL}"
 
 insert_after_first_heading_if_missing() {
   local file="$1"
@@ -248,3 +297,4 @@ replace_block "${README_PATH}" "<!-- AUTO:DOC_META:START -->" "<!-- AUTO:DOC_MET
 replace_block "${README_PATH}" "<!-- AUTO:UI_ELEMENT_TABLE:START -->" "<!-- AUTO:UI_ELEMENT_TABLE:END -->" "${table_tmp}"
 
 echo "Updated ${README_PATH}"
+echo "Updated ${ROOT_README_PATH}"

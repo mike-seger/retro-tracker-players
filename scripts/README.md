@@ -30,10 +30,11 @@ node scripts/extract-ui-elements.mjs --url <url> [options]
 | `--width <n>` | `640` | Accepted for compatibility, but ignored because viewport width is fixed |
 | `--height <n>` | `480` | Accepted for compatibility, but ignored because viewport height is fixed |
 | `--window-size <WxH>` | `640x480` | Accepted for compatibility, but ignored because viewport is fixed |
+| `--plain-screenshot <path>` | `doc/app-screensot.png` | Output plain app screenshot path (no numbering bubbles), captured at fixed `700x900` |
 | `--keep-modals` | *(off)* | Skip modal dismissal before screenshot |
 | `--all-visible-list-items` | *(off)* | Include every visible list item; by default only the first visible item from each list is included |
 
-Viewport is fixed to `640x480` by default and in practice always remains fixed. The sizing flags above are currently ignored so screenshots and element extraction stay stable across runs.
+Viewport is fixed to `640x480` for element extraction and annotated screenshot generation. The plain screenshot is captured at fixed `700x900`. The sizing flags above are currently ignored so extraction and annotated screenshot output stay stable across runs.
 
 ### Example
 
@@ -61,11 +62,13 @@ It performs these steps:
 - Reuses `http://127.0.0.1:8080/index.html` if a local server is already running
 - Otherwise starts a temporary `python3 -m http.server 8080` from the repo root
 - Runs `scripts/extract-ui-elements.mjs` against that page with `--wait-ms 1200`
+- Captures a plain screenshot at `doc/app-screensot.png` (same setup, no bubbles, fixed `700x900` viewport)
 - Refreshes `doc/elements.json` and `doc/elements-view.png`
 - Updates the generated metadata block in `doc/README.md`
 - Updates the generated UI element table in `doc/README.md`
 - Normalizes the doc title to `# ReTrap`
 - Syncs the screenshot reference in the `## User Interface` section
+- Syncs the top-level `README.md` app screenshot line to `![ReTrap app screenshot](doc/app-screensot.png)`
 
 ### Usage
 
@@ -86,7 +89,9 @@ Typical output looks like this:
 ```text
 Wrote 30 elements to /path/to/retro-tracker-players/doc/elements.json
 Saved screenshot to /path/to/retro-tracker-players/doc/elements-view.png
+Saved plain screenshot to /path/to/retro-tracker-players/doc/app-screensot.png
 Updated /path/to/retro-tracker-players/doc/README.md
+Updated /path/to/retro-tracker-players/README.md
 ```
 
 ## Git Hook Automation

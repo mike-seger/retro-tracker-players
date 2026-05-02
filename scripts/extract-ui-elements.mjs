@@ -20,16 +20,20 @@ function loadDocStyles() {
 
 function parseArgs(argv) {
   const FIXED_VIEWPORT = { width: 640, height: 480 };
+  const PLAIN_VIEWPORT = { width: 700, height: 900 };
   const defaultOut = path.join(repoRoot, 'doc', 'elements.json');
   const args = {
     waitMs: 800,
     width: FIXED_VIEWPORT.width,
     height: FIXED_VIEWPORT.height,
+    plainWidth: PLAIN_VIEWPORT.width,
+    plainHeight: PLAIN_VIEWPORT.height,
     keepModals: false,
     allVisibleListItems: false,
     defaultOut,
     out: defaultOut,
     screenshot: path.join(repoRoot, 'doc', 'elements-view.png'),
+    plainScreenshot: path.join(repoRoot, 'doc', 'app-screensot.png'),
   };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -41,6 +45,7 @@ function parseArgs(argv) {
     else if (a === '--window-size' && argv[i + 1]) {
       i++;
     }
+    else if (a === '--plain-screenshot' && argv[i + 1]) args.plainScreenshot = path.resolve(repoRoot, argv[++i]);
     else if (a === '--screenshot' && argv[i + 1]) args.screenshot = path.resolve(repoRoot, argv[++i]);
     else if (a === '--keep-modals') args.keepModals = true;
     else if (a === '--all-visible-list-items') args.allVisibleListItems = true;
@@ -50,8 +55,8 @@ function parseArgs(argv) {
 }
 
 function printHelp() {
-  console.log('Usage: node scripts/extract-ui-elements.mjs --url <url> [--out doc/elements.json] [--screenshot doc/elements-view.png] [--wait-ms 1000] [--keep-modals] [--all-visible-list-items]');
-  console.log('Viewport is fixed at 640x480 for screenshots and element extraction.');
+  console.log('Usage: node scripts/extract-ui-elements.mjs --url <url> [--out doc/elements.json] [--screenshot doc/elements-view.png] [--plain-screenshot doc/app-screensot.png] [--wait-ms 1000] [--keep-modals] [--all-visible-list-items]');
+  console.log('Viewport is fixed at 640x480 for element extraction and annotated screenshot. Plain screenshot is fixed at 700x900.');
 }
 
 function slugify(input) {
@@ -391,6 +396,17 @@ async function main() {
     await ensureInfoMetadataReady(page);
     await focusFirstTrack(page);
 
+    if (args.plainScreenshot) {
+      await page.setViewportSize({ width: args.plainWidth, height: args.plainHeight });
+      await ensureInfoMetadataReady(page);
+      await focusFirstTrack(page);
+      fs.mkdirSync(path.dirname(args.plainScreenshot), { recursive: true });
+      await page.screenshot({ path: args.plainScreenshot, fullPage: false });
+      await page.setViewportSize({ width: args.width, height: args.height });
+      await ensureInfoMetadataReady(page);
+      await focusFirstTrack(page);
+    }
+
     const raw = await page.evaluate((includeAllVisibleListItems) => {
       const TEXT_RE = /[A-Za-z0-9?\-]+/;
       const CONTROL_TAGS = new Set(['button', 'input', 'select', 'textarea']);
@@ -647,6 +663,9 @@ async function main() {
       console.log(`Synced ${elements.length} elements to ${args.defaultOut}`);
     }
     console.log(`Saved screenshot to ${args.screenshot}`);
+    if (args.plainScreenshot) {
+      console.log(`Saved plain screenshot to ${args.plainScreenshot}`);
+    }
   } finally {
     await browser.close();
   }

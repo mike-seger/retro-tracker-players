@@ -4,6 +4,8 @@ A single-page browser-based chiptune player covering the golden age of demoscene
 
 Demo: [ReTrap](https://mike-seger.github.io/retro-tracker-players/)
 
+![ReTrap app screenshot](doc/app-screensot.png)
+
 ## Quick Start
 
 From this directory, start a local web server:
