@@ -19,11 +19,12 @@ function loadDocStyles() {
 }
 
 function parseArgs(argv) {
+  const FIXED_VIEWPORT = { width: 640, height: 480 };
   const defaultOut = path.join(repoRoot, 'doc', 'elements.json');
   const args = {
     waitMs: 800,
-    width: 1366,
-    height: 900,
+    width: FIXED_VIEWPORT.width,
+    height: FIXED_VIEWPORT.height,
     keepModals: false,
     allVisibleListItems: false,
     defaultOut,
@@ -35,15 +36,10 @@ function parseArgs(argv) {
     if (a === '--url' && argv[i + 1]) args.url = argv[++i];
     else if (a === '--out' && argv[i + 1]) args.out = path.resolve(repoRoot, argv[++i]);
     else if (a === '--wait-ms' && argv[i + 1]) args.waitMs = Math.max(0, Number(argv[++i]) || 0);
-    else if (a === '--width' && argv[i + 1]) args.width = Math.max(320, Number(argv[++i]) || 1366);
-    else if (a === '--height' && argv[i + 1]) args.height = Math.max(240, Number(argv[++i]) || 900);
+    else if (a === '--width' && argv[i + 1]) { i++; }
+    else if (a === '--height' && argv[i + 1]) { i++; }
     else if (a === '--window-size' && argv[i + 1]) {
-      const raw = String(argv[++i]);
-      const m = raw.match(/^(\d+)x(\d+)$/i);
-      if (m) {
-        args.width = Math.max(320, Number(m[1]) || 1366);
-        args.height = Math.max(240, Number(m[2]) || 900);
-      }
+      i++;
     }
     else if (a === '--screenshot' && argv[i + 1]) args.screenshot = path.resolve(repoRoot, argv[++i]);
     else if (a === '--keep-modals') args.keepModals = true;
@@ -54,7 +50,8 @@ function parseArgs(argv) {
 }
 
 function printHelp() {
-  console.log('Usage: node scripts/extract-ui-elements.mjs --url <url> [--out doc/elements.json] [--screenshot doc/elements-view.png] [--window-size 1366x900] [--width 1366] [--height 900] [--wait-ms 1000] [--keep-modals] [--all-visible-list-items]');
+  console.log('Usage: node scripts/extract-ui-elements.mjs --url <url> [--out doc/elements.json] [--screenshot doc/elements-view.png] [--wait-ms 1000] [--keep-modals] [--all-visible-list-items]');
+  console.log('Viewport is fixed at 640x480 for screenshots and element extraction.');
 }
 
 function slugify(input) {

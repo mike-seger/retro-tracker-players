@@ -353,7 +353,27 @@ async function hydrateUISection() {
   if (!screenshot) return;
   if (content.querySelector('#help-ui-map-inline-btn')) return;
 
+  // README image paths are doc-relative; in the app overlay, anchor them to /doc/.
+  const rawSrc = screenshot.getAttribute('src') || '';
+  if (rawSrc && !/^(?:[a-z]+:|\/)/i.test(rawSrc)) {
+    screenshot.src = `doc/${rawSrc.replace(/^\.\//, '').replace(/^doc\//, '')}`;
+  }
+
   const host = screenshot.closest('p') || screenshot;
+
+  // In app runtime, hide static generated details table to avoid duplication.
+  content.querySelector('#ui-element-list')?.remove();
+
+  // Replace static README wording with runtime-specific helper text.
+  const uiIntro = host.nextElementSibling;
+  if (uiIntro && uiIntro.tagName === 'P') {
+    uiIntro.textContent = 'Click User Interface Highlighter below to open the live inspector.';
+  }
+
+  // Remove legacy sentence if present in older cached/readme content.
+  content.querySelectorAll('p').forEach((p) => {
+    if (/^The screenshot is generated/i.test((p.textContent || '').trim())) p.remove();
+  });
 
   const section = document.createElement('div');
   section.className = 'ui-doc-section';
@@ -371,7 +391,7 @@ async function hydrateUISection() {
   tableWrap.innerHTML = `
     <table class="ui-doc-table">
       <thead>
-        <tr><th class="num">No</th><th>Name</th><th>Selector</th></tr>
+        <tr><th class="num">#</th><th>Name</th><th>Selector</th></tr>
       </thead>
       <tbody>
         <tr><td class="num">--</td><td>Loading…</td><td class="sel">doc/elements.json</td></tr>
@@ -380,12 +400,8 @@ async function hydrateUISection() {
   `;
   section.appendChild(tableWrap);
 
-  const note = document.createElement('div');
-  note.className = 'ui-doc-note';
-  note.textContent = 'Numbers match the screenshot bubbles and inspector order.';
-  section.appendChild(note);
-
-  host.insertAdjacentElement('afterend', section);
+  const introAnchor = (uiIntro && uiIntro.tagName === 'P') ? uiIntro : host;
+  introAnchor.insertAdjacentElement('afterend', section);
 
   try {
     const data = await fetch('doc/elements.json', { cache: 'no-store' }).then((r) => r.ok ? r.json() : Promise.reject(r.status));

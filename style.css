@@ -498,6 +498,19 @@ body.mode-modland {
 #help-content hr { border: none; border-top: 1px solid #333; margin: 1.5em 0; }
 #help-content ul, #help-content ol { padding-left: 1.4em; margin: 0.5em 0; }
 #help-content li { margin: 0.25em 0; }
+#help-content table {
+  border-collapse: collapse;
+  margin: 0.5em 0 0.8em;
+}
+#help-content th,
+#help-content td {
+  padding: 0.1em 0.8em 0.1em 0;
+  white-space: nowrap;
+}
+#help-content th:last-child,
+#help-content td:last-child {
+  padding-right: 0;
+}
 #help-content kbd {
   display: inline-block; background: #222; border: 1px solid #555;
   border-radius: 3px; padding: 1px 5px; font-size: 0.88em;

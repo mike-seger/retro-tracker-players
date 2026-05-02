@@ -1,16 +1,16 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-04-29T15:03:36.808Z",
-  "sourceUrl": "http://127.0.0.1:5500/index.html?play=https%3A%2F%2Fmodland.com%2Fpub%2Fmodules%2FFasttracker%25202%2F-%2520unknown%2Feagle%2520trance.xm&folders=trance",
+  "generatedAt": "2026-05-02T17:11:57.760Z",
+  "sourceUrl": "http://127.0.0.1:8080/index.html",
   "screenshotPath": "doc/elements-view.png",
   "viewport": {
     "width": 640,
     "height": 480
   },
   "stats": {
-    "total": 31,
+    "total": 30,
     "controls": 14,
-    "information": 17
+    "information": 16
   },
   "elements": [
     {
@@ -106,24 +106,14 @@
       "id": "filter"
     },
     {
-      "key": "search-mode",
-      "name": "Search local or modland",
+      "key": "search-mode-btn",
+      "name": "Source",
       "category": "control",
-      "xpath": "//*[@id='search-mode']",
-      "humanXPath": "#search-mode",
+      "xpath": "//*[@id='search-mode-btn']",
+      "humanXPath": "#search-mode-btn",
       "notes": "control-match; text-match",
-      "tag": "select",
-      "id": "search-mode"
-    },
-    {
-      "key": "filter-count",
-      "name": "Tracks found / total",
-      "category": "information",
-      "xpath": "//*[@id='filter-count']",
-      "humanXPath": "#filter-count",
-      "notes": "text-match",
-      "tag": "span",
-      "id": "filter-count"
+      "tag": "button",
+      "id": "search-mode-btn"
     },
     {
       "key": "btn-copy",
@@ -209,8 +199,8 @@
       "key": "information-track-artist",
       "name": "Track artist",
       "category": "information",
-      "xpath": "/html[1]/body[1]/div[1]/ul[1]/li[163]/div[1]/span[1]",
-      "humanXPath": "body > div#player > ul#playlist > li.remote > div.row-top > span.artist",
+      "xpath": "/html[1]/body[1]/div[1]/ul[1]/li[1]/div[1]/span[1]",
+      "humanXPath": "body > div#player > ul#playlist > li > div.row-top > span.artist",
       "notes": "text-match",
       "tag": "span"
     },
@@ -218,8 +208,8 @@
       "key": "information-track-group",
       "name": "Track group",
       "category": "information",
-      "xpath": "/html[1]/body[1]/div[1]/ul[1]/li[163]/div[1]/span[2]",
-      "humanXPath": "body > div#player > ul#playlist > li.remote > div.row-top > span.folder",
+      "xpath": "/html[1]/body[1]/div[1]/ul[1]/li[1]/div[1]/span[2]",
+      "humanXPath": "body > div#player > ul#playlist > li > div.row-top > span.folder",
       "notes": "text-match",
       "tag": "span"
     },
@@ -227,8 +217,8 @@
       "key": "information-track-index",
       "name": "Track index",
       "category": "information",
-      "xpath": "/html[1]/body[1]/div[1]/ul[1]/li[163]/span[1]",
-      "humanXPath": "html > body > div#player > ul#playlist > li.remote > span.idx",
+      "xpath": "/html[1]/body[1]/div[1]/ul[1]/li[1]/span[1]",
+      "humanXPath": "html > body > div#player > ul#playlist > li > span.idx",
       "notes": "text-match",
       "tag": "span"
     },
@@ -236,8 +226,8 @@
       "key": "control-track-selector-checkbox",
       "name": "Track selector checkbox",
       "category": "control",
-      "xpath": "/html[1]/body[1]/div[1]/ul[1]/li[163]/input[1]",
-      "humanXPath": "html > body > div#player > ul#playlist > li.remote > input.sel-cb",
+      "xpath": "/html[1]/body[1]/div[1]/ul[1]/li[1]/input[1]",
+      "humanXPath": "html > body > div#player > ul#playlist > li > input.sel-cb",
       "notes": "control-match; text-match",
       "tag": "input"
     },
@@ -245,8 +235,8 @@
       "key": "information-track-title",
       "name": "Track title",
       "category": "information",
-      "xpath": "/html[1]/body[1]/div[1]/ul[1]/li[163]/div[2]/span[1]",
-      "humanXPath": "body > div#player > ul#playlist > li.remote > div.row-bot > span.title",
+      "xpath": "/html[1]/body[1]/div[1]/ul[1]/li[1]/div[2]/span[1]",
+      "humanXPath": "body > div#player > ul#playlist > li > div.row-bot > span.title",
       "notes": "text-match",
       "tag": "span"
     },
@@ -254,8 +244,8 @@
       "key": "information-track-format",
       "name": "Track format",
       "category": "information",
-      "xpath": "/html[1]/body[1]/div[1]/ul[1]/li[163]/div[2]/span[2]",
-      "humanXPath": "body > div#player > ul#playlist > li.remote > div.row-bot > span.ext",
+      "xpath": "/html[1]/body[1]/div[1]/ul[1]/li[1]/div[2]/span[2]",
+      "humanXPath": "body > div#player > ul#playlist > li > div.row-bot > span.ext",
       "notes": "text-match",
       "tag": "span"
     },
@@ -263,8 +253,8 @@
       "key": "control-download-track",
       "name": "Download track",
       "category": "control",
-      "xpath": "/html[1]/body[1]/div[1]/ul[1]/li[163]/div[2]/button[1]",
-      "humanXPath": "body > div#player > ul#playlist > li.remote > div.row-bot > button.r-dl",
+      "xpath": "/html[1]/body[1]/div[1]/ul[1]/li[1]/div[2]/button[1]",
+      "humanXPath": "body > div#player > ul#playlist > li > div.row-bot > button.r-dl",
       "notes": "control-match; text-match",
       "tag": "button"
     },

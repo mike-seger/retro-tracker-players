@@ -25,19 +25,18 @@ node scripts/extract-ui-elements.mjs --url <url> [options]
 | `--url <url>` | *(required)* | URL to analyse |
 | `--out <path>` | `doc/elements.json` | Output JSON path |
 | `--screenshot <path>` | `doc/elements-view.png` | Output screenshot path |
-| `--window-size <WxH>` | `1366x900` | Browser viewport size |
-| `--width <n>` | — | Override viewport width (alternative to `--window-size`) |
-| `--height <n>` | — | Override viewport height (alternative to `--window-size`) |
 | `--wait-ms <n>` | `1000` | Extra milliseconds to wait after page load before extracting |
 | `--keep-modals` | *(off)* | Skip modal dismissal before screenshot |
 | `--all-visible-list-items` | *(off)* | Include every visible list item; by default only the first visible item from each list is included |
+
+Viewport is fixed to `640x480`.
 
 ### Example
 
 Start a local server (e.g. VS Code Live Server or `npx serve .`), then run:
 
 ```bash
-node scripts/extract-ui-elements.mjs --url "http://127.0.0.1:63706/index.html?play=https%3A%2F%2Fmodland.com%2Fpub%2Fmodules%2FFasttracker%25202%2F-%2520unknown%2Feagle%2520trance.xm&folders=trance" --window-size 640x480 --wait-ms 1200
+node scripts/extract-ui-elements.mjs --url "http://127.0.0.1:63706/index.html?play=https%3A%2F%2Fmodland.com%2Fpub%2Fmodules%2FFasttracker%25202%2F-%2520unknown%2Feagle%2520trance.xm&folders=trance" --wait-ms 1200
 ```
 
 Output:

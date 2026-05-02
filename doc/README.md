@@ -1,4 +1,11 @@
-# ReTrap — Help
+# ReTrap
+
+<!-- AUTO:DOC_META:START -->
+| Version | Updated |
+|:--|:--|
+| d54e655 | 2026-05-02 19:11 |
+<!-- AUTO:DOC_META:END -->
+
 
 A browser-based player for classic tracker module formats (MOD, XM, S3M, IT, AHX, SID) with local file lists and Modland search.
 
@@ -6,10 +13,48 @@ A browser-based player for classic tracker module formats (MOD, XM, S3M, IT, AHX
 
 ## User Interface
 
-![Annotated user interface map](doc/elements-view.png)
+![Annotated user interface map](elements-view.png)
 
-The screenshot is generated from `doc/elements.json` and annotated with zero-padded row numbers.
-Use **User Interface Highlighter** below to open the live inspector; the table under the button lists **No**, **Name**, and **Selector** in the same order.
+Description of the UI elements from the screenshot.
+
+<!-- AUTO:UI_ELEMENT_TABLE:START -->
+<div id="ui-element-list" style="max-height: 400px; overflow-y: auto; overflow-x: visible;">
+
+| # | Name | Selector |
+|:--|:--|:--|
+| 01 | Engine label | html > body > div#player > div#info > div.info-field > span.label |
+| 02 | Engine value | html > body > div#player > div#info > div.info-field > span.val |
+| 03 | Tracker label | html > body > div#player > div#info > div.info-field > span.label |
+| 04 | Tracker value | html > body > div#player > div#info > div.info-field > span.val |
+| 05 | Title label | html > body > div#player > div#info > div.info-field > span.label |
+| 06 | Title value | html > body > div#player > div#info > div.info-field > span.val |
+| 07 | Type label | html > body > div#player > div#info > div.info-field > span.label |
+| 08 | Type value | html > body > div#player > div#info > div.info-field > span.val |
+| 09 | Share / copy link | #share-btn |
+| 10 | Search tracks … | #filter |
+| 11 | Source | #search-mode-btn |
+| 12 | Copy selected track links to clipboard | #btn-copy |
+| 13 | Download selected tracks as ZIP | #btn-zip |
+| 14 | Select track group | #refine-folder-btn |
+| 15 | Select artist | #refine-artist-btn |
+| 16 | Select format | #refine-format-btn |
+| 17 | Help / About | #help-btn |
+| 18 | Track number / total found | #track-pos |
+| 19 | Toggle all, none, or restore track selection | #sel-bulk-cb |
+| 20 | Track artist | body > div#player > ul#playlist > li > div.row-top > span.artist |
+| 21 | Track group | body > div#player > ul#playlist > li > div.row-top > span.folder |
+| 22 | Track index | html > body > div#player > ul#playlist > li > span.idx |
+| 23 | Track selector checkbox | html > body > div#player > ul#playlist > li > input.sel-cb |
+| 24 | Track title | body > div#player > ul#playlist > li > div.row-bot > span.title |
+| 25 | Track format | body > div#player > ul#playlist > li > div.row-bot > span.ext |
+| 26 | Download track | body > div#player > ul#playlist > li > div.row-bot > button.r-dl |
+| 27 | Play / Pause | #btn-play |
+| 28 | Track Time | #time |
+| 29 | Track Length | #duration |
+| 30 | Track seekbar | #seek |
+
+</div>
+<!-- AUTO:UI_ELEMENT_TABLE:END -->
 
 ## Keyboard Shortcuts
 
