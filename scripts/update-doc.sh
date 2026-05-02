@@ -292,9 +292,11 @@ replace_block() {
 
 insert_after_first_heading_if_missing "${README_PATH}" "AUTO:DOC_META:START" "${meta_tmp}"
 insert_before_keyboard_if_missing "${README_PATH}" "AUTO:UI_ELEMENT_TABLE:START" "${table_tmp}"
+insert_after_first_heading_if_missing "${ROOT_README_PATH}" "AUTO:DOC_META:START" "${meta_tmp}"
 
 replace_block "${README_PATH}" "<!-- AUTO:DOC_META:START -->" "<!-- AUTO:DOC_META:END -->" "${meta_tmp}"
 replace_block "${README_PATH}" "<!-- AUTO:UI_ELEMENT_TABLE:START -->" "<!-- AUTO:UI_ELEMENT_TABLE:END -->" "${table_tmp}"
+replace_block "${ROOT_README_PATH}" "<!-- AUTO:DOC_META:START -->" "<!-- AUTO:DOC_META:END -->" "${meta_tmp}"
 
 echo "Updated ${README_PATH}"
 echo "Updated ${ROOT_README_PATH}"
