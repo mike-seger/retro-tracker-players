@@ -134,9 +134,21 @@ export async function getAll() {
   return list;
 }
 
+export async function checkNameExists(name, excludeId = null) {
+  await openDB();
+  const all = await dbReq(_db.transaction(STORE, 'readonly').objectStore(STORE).getAll());
+  const trimmedName = String(name || '').trim().toLowerCase();
+  return all.some(pl => pl.id !== excludeId && (pl.name || '').toLowerCase() === trimmedName);
+}
+
 export async function create(name) {
   await openDB();
-  const pl = { id: uid(), name: String(name || 'New playlist').trim(), tracks: [] };
+  const trimmedName = String(name || 'New playlist').trim();
+  const exists = await checkNameExists(trimmedName);
+  if (exists) {
+    throw new Error(`Playlist name "${trimmedName}" already exists`);
+  }
+  const pl = { id: uid(), name: trimmedName, tracks: [] };
   await dbReq(_db.transaction(STORE, 'readwrite').objectStore(STORE).put(pl));
   notify();
   return pl;
@@ -144,11 +156,17 @@ export async function create(name) {
 
 export async function rename(id, name) {
   await openDB();
+  const trimmedName = String(name || '').trim();
+  if (!trimmedName) return;
+  const exists = await checkNameExists(trimmedName, id);
+  if (exists) {
+    throw new Error(`Playlist name "${trimmedName}" already exists`);
+  }
   const t = _db.transaction(STORE, 'readwrite');
   const s = t.objectStore(STORE);
   const pl = await dbReq(s.get(id));
   if (!pl) return;
-  pl.name = String(name || '').trim() || pl.name;
+  pl.name = trimmedName;
   await dbReq(s.put(pl));
   notify();
 }

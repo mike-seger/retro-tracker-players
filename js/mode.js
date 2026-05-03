@@ -11,6 +11,7 @@ import { populateFolderPanel, populateLocalArtistPanel,
 import { doModlandSearch, updateMlButtons } from './modland.js';
 import { persistContext } from './persistence.js';
 import { restoreSelection, updateSelCount } from './selection.js';
+import * as remoteSearch from './remote-search.js';
 
 // ── context save/restore ──────────────────────────────
 export function saveLocalContext() {
@@ -130,7 +131,9 @@ export function switchMode(mode) {
     elSelBulk.style.display = '';
     restoreLocalContext();
   } else {
-    import('./format-panel.js').then(m => m.buildFormatPanel([]));
+    remoteSearch.loadIndex()
+      .then(() => import('./format-panel.js').then(m => m.buildFormatPanel(remoteSearch.availableFormats())))
+      .catch(() => import('./format-panel.js').then(m => m.buildFormatPanel([])));
     restoreModlandContext();
   }
 

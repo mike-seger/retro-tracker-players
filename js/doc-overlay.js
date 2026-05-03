@@ -1,6 +1,7 @@
 // js/doc-overlay.js — Help overlay with lazy-fetched + rendered README
 import { btnHelp } from './state.js';
 import { openPlaylistOverlay } from './playlist-overlay.js';
+import { closeAllDropdowns } from './dropdown-keys.js';
 
 let _helpCache = null;
 let _uiMapPopup = null;
@@ -585,11 +586,16 @@ const optionsPanel = document.getElementById('options-panel');
 function toggleOptionsPanel() {
   if (!optionsPanel) return;
   const open = !optionsPanel.hidden;
+  if (!open) {
+    closeAllDropdowns();
+    const searchModePanel = document.getElementById('search-mode-panel');
+    if (searchModePanel) searchModePanel.hidden = true;
+  }
   optionsPanel.hidden = open;
   btnHelp.classList.toggle('active', !open);
 }
 
-function closeOptionsPanel() {
+export function closeOptionsPanel() {
   if (optionsPanel) optionsPanel.hidden = true;
   btnHelp.classList.remove('active');
 }

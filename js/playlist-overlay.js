@@ -436,23 +436,59 @@ function makeBtn(text, title, onClick) {
 async function createNew() {
   const name = prompt('Playlist name:');
   if (!name?.trim()) return;
-  await pm.create(name.trim());
+  try {
+    await pm.create(name.trim());
+  } catch (e) {
+    alert('Error: ' + e.message);
+  }
 }
 
 function startRename(id, span, currentName) {
+  const container = document.createElement('div');
+  container.style.display = 'flex';
+  container.style.alignItems = 'center';
+  container.style.gap = '4px';
+  
   const input = document.createElement('input');
-  input.type = 'text'; input.value = currentName; input.className = 'pm-rename-input';
-  span.replaceWith(input);
-  input.focus(); input.select();
+  input.type = 'text';
+  input.value = currentName;
+  input.className = 'pm-rename-input';
+  
+  const errorSpan = document.createElement('span');
+  errorSpan.style.color = '#ff6b6b';
+  errorSpan.style.fontSize = '11px';
+  errorSpan.style.whiteSpace = 'nowrap';
+  errorSpan.hidden = true;
+  
+  container.appendChild(input);
+  container.appendChild(errorSpan);
+  span.replaceWith(container);
+  
+  input.focus();
+  input.select();
+  
   const commit = async () => {
     const n = input.value.trim();
-    if (n && n !== currentName) await pm.rename(id, n);
-    else render();
+    if (!n || n === currentName) {
+      container.replaceWith(span);
+      return;
+    }
+    
+    try {
+      await pm.rename(id, n);
+      container.replaceWith(span);
+    } catch (e) {
+      errorSpan.textContent = '✗ ' + e.message;
+      errorSpan.hidden = false;
+      input.focus();
+      input.select();
+    }
   };
+  
   input.addEventListener('blur', commit);
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
-    if (e.key === 'Escape') { e.preventDefault(); render(); }
+    if (e.key === 'Escape') { e.preventDefault(); container.replaceWith(span); }
   });
 }
 

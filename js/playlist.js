@@ -223,16 +223,12 @@ export function updateTrackPos() {
   }
 
   const filtered = visibleTotal;
-  const total = (() => {
-    if (S.searchMode === 'local') return Math.max(filtered, S._lastFilteredTotal || 0);
-    if (S._inSearchResults) return Math.max(filtered, S._lastSearchTotal || 0);
-    return files.length;
-  })();
+  const total = files.length;  // unfiltered total
   const pos = (S.currentIdx >= 0 && S.currentIdx < files.length && visiblePos > 0) ? String(visiblePos) : '-';
 
   elTrackPos.textContent = isMobile
-    ? `${pos} / ${filtered}`
-    : `${pos} / ${filtered} / ${total}`;
+    ? `${pos}/${filtered}`
+    : `${pos}/${filtered}/${total}`;
 }
 
 // ── scroll + highlight + focus ────────────────────────
@@ -277,6 +273,7 @@ export function setFocus(idx) {
     li.classList.add('focused');
     scrollIntoViewSmart(li);
   }
+  import('./modland.js').then(m => m.refreshOpenAddDropdown?.()).catch(() => {});
 }
 
 // Re-anchor current/focus by the playing URL after list content changes.

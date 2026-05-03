@@ -21,6 +21,16 @@ export function openDropdown(btn, panel) {
   const wasHidden = panel.hidden;
   // Close all OTHER dropdowns without touching this one
   for (const [p] of _registered) if (p !== panel) p.hidden = true;
+  const searchModePanel = document.getElementById('search-mode-panel');
+  if (searchModePanel) searchModePanel.hidden = true;
+  const optionsPanel = document.getElementById('options-panel');
+  if (optionsPanel) {
+    optionsPanel.hidden = true;
+    const helpOverlay = document.getElementById('help-overlay');
+    if (!helpOverlay || helpOverlay.hidden) {
+      document.getElementById('help-btn')?.classList.remove('active');
+    }
+  }
   if (wasHidden) {
     const reg = _registered.get(panel);
     reg?.saveState?.();

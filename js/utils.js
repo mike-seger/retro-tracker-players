@@ -64,15 +64,6 @@ export function parseTrackDisplay(entry) {
   // Folder badge: "<root>" when entry lives at path root (no directory component)
   const rootBadge = rawFolder ? folder : '<root>';
 
-  // AHX: artist is always the path prefix; never split on dash
-  if (entry.playerId === 'ahx') {
-    return {
-      artist: normArtist(folder),
-      title: baseName.replace(/\.\w+$/i, '').replace(/_/g, ' '),
-      folder: rawFolder ? '' : '<root>'
-    };
-  }
-
   // Try splitting filename on " – " (en-dash) or " - " (hyphen)
   const enDash = baseName.indexOf(' \u2013 ');
   const hyphen = baseName.indexOf(' - ');
@@ -96,12 +87,12 @@ export function parseTrackDisplay(entry) {
 export function extractArtist(entry) {
   const slash = entry.name.lastIndexOf('/');
   if (slash < 0) return '';
-  if (entry.playerId === 'ahx') return trimDisplayPath(entry.name.substring(0, slash));
   const fileName = entry.name.substring(slash + 1);
   const dashIdx = fileName.indexOf(' \u2013 ') >= 0
     ? fileName.indexOf(' \u2013 ')
     : fileName.indexOf(' - ');
-  return dashIdx >= 0 ? trimDisplayPath(fileName.substring(0, dashIdx)) : '';
+  if (dashIdx >= 0) return trimDisplayPath(fileName.substring(0, dashIdx));
+  return trimDisplayPath(entry.name.substring(0, slash));
 }
 
 export function addLongPress(el, callback, delay = 500) {

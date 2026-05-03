@@ -20,19 +20,19 @@
 <div id="player">
   <div id="info" style="--info-label-col: 63px;">
     <div class="info-field">
-      <span class="label" aria-label="Engine label" title="Copy Engine" data-copy="—" data-ui-doc="1">Engine:&nbsp;</span>
+      <span class="label" aria-label="Engine label" title="Copy Engine" data-copy="—" data-ui-doc="1">Engine</span>
       <span class="val" aria-label="Engine value" data-ui-doc="1">—</span>
     </div>
     <div class="info-field">
-      <span class="label" aria-label="Title label" title="Copy Title" data-copy="—" data-ui-doc="1">Title:&nbsp;</span>
+      <span class="label" aria-label="Title label" title="Copy Title" data-copy="—" data-ui-doc="1">Title</span>
       <span class="val" aria-label="Title value" data-ui-doc="1">—</span>
     </div>
     <div class="info-field">
-      <span class="label" aria-label="Type label" title="Copy Type" data-copy="—" data-ui-doc="1">Type:&nbsp;</span>
+      <span class="label" aria-label="Type label" title="Copy Type" data-copy="—" data-ui-doc="1">Type</span>
       <span class="val" aria-label="Type value" data-ui-doc="1">—</span>
     </div>
     <div class="info-field">
-      <span class="label" aria-label="Tracker label" title="Copy Tracker" data-copy="—" data-ui-doc="1">Tracker:&nbsp;</span>
+      <span class="label" aria-label="Tracker label" title="Copy Tracker" data-copy="—" data-ui-doc="1">Tracker</span>
       <span class="val" aria-label="Tracker value" data-ui-doc="1">—</span>
     </div>
   </div>
@@ -46,9 +46,6 @@
         <button class="share-opt" data-action="facebook">Share on Facebook</button>
       </div>
     </span>
-    <button id="btn-copy" title="Copy selected track links to clipboard">C</button>
-    <span id="sel-count"></span>
-    <button id="btn-zip" title="Download selected tracks as ZIP">Z</button>
     <button id="ml-add-all" class="ml-btn ml-add" style="display:none" title="Add all search results">+</button>
     <button id="ml-del-all" class="ml-btn" style="display:none" title="Delete all modland tracks">-</button>
     <button id="ml-random" class="ml-btn" style="display:none" title="Browse random tracks">R</button>
@@ -93,6 +90,9 @@
     <span id="sel-bulk" title="Toggle all, none, or restore previous selection">
       <input type="checkbox" id="sel-bulk-cb" aria-label="Toggle all, none, or restore track selection">
     </span>
+    <button id="btn-copy" title="Copy selected track links to clipboard">C</button>
+    <span id="sel-count"></span>
+    <button id="btn-zip" title="Download selected tracks as ZIP">Z</button>
     <span id="filter-wrap">
       <input type="text" id="filter" placeholder="Filter tracks…" aria-label="Search tracks …">
       <button id="filter-clear" type="button" aria-label="Clear">X</button>

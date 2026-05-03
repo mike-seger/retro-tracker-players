@@ -30,6 +30,20 @@ export function isLoaded() {
   return !!_index;
 }
 
+function normalizeFormatSet(formatSet) {
+  if (!formatSet || formatSet.size === 0) return null;
+  const out = new Set();
+  for (const f of formatSet) out.add(String(f).toLowerCase());
+  return out.size > 0 ? out : null;
+}
+
+function matchesTerms(s, terms) {
+  for (let t = 0; t < terms.length; t++) {
+    if (s.indexOf(terms[t]) < 0) return false;
+  }
+  return true;
+}
+
 // Search entries by substring (case-insensitive). Returns up to `limit` results.
 // Multiple space-delimited terms are matched with AND (all must appear, any order).
 // Each result: { name, ext, playerId, url }
@@ -37,6 +51,16 @@ export function search(query, limit = 100, skip = 0) {
   if (!_index) return [];
   const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
   if (terms.length === 0) return [];
+  return searchByFilters(terms, null, limit, skip);
+}
+
+export function searchWithFormats(query, formatSet, limit = 100, skip = 0) {
+  if (!_index) return [];
+  const terms = String(query || '').toLowerCase().split(/\s+/).filter(Boolean);
+  return searchByFilters(terms, normalizeFormatSet(formatSet), limit, skip);
+}
+
+function searchByFilters(terms, formatSet, limit, skip) {
   const all = [];
   const entries = _index.entries;
   const formats = _index.formats;
@@ -44,24 +68,19 @@ export function search(query, limit = 100, skip = 0) {
 
   for (let i = 0; i < entries.length; i++) {
     const s = _searchLower[i];
-    let match = true;
-    for (let t = 0; t < terms.length; t++) {
-      if (s.indexOf(terms[t]) < 0) { match = false; break; }
-    }
-    if (match) {
-      const [fmtIdx, rest] = entries[i];
-      const ext = rest.substring(rest.lastIndexOf('.') + 1).toLowerCase();
-      const playerId = EXT_TO_PLAYER[ext];
-      if (playerId) {
-        const fullPath = formats[fmtIdx] + '/' + rest;
-        all.push({
-          name: rest,
-          ext: ext.toUpperCase(),
-          playerId,
-          url: base + fullPath.split('/').map(encodeURIComponent).join('/'),
-        });
-      }
-    }
+    if (!matchesTerms(s, terms)) continue;
+    const [fmtIdx, rest] = entries[i];
+    const ext = rest.substring(rest.lastIndexOf('.') + 1).toLowerCase();
+    const playerId = EXT_TO_PLAYER[ext];
+    if (!playerId) continue;
+    if (formatSet && !formatSet.has(ext.toUpperCase()) && !formatSet.has(ext)) continue;
+    const fullPath = formats[fmtIdx] + '/' + rest;
+    all.push({
+      name: rest,
+      ext: ext.toUpperCase(),
+      playerId,
+      url: base + fullPath.split('/').map(encodeURIComponent).join('/'),
+    });
   }
 
   // Sort by artist/folder then title
@@ -84,19 +103,37 @@ export function count(query) {
   if (!_index) return 0;
   const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
   if (terms.length === 0) return 0;
+  return countByFilters(terms, null);
+}
+
+export function countWithFormats(query, formatSet) {
+  if (!_index) return 0;
+  const terms = String(query || '').toLowerCase().split(/\s+/).filter(Boolean);
+  return countByFilters(terms, normalizeFormatSet(formatSet));
+}
+
+function countByFilters(terms, formatSet) {
   let n = 0;
   for (let i = 0; i < _searchLower.length; i++) {
     const s = _searchLower[i];
-    let match = true;
-    for (let t = 0; t < terms.length; t++) {
-      if (s.indexOf(terms[t]) < 0) { match = false; break; }
-    }
-    if (match) {
-      const ext = _index.entries[i][1].substring(_index.entries[i][1].lastIndexOf('.') + 1).toLowerCase();
-      if (EXT_TO_PLAYER[ext]) n++;
-    }
+    if (!matchesTerms(s, terms)) continue;
+    const ext = _index.entries[i][1].substring(_index.entries[i][1].lastIndexOf('.') + 1).toLowerCase();
+    if (!EXT_TO_PLAYER[ext]) continue;
+    if (formatSet && !formatSet.has(ext.toUpperCase()) && !formatSet.has(ext)) continue;
+    n++;
   }
   return n;
+}
+
+export function availableFormats() {
+  if (!_index) return new Set();
+  const out = new Set();
+  for (let i = 0; i < _index.entries.length; i++) {
+    const rest = _index.entries[i][1];
+    const ext = rest.substring(rest.lastIndexOf('.') + 1).toLowerCase();
+    if (EXT_TO_PLAYER[ext]) out.add(ext.toUpperCase());
+  }
+  return out;
 }
 
 export function entryCount() {

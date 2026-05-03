@@ -3,7 +3,7 @@
 <!-- AUTO:DOC_META:START -->
 | Version | Updated |
 |:--|:--|
-| 0.9.8-6 | 2026-05-03 17:46 |
+| 0.9.8-7 | 2026-05-03 20:30 |
 <!-- AUTO:DOC_META:END -->
 
 A browser-based player for classic tracker module formats (MOD, XM, S3M, IT, AHX, SID) with local file lists and Modland search.
@@ -30,32 +30,31 @@ Description of the UI elements from the screenshot.
 | 07 | Copy Type value | html > body > div#player > div#info > div.info-field > span.label |
 | 08 | Type value | html > body > div#player > div#info > div.info-field > span.val |
 | 09 | Share / copy link | #share-btn |
-| 10 | Search tracks … | #filter |
-| 11 | Source | #search-mode-btn |
-| 12 | Tracks found / total | #filter-count |
-| 13 | Copy selected track links to clipboard | #btn-copy |
-| 14 | Download selected tracks as ZIP | #btn-zip |
-| 15 | Select list | #refine-folder-btn |
-| 16 | Select artist | #refine-artist-btn |
-| 17 | Select format | #refine-format-btn |
-| 18 | Options | #help-btn |
-| 19 | Track number / total found | #track-pos |
-| 20 | Toggle all, none, or restore track selection | #sel-bulk-cb |
-| 21 | Track artist | body > div#player > ul#playlist > li.remote > div.row-top > span.artist |
-| 22 | Track group | body > div#player > ul#playlist > li.remote > div.row-top > span.folder |
-| 23 | Track index | html > body > div#player > ul#playlist > li.remote > span.idx |
-| 24 | Track selector checkbox | html > body > div#player > ul#playlist > li.remote > input.sel-cb |
-| 25 | Track title | body > div#player > ul#playlist > li.remote > div.row-bot > span.title |
-| 26 | Track format | body > div#player > ul#playlist > li.remote > div.row-bot > span.ext |
-| 27 | Download track | body > div#player > ul#playlist > li.remote > div.row-bot > button.r-dl |
-| 28 | Play / Pause | #btn-play |
-| 29 | Track Time | #time |
-| 30 | Track Length | #duration |
-| 31 | Track seekbar | #seek |
-| 32 | Browse random tracks | #ml-random |
-| 33 | Result page | #refine-range-btn |
-| 34 | Add all search results | #ml-add-all |
-| 35 | Add track | button.r-add (first row) |
+| 10 | Select list | #refine-folder-btn |
+| 11 | Select artist | #refine-artist-btn |
+| 12 | Select format | #refine-format-btn |
+| 13 | Source | #search-mode-btn |
+| 14 | Options | #help-btn |
+| 15 | Copy selected track links to clipboard | #btn-copy |
+| 16 | Download selected tracks as ZIP | #btn-zip |
+| 17 | Search tracks … | #filter |
+| 18 | Track number / total found | #track-pos |
+| 19 | Toggle all, none, or restore track selection | #sel-bulk-cb |
+| 20 | Track artist | body > div#player > ul#playlist > li.remote > div.row-top > span.artist |
+| 21 | Track group | body > div#player > ul#playlist > li.remote > div.row-top > span.folder |
+| 22 | Track index | html > body > div#player > ul#playlist > li.remote > span.idx |
+| 23 | Track selector checkbox | html > body > div#player > ul#playlist > li.remote > input.sel-cb |
+| 24 | Track title | body > div#player > ul#playlist > li.remote > div.row-bot > span.title |
+| 25 | Track format | body > div#player > ul#playlist > li.remote > div.row-bot > span.ext |
+| 26 | Download track | body > div#player > ul#playlist > li.remote > div.row-bot > button.r-dl |
+| 27 | Play / Pause | #btn-play |
+| 28 | Track Time | #time |
+| 29 | Track Length | #duration |
+| 30 | Track seekbar | #seek |
+| 31 | Browse random tracks | #ml-random |
+| 32 | Result page | #refine-range-btn |
+| 33 | Add all search results | #ml-add-all |
+| 34 | Add track | button.r-add (first row) |
 
 </div>
 <!-- AUTO:UI_ELEMENT_TABLE:END -->

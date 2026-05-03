@@ -37,7 +37,8 @@
 }
 
 .ui-doc-number-bubble.below {
-  transform: translate(-50%, var(--tip-h));
+  transform: translate(-50%, calc(var(--tip-h) + 4px));
+  padding-bottom: 3px;
 }
 
 .ui-doc-number-bubble.below::after {

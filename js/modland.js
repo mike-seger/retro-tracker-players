@@ -143,7 +143,18 @@ export function doModlandSearch() {
   const raw = elFilter.value.trim();
   const skip = getRangeSkip();
 
-  if (raw.length < 2) {
+  if (!remoteSearch.isLoaded()) {
+    elFilterCnt.textContent = 'loading…';
+    remoteSearch.loadIndex().then(() => doModlandSearch());
+    return;
+  }
+
+  const allFormats = remoteSearch.availableFormats();
+  buildFormatPanel(allFormats);
+  const fmtActive = S.selectedFormats.size > 0 && S.selectedFormats.size < S._allFormatOptions.size;
+  const qActive = raw.length >= 2;
+
+  if (!qActive && !fmtActive) {
     S._lastSearchResults = [];
     S._inSearchResults = false;
     updateMlButtons();
@@ -154,29 +165,17 @@ export function doModlandSearch() {
   }
 
   const q = raw;
-
-  if (!remoteSearch.isLoaded()) {
-    elFilterCnt.textContent = 'loading…';
-    remoteSearch.loadIndex().then(() => doModlandSearch());
-    return;
-  }
-
-  const total = remoteSearch.count(q);
+  const total = remoteSearch.countWithFormats(q, fmtActive ? S.selectedFormats : null);
   let clampedSkip = skip;
   if (clampedSkip > 0 && clampedSkip + 200 > total) clampedSkip = Math.max(total - 200, 0);
 
-  const results = remoteSearch.search(q, 200, clampedSkip);
+  const results = remoteSearch.searchWithFormats(q, fmtActive ? S.selectedFormats : null, 200, clampedSkip);
   const filtered = results.filter(r => S.enabledPlayers[r.playerId] !== false);
   S._lastSearchSkip = clampedSkip;
   S._lastSearchTotal = total;
   S._inSearchResults = true;
 
   buildRangePanel(total);
-
-  // Populate format dropdown
-  const formats = new Set();
-  for (const r of filtered) formats.add(r.ext.toUpperCase());
-  buildFormatPanel(formats);
 
   const displayed = (S.selectedFormats.size > 0 && S.selectedFormats.size < S._allFormatOptions.size)
     ? filtered.filter(r => S.selectedFormats.has(r.ext.toUpperCase()))
@@ -353,8 +352,144 @@ export function doRandomBrowse(skip) {
 }
 
 // ── r-add dropdown ────────────────────────────────────
+let _addDropdownSession = null;
+
 function closeAddDropdown() {
+  _addDropdownSession = null;
   document.getElementById('r-add-dropdown')?.remove();
+}
+
+function positionAddDropdown(panel, btn) {
+  if (!panel || !btn) return;
+  const pad = 4;
+  const gap = 2;
+  const vw = window.innerWidth || document.documentElement.clientWidth;
+  const vh = window.innerHeight || document.documentElement.clientHeight;
+  const rect = btn.getBoundingClientRect();
+  panel.style.maxHeight = `${Math.max(120, vh - pad * 2)}px`;
+  const pw = panel.offsetWidth || 220;
+  const ph = panel.offsetHeight || 120;
+
+  let left = rect.right - pw;
+  if (left < pad) left = pad;
+  if (left + pw > vw - pad) left = Math.max(pad, vw - pad - pw);
+
+  const belowTop = rect.bottom + gap;
+  const aboveTop = rect.top - gap - ph;
+  const belowSpace = vh - pad - belowTop;
+  const aboveSpace = rect.top - pad - gap;
+
+  let top = belowTop;
+  if (ph > belowSpace && aboveSpace > belowSpace) {
+    top = aboveTop;
+  }
+  if (top < pad) top = pad;
+  if (top + ph > vh - pad) top = Math.max(pad, vh - pad - ph);
+
+  panel.style.cssText = `position:fixed;z-index:500;left:${left}px;top:${top}px;max-height:${Math.max(120, vh - pad * 2)}px;`;
+}
+
+function renderAddDropdown(panel, btn, track) {
+  panel.innerHTML = '';
+  const playlists = _addDropdownSession?.playlists || [];
+  const trackKey = pm.trackKey(track);
+  const scratchSet = new Set(S.modlandFiles.map(pm.trackKey));
+  const { artist, title } = parseTrackDisplay(track);
+  const li = btn.closest('li');
+  const syncScratchVisual = (checked) => {
+    if (li) li.classList.toggle('added', checked);
+    btn.textContent = checked ? '✓' : '+';
+  };
+
+  const head = document.createElement('div');
+  head.className = 'r-add-head';
+  const headArtist = document.createElement('div');
+  headArtist.className = 'r-add-head-artist';
+  headArtist.textContent = artist || 'Unknown';
+  const headTitle = document.createElement('div');
+  headTitle.className = 'r-add-head-title';
+  headTitle.textContent = title || track.name || 'Untitled';
+  head.appendChild(headArtist);
+  head.appendChild(headTitle);
+  panel.appendChild(head);
+
+  const buildRow = ({ text, checked, strong = false, onToggle }) => {
+    const row = document.createElement('label');
+    row.className = 'r-add-opt r-add-row' + (strong ? ' r-add-scratch' : '');
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = checked;
+    const txt = document.createElement(strong ? 'em' : 'span');
+    txt.textContent = text;
+    row.appendChild(cb);
+    row.appendChild(txt);
+
+    cb.addEventListener('change', async (e) => {
+      e.stopPropagation();
+      cb.disabled = true;
+      try {
+        await onToggle(cb.checked);
+      } finally {
+        cb.disabled = false;
+      }
+    });
+    row.addEventListener('click', (e) => e.stopPropagation());
+    return row;
+  };
+
+  panel.appendChild(buildRow({
+    text: 'Scratchpad',
+    checked: scratchSet.has(trackKey),
+    strong: true,
+    onToggle: async (checked) => {
+      if (checked) {
+        addModlandTrack(track);
+      } else {
+        S.modlandFiles = S.modlandFiles.filter(t => pm.trackKey(t) !== trackKey);
+        saveModlandUrls();
+      }
+      syncScratchVisual(checked);
+    },
+  }));
+
+  for (const pl of playlists) {
+    const inPlaylist = (pl.tracks || []).some(t => pm.trackKey(t) === trackKey);
+    panel.appendChild(buildRow({
+      text: pl.name,
+      checked: inPlaylist,
+      onToggle: async (checked) => {
+        if (checked) {
+          const added = await pm.addTrack(pl.id, track);
+          if (added && !(pl.tracks || []).some(t => pm.trackKey(t) === trackKey)) {
+            pl.tracks = [...(pl.tracks || []), track];
+          }
+        } else {
+          await pm.removeTrack(pl.id, trackKey);
+          pl.tracks = (pl.tracks || []).filter(t => pm.trackKey(t) !== trackKey);
+        }
+      },
+    }));
+  }
+}
+
+export function refreshOpenAddDropdown() {
+  const panel = document.getElementById('r-add-dropdown');
+  if (!_addDropdownSession || !panel) return;
+  if (S.searchMode !== 'modland' || !S._inSearchResults) {
+    closeAddDropdown();
+    return;
+  }
+  const idx = S.focusedIdx >= 0 ? S.focusedIdx : S.currentIdx;
+  const track = activeFiles()[idx];
+  const row = idx >= 0 ? elList.children[idx] : null;
+  const btn = row?.querySelector('.r-add');
+  if (!track || !btn) {
+    closeAddDropdown();
+    return;
+  }
+  _addDropdownSession.trackKey = pm.trackKey(track);
+  renderAddDropdown(panel, btn, track);
+  positionAddDropdown(panel, btn);
 }
 
 function openAddDropdown(btn, track) {
@@ -364,50 +499,18 @@ function openAddDropdown(btn, track) {
     const panel = document.createElement('div');
     panel.id = 'r-add-dropdown';
     panel.className = 'r-add-panel';
-
-    const scratchOpt = document.createElement('div');
-    scratchOpt.className = 'r-add-opt r-add-scratch';
-    const em = document.createElement('em');
-    em.textContent = 'Scratchpad';
-    scratchOpt.appendChild(em);
-    scratchOpt.addEventListener('click', (e) => {
-      e.stopPropagation();
-      closeAddDropdown();
-      const li = btn.closest('li');
-      if (!li || li.classList.contains('added')) return;
-      addModlandTrack(track);
-      li.classList.add('added');
-      btn.textContent = '✓';
-    });
-    panel.appendChild(scratchOpt);
-
-    for (const pl of playlists) {
-      const opt = document.createElement('div');
-      opt.className = 'r-add-opt';
-      opt.textContent = pl.name;
-      opt.addEventListener('click', (e) => {
-        e.stopPropagation();
-        closeAddDropdown();
-        pm.addTrack(pl.id, track).then(() => {
-          const prev = btn.textContent;
-          btn.textContent = '✓';
-          setTimeout(() => { if (btn.textContent === '✓') btn.textContent = prev; }, 1200);
-        });
-      });
-      panel.appendChild(opt);
-    }
+    _addDropdownSession = { playlists };
+    renderAddDropdown(panel, btn, track);
+    panel.addEventListener('click', (e) => e.stopPropagation());
 
     document.body.appendChild(panel);
-    const rect = btn.getBoundingClientRect();
-    const pw = 150;
-    let left = rect.right - pw;
-    if (left < 4) left = 4;
-    if (left + pw > window.innerWidth - 4) left = window.innerWidth - 4 - pw;
-    panel.style.cssText = `position:fixed;z-index:500;left:${left}px;top:${rect.bottom + 2}px;`;
+    positionAddDropdown(panel, btn);
   });
 }
 
 document.addEventListener('click', () => closeAddDropdown());
+window.addEventListener('resize', () => refreshOpenAddDropdown());
+elList.addEventListener('scroll', () => refreshOpenAddDropdown());
 
 // ── ML button listeners ───────────────────────────────
 elMlAddAll.addEventListener('click', () => {

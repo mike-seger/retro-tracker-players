@@ -18,11 +18,12 @@ import { switchMode, restorePersistedContext } from './mode.js';
 import { loadDeepLinkedTrack, applyDeepLinkFilters } from './deeplink.js';
 import { showResumePrompt } from './prompts.js';
 import { loadAndPlay } from './player.js';
+import { closeAllDropdowns } from './dropdown-keys.js';
 
 // Side-effect-only imports (register their own listeners)
 import './keyboard.js';
 import './pinch.js';
-import './doc-overlay.js';
+import { closeOptionsPanel } from './doc-overlay.js';
 import * as pm from './playlist-manager.js';
 import { closePlaylistOverlay } from './playlist-overlay.js';
 
@@ -200,6 +201,8 @@ function positionSearchModePanel() {
 
 elSearchMode.addEventListener('click', () => {
   if (elSearchModePanel.hidden) {
+    closeAllDropdowns();
+    closeOptionsPanel();
     elSearchModePanel.querySelectorAll('.src-opt').forEach(o =>
       o.classList.toggle('selected', o.dataset.value === S.searchMode));
     elSearchModePanel.hidden = false;

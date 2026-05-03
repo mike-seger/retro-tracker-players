@@ -130,4 +130,27 @@ export function showResumePrompt(trackName, onConfirm, showAutoOption = false) {
   overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
 }
 
+export function showAudioResumeDialog(onConfirm) {
+  const overlay = document.createElement('div');
+  overlay.className = 'confirm-overlay';
+  overlay.innerHTML =
+    `<div class="confirm-box">` +
+    `<div class="confirm-msg">Audio is suspended.<br><span class="confirm-detail">Tap to resume playback.</span></div>` +
+    `<div class="confirm-btns">` +
+    `<button class="confirm-yes">Resume Audio</button>` +
+    `<button class="confirm-no">Cancel</button>` +
+    `</div></div>`;
+  document.body.appendChild(overlay);
+  const yesBtn = overlay.querySelector('.confirm-yes');
+  const noBtn = overlay.querySelector('.confirm-no');
+  
+  yesBtn.addEventListener('click', () => {
+    overlay.remove();
+    onConfirm?.();
+  });
+  noBtn.addEventListener('click', () => overlay.remove());
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+  
+  yesBtn.focus();
+}
 

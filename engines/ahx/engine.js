@@ -22,7 +22,44 @@ export async function init() {
   await loadScript(BASE + 'ahx.js');
 }
 
-export async function load(url) {
+function decodeSafe(s) {
+  try { return decodeURIComponent(s); } catch (_) { return s; }
+}
+
+function parseMetaFromEntry(entry) {
+  if (!entry?.name) return null;
+  const decoded = decodeSafe(String(entry.name));
+  const slash = decoded.lastIndexOf('/');
+  const fileName = slash >= 0 ? decoded.substring(slash + 1) : decoded;
+  const folder = slash >= 0 ? decoded.substring(0, slash) : '';
+  const enDash = fileName.indexOf(' \u2013 ');
+  const hyphen = fileName.indexOf(' - ');
+  const dashIdx = enDash >= 0 ? enDash : hyphen;
+  if (dashIdx >= 0) {
+    return {
+      artist: fileName.substring(0, dashIdx).trim().replace(/_/g, ' '),
+      title: fileName.substring(dashIdx + 3).replace(/\.\w+$/i, '').trim().replace(/_/g, ' '),
+    };
+  }
+  return {
+    artist: folder.trim().replace(/_/g, ' '),
+    title: fileName.replace(/\.\w+$/i, '').trim().replace(/_/g, ' '),
+  };
+}
+
+function parseArtistFromUrl(url) {
+  try {
+    const u = new URL(url, window.location.href);
+    const parts = u.pathname.split('/').filter(Boolean);
+    if (parts.length >= 2) return decodeSafe(parts[parts.length - 2]);
+  } catch (_) {
+    const parts = String(url).split('/');
+    if (parts.length >= 2) return decodeSafe(parts[parts.length - 2]);
+  }
+  return '';
+}
+
+export async function load(url, entry = null) {
   const gen = ++_loadGen;
   _aborted = false;
   if (!master) master = AHXMaster();
@@ -43,13 +80,13 @@ export async function load(url) {
       master.Play(song);
       connectAudio();
 
-      // Extract artist from URL path: "ahx/files/Artist/song.ahx" → "Artist"
-      const parts = url.split('/');
-      const artist = parts.length >= 3 ? decodeURIComponent(parts[parts.length - 2]) : '';
+      const parsed = parseMetaFromEntry(entry);
+      const artist = parsed?.artist || parseArtistFromUrl(url) || '—';
+      const title = parsed?.title || song.Name || '—';
 
       resolve({
         fields: [
-          { label: 'Title',     value: song.Name || '—' },
+          { label: 'Title',     value: title },
           { label: 'Artist',    value: artist },
           { label: 'Positions', value: song.PositionNr + ' positions, ' + song.TrackLength + ' steps' },
         ],

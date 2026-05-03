@@ -498,3 +498,14 @@ export function setVolume(v) {
 export function isEnded() { return _ended; }
 export function onEnd(cb) { _onEnd = cb; }
 export function destroy() { stopPoll(); if (player) player.stop(); }
+
+// ── iOS audio suspend detection ────────────────────
+export function isContextSuspended() {
+  return audioCtx?.state === 'suspended';
+}
+
+export async function attemptContextResume() {
+  if (audioCtx?.state === 'suspended') {
+    try { await audioCtx.resume(); } catch (_) {}
+  }
+}

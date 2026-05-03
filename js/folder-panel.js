@@ -127,14 +127,14 @@ export async function buildFolderPanel(folders) {
       type: 'folder',
       id: name,
       name: pm.isSystemFolder(name) ? pm.getSystemFolderLabel(name) : name,
-    }))
-    .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+    }));
 
   const playlistOptions = visiblePlaylists
-    .map(pl => ({ type: 'playlist', id: pl.id, name: pl.name }))
-    .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+    .map(pl => ({ type: 'playlist', id: pl.id, name: pl.name }));
 
-  const options = [...folderOptions, ...playlistOptions];
+  // Sort all lists together alphabetically, case-insensitive
+  const options = [...folderOptions, ...playlistOptions]
+    .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
 
   for (const opt of options) {
     const label = document.createElement('label');
@@ -163,12 +163,6 @@ export async function buildFolderPanel(folders) {
     });
 
     label.appendChild(cb);
-    if (opt.type === 'playlist') {
-      const badge = document.createElement('span');
-      badge.className = 'pl-badge';
-      badge.textContent = 'P';
-      label.appendChild(badge);
-    }
     label.appendChild(document.createTextNode(opt.name));
     panel.appendChild(label);
   }

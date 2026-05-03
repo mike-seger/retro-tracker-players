@@ -6,11 +6,12 @@ import { cacheFetch, cacheHas } from './cache.js';
 import { activeFiles, highlightCurrent, setFocus, updateTrackPos,
          getVisibleIndices, alignInfoValueColumn, scrollIntoViewSmart } from './playlist.js';
 import { setAdvanceTrackCallback } from './engines.js';
+import { showAudioResumeDialog } from './prompts.js';
 
 function renderInfoFields(fields) {
   elInfo.innerHTML = fields.map((f) =>
     `<div class="info-field">` +
-    `<span class="label" aria-label="${esc(f.label)} label" title="Copy ${esc(f.label)}" data-copy="${esc(f.value)}" data-ui-doc="1">${esc(f.label)}:&nbsp;</span>` +
+    `<span class="label" aria-label="${esc(f.label)} label" title="Copy ${esc(f.label)}" data-copy="${esc(f.value)}" data-ui-doc="1">${esc(f.label)}</span>` +
     `<span class="val" aria-label="${esc(f.label)} value" data-ui-doc="1">${esc(f.value)}</span>` +
     `</div>`
   ).join('');
@@ -24,6 +25,28 @@ function renderInfoStatus(engineValue) {
     { label: 'Type', value: '—' },
     { label: 'Tracker', value: '—' },
   ]);
+}
+
+// ── iOS audio context suspension detection ─────────
+async function checkAndHandleAudioSuspension(playerId, idx) {
+  if (playerId !== 'mod') return false; // Only MOD engine has the check function
+  try {
+    const eng = S.engines[playerId];
+    if (eng?.isContextSuspended?.()) {
+      const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+        (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
+      if (isMobile) {
+        showAudioResumeDialog(async () => {
+          // Try to resume the context
+          await eng.attemptContextResume?.();
+          // Retry the play
+          await loadAndPlay(idx);
+        });
+        return true;
+      }
+    }
+  } catch (_) {}
+  return false;
 }
 
 // ── load + play ───────────────────────────────────────
@@ -81,7 +104,7 @@ export async function loadAndPlay(idx) {
     const playUrl = await cacheFetch(url);
     if (seq !== S._loadSeq) { engine.pause(); return; }
     const tFetch = performance.now();
-    const result = await engine.load(playUrl);
+    const result = await engine.load(playUrl, entry);
     if (seq !== S._loadSeq) { engine.pause(); return; }
     const tLoad = performance.now();
 
@@ -93,6 +116,12 @@ export async function loadAndPlay(idx) {
     }
   } catch (e) {
     if (seq !== S._loadSeq) { try { engine?.pause(); } catch (_) {} return; }
+    
+    // Check if audio is suspended (e.g., after iOS screen lock)
+    if (await checkAndHandleAudioSuspension(entry.playerId, idx)) {
+      return;
+    }
+    
     console.error('Failed to load', url, e);
     renderInfoStatus('Error loading track');
   }
