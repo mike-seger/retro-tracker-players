@@ -3,11 +3,12 @@
 <!-- AUTO:DOC_META:START -->
 | Version | Updated |
 |:--|:--|
-| 0.9.6-1-3 | 2026-05-02 21:21 |
+| 0.9.6-1-4 | 2026-05-03 01:33 |
 <!-- AUTO:DOC_META:END -->
 
+A single-page browser-based chiptune player for the golden age of demoscene music, from C64 SID chips to Amiga tracker modules. It includes built-in local playlists and instant access to the Modland archive with 225K+ compatible tracker modules. Results can be narrowed with smart filters, and you can build your own custom lists from what you find.
 
-A single-page browser-based chiptune player covering the golden age of demoscene music — from C64 SID chips to Amiga tracker modules. No installs, no plugins, no nonsense. Just open a browser and press play.
+No installs, no plugins, no nonsense. Just open a browser and press play.
 
 Demo: [ReTrap](https://mike-seger.github.io/retro-tracker-players/)
 
