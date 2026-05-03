@@ -70,5 +70,32 @@
         "https://modland.com/pub/modules/HVSC/MUSICIANS/N/Nordischsound/Popcorn.sid",
         "https://modland.com/pub/modules/HVSC/MUSICIANS/P/Proton/Popcorn.sid",
         "https://modland.com/pub/modules/HVSC/MUSICIANS/R/Randy/Popcorn-remix.sid"
+    ],
+    "waltz+polka": [
+        "https://modland.com/pub/modules/Protracker/Absys/yodel%20waltz.short.mod",
+        "https://modland.com/pub/modules/Protracker/AM-FM/lam0r%20waltz.mod",
+        "https://modland.com/pub/modules/Fasttracker%202/Aureate/mobius%20waltz.xm",
+        "https://modland.com/pub/modules/HVSC/MUSICIANS/B/Bakker_Nantco/One_Night_Polka.sid",
+        "https://modland.com/pub/modules/Protracker/Cartoon/waltwaltz.mod",
+        "https://modland.com/pub/modules/Fasttracker%202/Cerror/polka%20puke.xm",
+        "https://modland.com/pub/modules/Fasttracker%202/Dalezy/scurvy%20waltz.xm",
+        "https://modland.com/pub/modules/HVSC/MUSICIANS/D/DRAX/Capripholian_Waltz.sid",
+        "https://modland.com/pub/modules/Protracker/Fabian/polkasta.mod",
+        "https://modland.com/pub/modules/HVSC/MUSICIANS/F/FieserWolF/Evas_Polka.sid",
+        "https://modland.com/pub/modules/HVSC/MUSICIANS/F/Froyd/Waltz.sid",
+        "https://modland.com/pub/modules/HVSC/MUSICIANS/B/Blues_Muz/Gallefoss_Glenn/Polkapop.sid",
+        "https://modland.com/pub/modules/Impulsetracker/Grizzly/the%20polka%20of%20your%20life.it",
+        "https://modland.com/pub/modules/Protracker/Heatbeat/kikka-waltz.mod",
+        "https://modland.com/pub/modules/Protracker/Jerry/jerry-polka-ext!.mod",
+        "https://modland.com/pub/modules/Protracker/Kollaps/polka%20abend.mod",
+        "https://modland.com/pub/modules/HVSC/MUSICIANS/M/Marquis_Dave/Gold_and_Silver_Waltz.sid",
+        "https://modland.com/pub/modules/Fasttracker%202/Metal/olga%20polka.xm",
+        "https://modland.com/pub/modules/Impulsetracker/Nimbus/ot%20waltz.it",
+        "https://modland.com/pub/modules/Protracker/Oxbow/musikverein%20polka%20.%20unusu.mod",
+        "https://modland.com/pub/modules/Protracker/Technix/waltzer%20boy.mod",
+        "https://modland.com/pub/modules/Protracker/The%20Hooligan/sacklake's%20polka.mod",
+        "https://modland.com/pub/modules/Fasttracker%202/Tito/vodka%20polka.xm",
+        "https://modland.com/pub/modules/HVSC/MUSICIANS/W/Worthley_Rich/Minute_Waltz.sid",
+        "https://modland.com/pub/modules/Protracker/Zixaq/polka%20ba%20jolka.mod"
     ]
 }
