@@ -76,6 +76,74 @@ function classify(el) {
   return el.isControl ? 'control' : 'information';
 }
 
+function remapLabelEntry(name, category) {
+  const raw = String(name || '').trim();
+  if (category !== 'information') return { name: raw, category };
+  const m = raw.match(/^(.*)\s+label$/i);
+  if (!m) return { name: raw, category };
+  const base = String(m[1] || '').trim();
+  if (!base) return { name: raw, category };
+  return {
+    name: `Copy ${base} value`,
+    category: 'control',
+  };
+}
+
+function mergeStaticControls(elements) {
+  const extras = [
+    {
+      key: 'ml-random',
+      name: 'Browse random tracks',
+      category: 'control',
+      xpath: "//*[@id='ml-random']",
+      humanXPath: '#ml-random',
+      notes: 'control-match; static-control',
+      tag: 'button',
+      id: 'ml-random',
+    },
+    {
+      key: 'refine-range-btn',
+      name: 'Result page',
+      category: 'control',
+      xpath: "//*[@id='refine-range-btn']",
+      humanXPath: '#refine-range-btn',
+      notes: 'control-match; static-control',
+      tag: 'button',
+      id: 'refine-range-btn',
+    },
+    {
+      key: 'ml-add-all',
+      name: 'Add all search results',
+      category: 'control',
+      xpath: "//*[@id='ml-add-all']",
+      humanXPath: '#ml-add-all',
+      notes: 'control-match; static-control',
+      tag: 'button',
+      id: 'ml-add-all',
+    },
+    {
+      key: 'control-track-add',
+      name: 'Add track',
+      category: 'control',
+      xpath: "(//button[contains(concat(' ', normalize-space(@class), ' '), ' r-add ')])[1]",
+      humanXPath: 'button.r-add (first row)',
+      notes: 'control-match; static-control',
+      tag: 'button',
+    },
+  ];
+
+  for (const extra of extras) {
+    const exists = elements.some((e) =>
+      (extra.id && e.id === extra.id) ||
+      e.key === extra.key ||
+      e.xpath === extra.xpath
+    );
+    if (!exists) elements.push(extra);
+  }
+
+  return elements;
+}
+
 async function loadPlaywright() {
   try {
     return await import('playwright');
@@ -617,14 +685,16 @@ async function main() {
     const keyCounts = new Map();
     const elements = raw
       .map((el) => {
-        const category = classify(el);
-        const base = slugify(el.id || `${category}-${el.name}`);
+        const mapped = remapLabelEntry(el.name, classify(el));
+        const category = mapped.category;
+        const finalName = mapped.name;
+        const base = slugify(el.id || `${category}-${finalName}`);
         const n = (keyCounts.get(base) || 0) + 1;
         keyCounts.set(base, n);
         const key = n === 1 ? base : `${base}-${n}`;
         return {
           key,
-          name: prettyName(el.name),
+          name: prettyName(finalName),
           category,
           xpath: el.xpath,
           humanXPath: el.humanXPath,
@@ -633,6 +703,8 @@ async function main() {
           ...(el.id ? { id: el.id } : {}),
         };
       });
+
+    mergeStaticControls(elements);
 
     await annotateElementsForScreenshot(page, raw, docStyles);
     fs.mkdirSync(path.dirname(args.screenshot), { recursive: true });

@@ -3,6 +3,42 @@ import { S, elRefineFolderBtn, elRefineFolderPanel } from './state.js';
 import { openDropdown, registerDropdown } from './dropdown-keys.js';
 
 let _savedFolders = null;
+let _openedFolders = null;
+let _openedFolderState = null;
+
+function selectionState(selectedSize, totalSize) {
+  if (totalSize > 0 && selectedSize === totalSize) return 'all';
+  if (selectedSize === 0) return 'none';
+  return 'some';
+}
+
+function cycleMasterFolders() {
+  const totalSize = S._allFolderOptions.size;
+  const current = selectionState(S.selectedFolders.size, totalSize);
+  const opened = _openedFolderState || current;
+
+  let next;
+  if (opened === 'some') {
+    next = current === 'some' ? 'none' : (current === 'none' ? 'all' : 'some');
+  } else if (opened === 'all') {
+    next = current === 'none' ? 'all' : 'none';
+  } else {
+    next = current === 'all' ? 'none' : 'all';
+  }
+
+  if (next === 'all') {
+    S.selectedFolders = new Set(S._allFolderOptions);
+  } else if (next === 'none') {
+    S.selectedFolders = new Set();
+  } else {
+    const restored = [...(_openedFolders || [])].filter(f => S._allFolderOptions.has(f));
+    S.selectedFolders = new Set(restored);
+  }
+
+  updateFolderBtn();
+  syncFolderCheckboxes();
+  _onFolderChange?.();
+}
 
 let _onFolderChange = null;
 export function setFolderChangeHandler(fn) { _onFolderChange = fn; }
@@ -16,10 +52,13 @@ export function buildFolderPanel(folders) {
   const panel = elRefineFolderPanel;
   panel.innerHTML = '';
 
+  const head = document.createElement('div');
+  head.className = 'panel-head';
+
   const title = document.createElement('div');
   title.className = 'panel-title';
   title.textContent = 'Folder';
-  panel.appendChild(title);
+  head.appendChild(title);
 
   const master = document.createElement('label');
   master.className = 'fmt-opt fmt-master';
@@ -28,16 +67,11 @@ export function buildFolderPanel(folders) {
   masterCb.type = 'checkbox';
   masterCb.value = '__master__';
   masterCb.checked = true;
-  masterCb.addEventListener('change', () => {
-    if (masterCb.checked) S.selectedFolders = new Set(S._allFolderOptions);
-    else S.selectedFolders = new Set();
-    updateFolderBtn();
-    syncFolderCheckboxes();
-    _onFolderChange?.();
-  });
+  masterCb.addEventListener('change', cycleMasterFolders);
   master.appendChild(masterCb);
-  master.appendChild(document.createTextNode(''));
-  panel.appendChild(master);
+  master.appendChild(document.createTextNode('*'));
+  head.appendChild(master);
+  panel.appendChild(head);
 
   for (const f of sorted) {
     const label = document.createElement('label');
@@ -103,11 +137,17 @@ elRefineFolderBtn.addEventListener('click', (e) => {
 registerDropdown({
   btn: elRefineFolderBtn,
   panel: elRefineFolderPanel,
-  saveState: () => { _savedFolders = new Set(S.selectedFolders); },
+  saveState: () => {
+    _savedFolders = new Set(S.selectedFolders);
+    _openedFolders = new Set(S.selectedFolders);
+    _openedFolderState = selectionState(S.selectedFolders.size, S._allFolderOptions.size);
+  },
   restoreState: () => {
     if (_savedFolders !== null) {
       S.selectedFolders = _savedFolders;
       _savedFolders = null;
+      _openedFolders = null;
+      _openedFolderState = null;
       updateFolderBtn();
       syncFolderCheckboxes();
       _onFolderChange?.();

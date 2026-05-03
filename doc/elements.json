@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-03T02:06:43.127Z",
+  "generatedAt": "2026-05-03T02:27:53.119Z",
   "sourceUrl": "http://127.0.0.1:8080/index.html",
   "screenshotPath": "doc/elements-view.png",
   "viewport": {
@@ -8,15 +8,15 @@
     "height": 480
   },
   "stats": {
-    "total": 30,
-    "controls": 14,
-    "information": 16
+    "total": 34,
+    "controls": 22,
+    "information": 12
   },
   "elements": [
     {
-      "key": "information-engine-label",
-      "name": "Engine label",
-      "category": "information",
+      "key": "control-copy-engine-value",
+      "name": "Copy Engine value",
+      "category": "control",
       "xpath": "//span[@aria-label='Engine label']",
       "humanXPath": "html > body > div#player > div#info > div.info-field > span.label",
       "notes": "text-match",
@@ -32,9 +32,9 @@
       "tag": "span"
     },
     {
-      "key": "information-tracker-label",
-      "name": "Tracker label",
-      "category": "information",
+      "key": "control-copy-tracker-value",
+      "name": "Copy Tracker value",
+      "category": "control",
       "xpath": "//span[@aria-label='Tracker label']",
       "humanXPath": "html > body > div#player > div#info > div.info-field > span.label",
       "notes": "text-match",
@@ -50,9 +50,9 @@
       "tag": "span"
     },
     {
-      "key": "information-title-label",
-      "name": "Title label",
-      "category": "information",
+      "key": "control-copy-title-value",
+      "name": "Copy Title value",
+      "category": "control",
       "xpath": "//span[@aria-label='Title label']",
       "humanXPath": "html > body > div#player > div#info > div.info-field > span.label",
       "notes": "text-match",
@@ -68,9 +68,9 @@
       "tag": "span"
     },
     {
-      "key": "information-type-label",
-      "name": "Type label",
-      "category": "information",
+      "key": "control-copy-type-value",
+      "name": "Copy Type value",
+      "category": "control",
       "xpath": "//span[@aria-label='Type label']",
       "humanXPath": "html > body > div#player > div#info > div.info-field > span.label",
       "notes": "text-match",
@@ -256,6 +256,45 @@
       "xpath": "/html[1]/body[1]/div[1]/ul[1]/li[1]/div[2]/button[1]",
       "humanXPath": "body > div#player > ul#playlist > li.current > div.row-bot > button.r-dl",
       "notes": "control-match; text-match",
+      "tag": "button"
+    },
+    {
+      "key": "ml-random",
+      "name": "Browse random tracks",
+      "category": "control",
+      "xpath": "//*[@id='ml-random']",
+      "humanXPath": "#ml-random",
+      "notes": "control-match; static-control",
+      "tag": "button",
+      "id": "ml-random"
+    },
+    {
+      "key": "refine-range-btn",
+      "name": "Result page",
+      "category": "control",
+      "xpath": "//*[@id='refine-range-btn']",
+      "humanXPath": "#refine-range-btn",
+      "notes": "control-match; static-control",
+      "tag": "button",
+      "id": "refine-range-btn"
+    },
+    {
+      "key": "ml-add-all",
+      "name": "Add all search results",
+      "category": "control",
+      "xpath": "//*[@id='ml-add-all']",
+      "humanXPath": "#ml-add-all",
+      "notes": "control-match; static-control",
+      "tag": "button",
+      "id": "ml-add-all"
+    },
+    {
+      "key": "control-track-add",
+      "name": "Add track",
+      "category": "control",
+      "xpath": "(//button[contains(concat(' ', normalize-space(@class), ' '), ' r-add ')])[1]",
+      "humanXPath": "button.r-add (first row)",
+      "notes": "control-match; static-control",
       "tag": "button"
     },
     {

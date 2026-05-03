@@ -3,6 +3,42 @@ import { S, elRefineArtistBtn, elRefineArtistPanel } from './state.js';
 import { openDropdown, registerDropdown } from './dropdown-keys.js';
 
 let _savedArtists = null;
+let _openedArtists = null;
+let _openedArtistState = null;
+
+function selectionState(selectedSize, totalSize) {
+  if (totalSize > 0 && selectedSize === totalSize) return 'all';
+  if (selectedSize === 0) return 'none';
+  return 'some';
+}
+
+function cycleMasterArtists() {
+  const totalSize = S._allArtistOptions.size;
+  const current = selectionState(S.selectedArtists.size, totalSize);
+  const opened = _openedArtistState || current;
+
+  let next;
+  if (opened === 'some') {
+    next = current === 'some' ? 'none' : (current === 'none' ? 'all' : 'some');
+  } else if (opened === 'all') {
+    next = current === 'none' ? 'all' : 'none';
+  } else {
+    next = current === 'all' ? 'none' : 'all';
+  }
+
+  if (next === 'all') {
+    S.selectedArtists = new Set(S._allArtistOptions);
+  } else if (next === 'none') {
+    S.selectedArtists = new Set();
+  } else {
+    const restored = [...(_openedArtists || [])].filter(a => S._allArtistOptions.has(a));
+    S.selectedArtists = new Set(restored);
+  }
+
+  updateArtistBtn();
+  syncArtistCheckboxes();
+  _onArtistChange?.();
+}
 
 let _onArtistChange = null;
 export function setArtistChangeHandler(fn) { _onArtistChange = fn; }
@@ -16,10 +52,13 @@ export function buildArtistPanel(artists) {
   const panel = elRefineArtistPanel;
   panel.innerHTML = '';
 
+  const head = document.createElement('div');
+  head.className = 'panel-head';
+
   const title = document.createElement('div');
   title.className = 'panel-title';
   title.textContent = 'Artist';
-  panel.appendChild(title);
+  head.appendChild(title);
 
   const master = document.createElement('label');
   master.className = 'fmt-opt fmt-master';
@@ -28,16 +67,11 @@ export function buildArtistPanel(artists) {
   masterCb.type = 'checkbox';
   masterCb.value = '__master__';
   masterCb.checked = true;
-  masterCb.addEventListener('change', () => {
-    if (masterCb.checked) S.selectedArtists = new Set(S._allArtistOptions);
-    else S.selectedArtists = new Set();
-    updateArtistBtn();
-    syncArtistCheckboxes();
-    _onArtistChange?.();
-  });
+  masterCb.addEventListener('change', cycleMasterArtists);
   master.appendChild(masterCb);
-  master.appendChild(document.createTextNode(''));
-  panel.appendChild(master);
+  master.appendChild(document.createTextNode('*'));
+  head.appendChild(master);
+  panel.appendChild(head);
 
   for (const a of sorted) {
     const label = document.createElement('label');
@@ -103,11 +137,17 @@ elRefineArtistBtn.addEventListener('click', (e) => {
 registerDropdown({
   btn: elRefineArtistBtn,
   panel: elRefineArtistPanel,
-  saveState: () => { _savedArtists = new Set(S.selectedArtists); },
+  saveState: () => {
+    _savedArtists = new Set(S.selectedArtists);
+    _openedArtists = new Set(S.selectedArtists);
+    _openedArtistState = selectionState(S.selectedArtists.size, S._allArtistOptions.size);
+  },
   restoreState: () => {
     if (_savedArtists !== null) {
       S.selectedArtists = _savedArtists;
       _savedArtists = null;
+      _openedArtists = null;
+      _openedArtistState = null;
       updateArtistBtn();
       syncArtistCheckboxes();
       _onArtistChange?.();

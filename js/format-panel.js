@@ -3,6 +3,42 @@ import { S, elRefineFormatBtn, elRefineFormatPanel } from './state.js';
 import { openDropdown, registerDropdown } from './dropdown-keys.js';
 
 let _savedFormats = null;
+let _openedFormats = null;
+let _openedFormatState = null;
+
+function selectionState(selectedSize, totalSize) {
+  if (totalSize > 0 && selectedSize === totalSize) return 'all';
+  if (selectedSize === 0) return 'none';
+  return 'some';
+}
+
+function cycleMasterFormats() {
+  const totalSize = S._allFormatOptions.size;
+  const current = selectionState(S.selectedFormats.size, totalSize);
+  const opened = _openedFormatState || current;
+
+  let next;
+  if (opened === 'some') {
+    next = current === 'some' ? 'none' : (current === 'none' ? 'all' : 'some');
+  } else if (opened === 'all') {
+    next = current === 'none' ? 'all' : 'none';
+  } else {
+    next = current === 'all' ? 'none' : 'all';
+  }
+
+  if (next === 'all') {
+    S.selectedFormats = new Set(S._allFormatOptions);
+  } else if (next === 'none') {
+    S.selectedFormats = new Set();
+  } else {
+    const restored = [...(_openedFormats || [])].filter(f => S._allFormatOptions.has(f));
+    S.selectedFormats = new Set(restored);
+  }
+
+  updateFormatBtn();
+  syncFormatCheckboxes();
+  _onFormatChange?.();
+}
 
 // Set by app.js after all modules are loaded, to avoid circular import at eval time.
 let _onFormatChange = null;
@@ -18,10 +54,13 @@ export function buildFormatPanel(formats) {
   const panel = elRefineFormatPanel;
   panel.innerHTML = '';
 
+  const head = document.createElement('div');
+  head.className = 'panel-head';
+
   const title = document.createElement('div');
   title.className = 'panel-title';
   title.textContent = 'Format';
-  panel.appendChild(title);
+  head.appendChild(title);
 
   const master = document.createElement('label');
   master.className = 'fmt-opt fmt-master';
@@ -30,16 +69,11 @@ export function buildFormatPanel(formats) {
   masterCb.type = 'checkbox';
   masterCb.value = '__master__';
   masterCb.checked = true;
-  masterCb.addEventListener('change', () => {
-    if (masterCb.checked) S.selectedFormats = new Set(S._allFormatOptions);
-    else S.selectedFormats = new Set();
-    updateFormatBtn();
-    syncFormatCheckboxes();
-    _onFormatChange?.();
-  });
+  masterCb.addEventListener('change', cycleMasterFormats);
   master.appendChild(masterCb);
-  master.appendChild(document.createTextNode(''));
-  panel.appendChild(master);
+  master.appendChild(document.createTextNode('*'));
+  head.appendChild(master);
+  panel.appendChild(head);
 
   for (const fmt of sorted) {
     const label = document.createElement('label');
@@ -105,11 +139,17 @@ elRefineFormatBtn.addEventListener('click', (e) => {
 registerDropdown({
   btn: elRefineFormatBtn,
   panel: elRefineFormatPanel,
-  saveState: () => { _savedFormats = new Set(S.selectedFormats); },
+  saveState: () => {
+    _savedFormats = new Set(S.selectedFormats);
+    _openedFormats = new Set(S.selectedFormats);
+    _openedFormatState = selectionState(S.selectedFormats.size, S._allFormatOptions.size);
+  },
   restoreState: () => {
     if (_savedFormats !== null) {
       S.selectedFormats = _savedFormats;
       _savedFormats = null;
+      _openedFormats = null;
+      _openedFormatState = null;
       updateFormatBtn();
       syncFormatCheckboxes();
       _onFormatChange?.();

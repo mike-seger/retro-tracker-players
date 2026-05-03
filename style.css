@@ -43,6 +43,7 @@ body.mode-modland {
 ::-webkit-scrollbar-track { background: #1a1a1a; }
 ::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: #555; }
+::-webkit-scrollbar-corner { background: #1a1a1a; }
 
 /* ── player area ───────────────────────────────────── */
 #player {
@@ -244,6 +245,12 @@ body.mode-modland {
   padding: 5px 12px 4px; font-size: 11px; font-weight: bold; letter-spacing: 0.06em;
   text-transform: uppercase; color: #888; background: #1a1a1a;
   border-bottom: 1px solid #444; user-select: none;
+}
+.panel-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #222;
 }
 .fmt-opt {
   display: flex; align-items: center; gap: 6px;
@@ -468,7 +475,7 @@ body.mode-modland {
 /* ── help overlay ───────────────────────────────── */
 #help-overlay {
   position: absolute; inset: 0; background: #141414;
-  overflow-y: auto; z-index: 200; padding: 12px 16px 24px;
+  overflow-y: auto; overflow-x: hidden; z-index: 200; padding: 12px 16px 24px;
   box-sizing: border-box;
 }
 #help-overlay[hidden] { display: none; }
@@ -480,7 +487,7 @@ body.mode-modland {
 }
 #help-close:hover { color: #faa; border-color: #faa; }
 #help-content {
-  max-width: 680px; margin: 0 auto; font-size: 13px;
+  max-width: 680px; width: min(680px, 100%); margin: 0 auto; font-size: 13px;
   line-height: 1.65; color: #bbb;
 }
 #help-content h1, #help-content h2, #help-content h3 {
@@ -505,7 +512,8 @@ body.mode-modland {
 #help-content th,
 #help-content td {
   padding: 0.1em 0.8em 0.1em 0;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 #help-content th:last-child,
 #help-content td:last-child {

@@ -117,6 +117,11 @@ function popupHTML() {
 <style>
   * { box-sizing: border-box; }
   body { margin: 0; padding: 12px; font: 13px/1.4 -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif; background: #121212; color: #ddd; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: #1a1a1a; }
+  ::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #555; }
+  ::-webkit-scrollbar-corner { background: #1a1a1a; }
   .top { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
   .top input { flex: 1; background: #1b1b1b; color: #ddd; border: 1px solid #444; border-radius: 4px; padding: 6px 8px; }
   .top button { background: #232323; color: #ddd; border: 1px solid #555; border-radius: 4px; padding: 6px 10px; cursor: pointer; }
@@ -128,6 +133,10 @@ function popupHTML() {
   thead th { position: sticky; top: 0; background: #1a1a1a; z-index: 2; }
   tr:hover { background: #1c2530; }
   tr.active { background: #2a3e55; }
+  tr.row-hover { background: #1e2e1e; }
+  tr.active.row-hover { background: #2a3e55; }
+  tr.dim { opacity: 0.35; }
+  tr.dim:hover { background: #151515; }
   .num { color: #666; text-align: right; width: 2.5em; user-select: none; }
   .cat { color: #a8c7ff; white-space: nowrap; }
   .code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: #9ad2ff; font-size: 11px; }
@@ -157,7 +166,9 @@ function popupHTML() {
   let all = [];
   let filtered = [];
   let selectedKey = '';
+  let hoverKey = '';
   const coordCache = new Map();
+  const visibilityCache = new Map();
   const meta = document.getElementById('meta');
   const q = document.getElementById('q');
   const rows = document.getElementById('rows');
@@ -204,11 +215,66 @@ function popupHTML() {
     return list;
   }
 
+  function isActuallyVisible(node) {
+    if (!node || !(node instanceof window.opener.Element)) return false;
+    if (node.hidden || node.closest('[hidden]')) return false;
+    if (node.classList.contains('hidden') || node.closest('.hidden')) return false;
+    const st = window.opener.getComputedStyle(node);
+    if (st.display === 'none' || st.visibility === 'hidden' || st.opacity === '0') return false;
+    const r = node.getBoundingClientRect();
+    return r.width > 0 && r.height > 0;
+  }
+
+  function isRowDimmed(el) {
+    if (!el || el.category !== 'control') return false;
+    const key = cacheKey(el);
+    if (visibilityCache.has(key)) return visibilityCache.get(key);
+
+    let dim = true;
+    try {
+      if (window.opener && !window.opener.closed) {
+        const doc = window.opener.document;
+        const node = doc.evaluate(el.xpath, doc, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+        dim = !isActuallyVisible(node);
+      }
+    } catch (_) {
+      dim = true;
+    }
+
+    visibilityCache.set(key, dim);
+    return dim;
+  }
+
+  function getNavigableIndices() {
+    visibilityCache.clear();
+    const out = [];
+    for (let i = 0; i < filtered.length; i++) {
+      if (!isRowDimmed(filtered[i])) out.push(i);
+    }
+    return out;
+  }
+
+  function refreshDimming() {
+    if (!rows) return;
+    visibilityCache.clear();
+    rows.querySelectorAll('tr[data-i]').forEach((tr) => {
+      const i = Number(tr.dataset.i);
+      const el = filtered[i];
+      if (!el) return;
+      tr.classList.toggle('dim', isRowDimmed(el));
+    });
+  }
+
   function render() {
+    visibilityCache.clear();
+    const digits = Math.max(2, String(filtered.length || 0).length);
     rows.innerHTML = filtered.map((e, i) => {
-      const active = e.key === selectedKey ? ' class="active"' : '';
-      return '<tr data-i="' + i + '"' + active + '>' +
-        '<td class="num">' + (i + 1) + '</td>' +
+      const cls = [];
+      if (e.key === selectedKey) cls.push('active');
+      if (isRowDimmed(e)) cls.push('dim');
+      const classAttr = cls.length ? (' class="' + cls.join(' ') + '"') : '';
+      return '<tr data-i="' + i + '"' + classAttr + '>' +
+        '<td class="num">' + String(i + 1).padStart(digits, '0') + '</td>' +
         '<td class="cat">' + esc(e.category) + '</td>' +
         '<td>' + esc(e.name) + '</td>' +
         '<td class="code">' + esc(e.humanXPath || e.xpath) + '</td>' +
@@ -218,6 +284,7 @@ function popupHTML() {
   }
 
   function applyFilter() {
+    visibilityCache.clear();
     const needle = q.value.trim().toLowerCase();
     if (!needle) {
       filtered = all.slice();
@@ -228,6 +295,38 @@ function popupHTML() {
       });
     }
     render();
+  }
+
+  function updateRowHover() {
+    rows.querySelectorAll('tr.row-hover').forEach((tr) => tr.classList.remove('row-hover'));
+    if (!hoverKey) return;
+    const idx = filtered.findIndex((e) => e.key === hoverKey);
+    if (idx !== -1) {
+      const tr = rows.querySelector('tr[data-i="' + idx + '"]');
+      if (tr) { tr.classList.add('row-hover'); tr.scrollIntoView({ block: 'nearest' }); }
+    }
+  }
+
+  function attachOpenerHover() {
+    if (!window.opener || window.opener.closed) return;
+    window.opener.document.addEventListener('mouseover', (ev) => {
+      const target = ev.target;
+      for (const el of all) {
+        if (!el.xpath) continue;
+        try {
+          const doc = window.opener.document;
+          const node = doc.evaluate(el.xpath, doc, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+          if (node && (node === target || node.contains(target))) {
+            if (hoverKey !== el.key) { hoverKey = el.key; updateRowHover(); }
+            return;
+          }
+        } catch (_) {}
+      }
+      if (hoverKey) { hoverKey = ''; updateRowHover(); }
+    }, { passive: true });
+    window.opener.document.addEventListener('mouseleave', () => {
+      if (hoverKey) { hoverKey = ''; updateRowHover(); }
+    }, { passive: true });
   }
 
   function postHighlight(xpath) {
@@ -272,6 +371,7 @@ function popupHTML() {
       const data = await fetch(url, { cache: 'no-store' }).then((r) => r.ok ? r.json() : Promise.reject(r.status));
       all = Array.isArray(data.elements) ? data.elements : [];
       coordCache.clear();
+      visibilityCache.clear();
       filtered = all.slice();
       render();
     } catch (err) {
@@ -304,21 +404,32 @@ function popupHTML() {
   document.addEventListener('keydown', (ev) => {
     if (ev.key !== 'ArrowUp' && ev.key !== 'ArrowDown') return;
     if (!filtered.length) return;
+    const navigable = getNavigableIndices();
+    if (!navigable.length) return;
     ev.preventDefault();
     const curIdx = filtered.findIndex((e) => e.key === selectedKey);
-    let nextIdx;
-    if (curIdx === -1) {
-      nextIdx = ev.key === 'ArrowDown' ? 0 : filtered.length - 1;
+    const curNavPos = navigable.indexOf(curIdx);
+    let nextNavPos;
+    if (curNavPos === -1) {
+      nextNavPos = ev.key === 'ArrowDown' ? 0 : (navigable.length - 1);
     } else {
-      nextIdx = ev.key === 'ArrowDown'
-        ? Math.min(curIdx + 1, filtered.length - 1)
-        : Math.max(curIdx - 1, 0);
+      nextNavPos = ev.key === 'ArrowDown'
+        ? Math.min(curNavPos + 1, navigable.length - 1)
+        : Math.max(curNavPos - 1, 0);
     }
+    const nextIdx = navigable[nextNavPos];
     selectRow(filtered[nextIdx]);
   });
 
   q.addEventListener('input', applyFilter);
   document.getElementById('reload').addEventListener('click', load);
+  attachOpenerHover();
+  // Keep dimming synced with current opener UI visibility.
+  window.addEventListener('focus', refreshDimming);
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) refreshDimming();
+  });
+  setInterval(refreshDimming, 500);
   load();
 })();
 </script>
