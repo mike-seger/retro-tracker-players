@@ -17,6 +17,7 @@ export function saveLocalContext() {
   S._localCtx = {
     filter:         elFilter.value,
     selectedFolders: new Set(S.selectedFolders),
+    selectedPlaylists: new Set(S.selectedPlaylists),
     selectedArtists: new Set(S.selectedArtists),
     formats:         new Set(S.selectedFormats),
     currentIdx:      S.currentIdx,
@@ -29,6 +30,9 @@ export function restoreLocalContext() {
   elFilter.value = S._localCtx.filter;
   S.selectedFolders = new Set(
     [...S._localCtx.selectedFolders].filter(f => S._allFolderOptions.has(f))
+  );
+  S.selectedPlaylists = new Set(
+    [...(S._localCtx.selectedPlaylists || [])].filter(id => S._allPlaylistOptions.has(id))
   );
   updateFolderBtn();
   syncFolderCheckboxes();
@@ -71,17 +75,22 @@ export function restorePersistedContext() {
       switchMode(saved.mode);
     }
     if (saved.filter) elFilter.value = saved.filter;
-    if (saved.folders?.length && S.searchMode === 'local') {
+    if (Array.isArray(saved.folders) && S.searchMode === 'local') {
       S.selectedFolders = new Set(saved.folders.filter(f => S._allFolderOptions.has(f)));
       updateFolderBtn();
       syncFolderCheckboxes();
     }
-    if (saved.artists?.length && S.searchMode === 'local') {
+    if (Array.isArray(saved.playlists) && S.searchMode === 'local') {
+      S.selectedPlaylists = new Set(saved.playlists.filter(id => S._allPlaylistOptions.has(id)));
+      updateFolderBtn();
+      syncFolderCheckboxes();
+    }
+    if (Array.isArray(saved.artists) && S.searchMode === 'local') {
       S.selectedArtists = new Set(saved.artists.filter(a => S._allArtistOptions.has(a)));
       updateArtistBtn();
       syncArtistCheckboxes();
     }
-    if (saved.formats?.length && S.searchMode === 'local') {
+    if (Array.isArray(saved.formats) && S.searchMode === 'local') {
       S.selectedFormats = new Set(saved.formats.filter(f => S._allFormatOptions.has(f)));
       updateFormatBtn();
       syncFormatCheckboxes();

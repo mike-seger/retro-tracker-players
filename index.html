@@ -73,7 +73,7 @@
     <button id="ml-random" class="ml-btn" style="display:none" title="Browse random tracks">R</button>
     <div id="refine-inline">
       <div id="refine-folder-wrap" class="refine-panel-wrap" title="Filter by folder">
-        <button id="refine-folder-btn" type="button" aria-label="Select track group">F</button>
+        <button id="refine-folder-btn" type="button" aria-label="Select list">L</button>
         <div id="refine-folder-panel" hidden></div>
       </div>
       <div id="refine-artist-wrap" class="refine-panel-wrap" title="Filter by artist">
@@ -88,7 +88,15 @@
         <button id="refine-format-btn" type="button" aria-label="Select format">T</button>
         <div id="refine-format-panel" hidden></div>
       </div>
-      <button id="help-btn" type="button" title="Help / About">?</button>
+      <div id="options-wrap" class="refine-panel-wrap">
+        <button id="help-btn" type="button" title="Options">&#x22EE;</button>
+        <div id="options-panel" hidden>
+          <div class="panel-title">Options</div>
+          <div class="opts-opt" tabindex="0" data-action="help">Help</div>
+          <div class="opts-opt" tabindex="0" data-action="live-help">Live Help</div>
+          <div class="opts-opt" tabindex="0" data-action="playlists">Manage Playlists</div>
+        </div>
+      </div>
     </div>
     <span id="track-pos" aria-label="Track number / total found"></span>
   </div>
@@ -106,6 +114,11 @@
   <div id="help-overlay" hidden>
     <button id="help-close" type="button" aria-label="Close help">&times;</button>
     <div id="help-content"></div>
+  </div>
+
+  <div id="playlist-manager-overlay" hidden>
+    <button id="pm-close" type="button" aria-label="Close playlist manager">&times;</button>
+    <div id="pm-content"></div>
   </div>
 </div>
 

@@ -23,6 +23,8 @@ import { loadAndPlay } from './player.js';
 import './keyboard.js';
 import './pinch.js';
 import './doc-overlay.js';
+import * as pm from './playlist-manager.js';
+import { closePlaylistOverlay } from './playlist-overlay.js';
 
 // Global debug toggle for URL-based playing-track re-anchor logs.
 const DEBUG_TRACK_REANCHOR_LOG = false;
@@ -34,6 +36,26 @@ function detectPlayerIdFromUrl(url) {
   if (ext === 'sid') return SID_TRACK_PLAYER_ID;
   if (['mod', 'xm', 's3m', 'it'].includes(ext)) return 'mod';
   return null;
+}
+
+async function refreshUserPlaylistTracks() {
+  const lists = await pm.getAll();
+  const visibleLists = lists.filter(pl => !pm.isListHidden(pm.hiddenListKeyForPlaylist(pl.id)));
+  const tracks = [];
+  for (const pl of visibleLists) {
+    for (const t of (pl.tracks || [])) {
+      if (!t?.name || !t?.playerId) continue;
+      tracks.push({
+        name: t.name,
+        ext: t.ext || extOf(t.name || t.url || ''),
+        playerId: t.playerId,
+        source: 'user-playlist',
+        playlistId: pl.id,
+        ...(t.url ? { url: t.url } : {}),
+      });
+    }
+  }
+  S._userPlaylistTracks = tracks;
 }
 
 // ── format change callback — breaks format-panel ↔ filter circular dep ──
@@ -233,6 +255,23 @@ elFilterClr.addEventListener('click', () => {
     localStorage.removeItem('auto-resume');
   }
 
+  await pm.init();
+  await refreshUserPlaylistTracks();
+  document.getElementById('pm-close')?.addEventListener('click', closePlaylistOverlay);
+  pm.onChange(async () => {
+    await refreshUserPlaylistTracks();
+    if (!S._appReady) return;
+    rebuildMergedFiles();
+    await populateFolderPanel();
+    if (S.searchMode === 'local') {
+      populateLocalArtistPanel();
+      clearArtistFilter();
+      populateLocalFormatDropdown();
+      buildPlaylist();
+      updateSelCount();
+    }
+  });
+
   const resp = await fetch('players.json');
   S.players = await resp.json();
 
@@ -281,7 +320,7 @@ elFilterClr.addEventListener('click', () => {
   renderToggles();
   rebuildMergedFiles();
   populateLocalArtistPanel();
-  populateFolderPanel();
+  await populateFolderPanel();
   populateLocalFormatDropdown();
   updateRefineVisibility();
   buildPlaylist();

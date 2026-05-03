@@ -12,6 +12,7 @@ import { updateSelCount } from './selection.js';
 import { getRangeSkip, buildRangePanel } from './range-panel.js';
 import { showAddConfirm, showDeleteConfirm } from './prompts.js';
 import * as remoteSearch from './remote-search.js';
+import * as pm from './playlist-manager.js';
 
 // ── helpers ───────────────────────────────────────────
 function detectPlayerIdFromUrl(url) {
@@ -230,11 +231,7 @@ export function doModlandSearch() {
 
     li.querySelector('.r-add').addEventListener('click', (ev) => {
       ev.stopPropagation();
-      if (li.classList.contains('added')) return;
-      addModlandTrack(r);
-      addedUrls.add(r.url);
-      li.classList.add('added');
-      li.querySelector('.r-add').textContent = '✓';
+      openAddDropdown(ev.currentTarget, r);
     });
 
     li.addEventListener('click', (ev) => {
@@ -330,11 +327,7 @@ export function doRandomBrowse(skip) {
 
     li.querySelector('.r-add').addEventListener('click', (ev) => {
       ev.stopPropagation();
-      if (li.classList.contains('added')) return;
-      addModlandTrack(r);
-      addedUrls.add(r.url);
-      li.classList.add('added');
-      li.querySelector('.r-add').textContent = '✓';
+      openAddDropdown(ev.currentTarget, r);
     });
 
     li.addEventListener('click', (ev) => {
@@ -359,6 +352,63 @@ export function doRandomBrowse(skip) {
   updateMlButtons();
 }
 
+// ── r-add dropdown ────────────────────────────────────
+function closeAddDropdown() {
+  document.getElementById('r-add-dropdown')?.remove();
+}
+
+function openAddDropdown(btn, track) {
+  closeAddDropdown();
+  pm.getAll().then(playlists => {
+    playlists = playlists.filter(pl => !pm.isListHidden(pm.hiddenListKeyForPlaylist(pl.id)));
+    const panel = document.createElement('div');
+    panel.id = 'r-add-dropdown';
+    panel.className = 'r-add-panel';
+
+    const scratchOpt = document.createElement('div');
+    scratchOpt.className = 'r-add-opt r-add-scratch';
+    const em = document.createElement('em');
+    em.textContent = 'Scratchpad';
+    scratchOpt.appendChild(em);
+    scratchOpt.addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeAddDropdown();
+      const li = btn.closest('li');
+      if (!li || li.classList.contains('added')) return;
+      addModlandTrack(track);
+      li.classList.add('added');
+      btn.textContent = '✓';
+    });
+    panel.appendChild(scratchOpt);
+
+    for (const pl of playlists) {
+      const opt = document.createElement('div');
+      opt.className = 'r-add-opt';
+      opt.textContent = pl.name;
+      opt.addEventListener('click', (e) => {
+        e.stopPropagation();
+        closeAddDropdown();
+        pm.addTrack(pl.id, track).then(() => {
+          const prev = btn.textContent;
+          btn.textContent = '✓';
+          setTimeout(() => { if (btn.textContent === '✓') btn.textContent = prev; }, 1200);
+        });
+      });
+      panel.appendChild(opt);
+    }
+
+    document.body.appendChild(panel);
+    const rect = btn.getBoundingClientRect();
+    const pw = 150;
+    let left = rect.right - pw;
+    if (left < 4) left = 4;
+    if (left + pw > window.innerWidth - 4) left = window.innerWidth - 4 - pw;
+    panel.style.cssText = `position:fixed;z-index:500;left:${left}px;top:${rect.bottom + 2}px;`;
+  });
+}
+
+document.addEventListener('click', () => closeAddDropdown());
+
 // ── ML button listeners ───────────────────────────────
 elMlAddAll.addEventListener('click', () => {
   if (S._lastSearchResults.length === 0) return;
@@ -374,6 +424,16 @@ elMlAddAll.addEventListener('click', () => {
 });
 
 elMlDelAll.addEventListener('click', () => {
+  // If items are selected, only delete those
+  const sel = S.modlandSelected;
+  if (sel.size > 0) {
+    const files = activeFiles();
+    const targets = [...sel].map(i => files[i]?.url).filter(Boolean);
+    if (!targets.length) return;
+    showDeleteConfirm(targets.length, () => deleteModlandByUrls(targets));
+    return;
+  }
+  // No selection — offer deleting all visible
   let targets;
   if (S._inSearchResults && S._lastSearchResults.length > 0) {
     targets = S._lastSearchResults
@@ -389,7 +449,7 @@ elMlDelAll.addEventListener('click', () => {
       }
     }
   }
-  if (targets.length === 0) return;
+  if (!targets.length) return;
   showDeleteConfirm(targets.length, () => deleteModlandByUrls(targets));
 });
 

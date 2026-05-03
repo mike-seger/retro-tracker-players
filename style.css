@@ -524,3 +524,212 @@ body.mode-modland {
   border-radius: 3px; padding: 1px 5px; font-size: 0.88em;
   font-family: inherit; color: #ccc;
 }
+
+/* ── options dropdown (… button) ────────────────────── */
+#options-wrap {
+  position: relative;
+}
+#options-panel {
+  position: absolute; z-index: 300;
+  background: #222; border: 1px solid #555; border-radius: 4px;
+  top: calc(100% + 2px); right: 0; min-width: 140px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+#options-panel[hidden] { display: none; }
+.opts-opt {
+  padding: 5px 14px; cursor: pointer;
+  white-space: nowrap; color: #ccc; font-size: 13px; line-height: 1.4;
+  -webkit-user-select: none; user-select: none;
+}
+.opts-opt:hover, .opts-opt:focus { background: #333; outline: none; }
+
+/* ── playlist manager overlay ───────────────────────── */
+#playlist-manager-overlay {
+  position: absolute; inset: 0; background: #141414;
+  overflow-y: auto; overflow-x: hidden; z-index: 200; padding: 12px 16px 24px;
+  box-sizing: border-box;
+}
+#playlist-manager-overlay[hidden] { display: none; }
+#pm-close {
+  position: sticky; top: 0; float: right; margin-left: 12px;
+  background: #222; border: 1px solid #555; border-radius: 3px;
+  color: #888; cursor: pointer; font-size: 27px; line-height: 1;
+  padding: 2px 8px;
+}
+#pm-close:hover { color: #faa; border-color: #faa; }
+#pm-content { max-width: 680px; width: min(680px, 100%); margin: 0 auto; }
+#pm-toolbar {
+  display: flex; gap: 8px; align-items: center; margin-bottom: 12px; padding-top: 8px;
+}
+.pm-combo {
+  position: relative;
+  min-width: 220px;
+  display: inline-flex;
+  align-items: center;
+}
+.pm-combo-input {
+  width: 100%;
+  background: #1a1a1a;
+  border: 1px solid #444;
+  color: #ccc;
+  padding: 4px 30px 4px 8px;
+  border-radius: 3px;
+  font: inherit;
+  font-size: 13px;
+}
+.pm-combo-input:focus {
+  outline: none;
+  border-color: #666;
+}
+.pm-combo-toggle {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 24px;
+  border: none;
+  background: transparent;
+  color: #888;
+  cursor: pointer;
+  font-size: 12px;
+}
+.pm-combo.open .pm-combo-toggle,
+.pm-combo-toggle:hover { color: #ccc; }
+.pm-combo-panel {
+  position: absolute;
+  top: calc(100% + 3px);
+  left: 0;
+  right: 0;
+  z-index: 30;
+  background: #111;
+  border: 1px solid #555;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  max-height: 260px;
+  overflow: auto;
+  padding: 4px;
+}
+.pm-combo-panel[hidden] { display: none; }
+.pm-combo-opt {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 5px 8px;
+  border: none;
+  background: transparent;
+  color: #ccc;
+  border-radius: 3px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+}
+.pm-combo-opt:hover,
+.pm-combo-opt.active { background: #2a2a2a; }
+.pm-combo-opt.selected {
+  color: #fff;
+  font-weight: 600;
+}
+.pm-combo-empty {
+  color: #666;
+  font-size: 12px;
+  padding: 6px;
+}
+#pm-new-btn {
+  background: #2a2a2a; border: 1px solid #555; color: #ccc;
+  padding: 4px 12px; border-radius: 3px; cursor: pointer; font: inherit; font-size: 13px;
+}
+#pm-new-btn:hover { background: #333; border-color: #888; }
+.pm-vis-wrap { position: relative; margin-left: auto; }
+#pm-visible-btn { padding: 4px 10px; }
+#pm-visible-panel {
+  position: absolute; top: calc(100% + 3px); right: 0; z-index: 20;
+  min-width: 260px; max-height: min(55vh, 420px); overflow: auto;
+  background: #1f1f1f; border: 1px solid #444; border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5); padding: 6px;
+}
+#pm-visible-panel[hidden] { display: none; }
+.pm-vis-opt {
+  display: flex; align-items: center; gap: 8px;
+  padding: 5px 6px; border-radius: 3px; cursor: pointer;
+  color: #bbb; font-size: 12px;
+}
+.pm-vis-opt:hover { background: #292929; }
+.pm-vis-opt input[type="checkbox"] { margin: 0; }
+.pm-vis-kind {
+  margin-left: auto; color: #666; font-size: 10px;
+  text-transform: uppercase; letter-spacing: 0.04em;
+}
+.pm-vis-empty { color: #666; font-size: 12px; padding: 6px; }
+.pm-empty { color: #666; font-size: 13px; padding: 8px 0; }
+.pm-playlist {
+  background: #1e1e1e; border: 1px solid #333; border-radius: 4px;
+  margin-bottom: 10px; overflow: hidden;
+}
+.pm-playlist-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 10px; background: #222; border-bottom: 1px solid #333;
+}
+.pm-playlist-name {
+  flex: 1; font-size: 13px; color: #ccc; font-weight: 500;
+}
+.pm-rename-input {
+  flex: 1; background: #1a1a1a; border: 1px solid #555; color: #ccc;
+  padding: 2px 6px; border-radius: 3px; font: inherit; font-size: 13px;
+}
+.pm-playlist-count { font-size: 11px; color: #666; }
+.pm-playlist-actions {
+  display: flex; gap: 4px;
+}
+.pm-btn {
+  background: #2a2a2a; border: 1px solid #444; color: #888;
+  padding: 2px 7px; border-radius: 3px; cursor: pointer; font: inherit; font-size: 12px;
+}
+.pm-btn:hover { background: #333; color: #ccc; border-color: #666; }
+.pm-btn.danger:hover { color: #faa; border-color: #f88; }
+.pm-track-list { padding: 4px 0; }
+.pm-track-item {
+  display: flex; align-items: center; gap: 6px;
+  padding: 4px 10px; font-size: 12px; color: #aaa;
+}
+.pm-track-item:hover { background: #252525; }
+.pm-track-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pm-rm-btn {
+  background: none; border: none; color: #555; cursor: pointer;
+  font-size: 14px; line-height: 1; padding: 0 3px;
+}
+.pm-rm-btn:hover { color: #faa; }
+.pm-del-btn { }
+
+/* ── folder/list panel separator + playlist opts ─────── */
+.panel-section-sep {
+  padding: 5px 10px 3px; font-size: 11px; color: #666;
+  text-transform: uppercase; letter-spacing: 0.05em;
+  border-top: 1px solid #2a2a2a; margin-top: 4px;
+  pointer-events: none;
+}
+.pl-opt {
+  padding-left: 10px;
+}
+.pl-badge {
+  display: inline-block;
+  width: 1.1em;
+  color: #6ea7ff;
+  font-size: 10px;
+  font-weight: 700;
+  text-align: center;
+  margin-right: 4px;
+  opacity: 0.85;
+}
+
+/* ── r-add dropdown ──────────────────────────────────── */
+.r-add-panel {
+  background: #222; border: 1px solid #555; border-radius: 4px;
+  min-width: 140px; box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  overflow: hidden;
+}
+.r-add-opt {
+  padding: 6px 12px; cursor: pointer; font-size: 13px; color: #ccc;
+  white-space: nowrap; -webkit-user-select: none; user-select: none;
+}
+.r-add-opt:hover { background: #333; }
+.r-add-scratch { border-bottom: 1px solid #333; }

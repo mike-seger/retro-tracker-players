@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-03T02:27:53.119Z",
+  "generatedAt": "2026-05-03T11:53:14.442Z",
   "sourceUrl": "http://127.0.0.1:8080/index.html",
   "screenshotPath": "doc/elements-view.png",
   "viewport": {
@@ -259,45 +259,6 @@
       "tag": "button"
     },
     {
-      "key": "ml-random",
-      "name": "Browse random tracks",
-      "category": "control",
-      "xpath": "//*[@id='ml-random']",
-      "humanXPath": "#ml-random",
-      "notes": "control-match; static-control",
-      "tag": "button",
-      "id": "ml-random"
-    },
-    {
-      "key": "refine-range-btn",
-      "name": "Result page",
-      "category": "control",
-      "xpath": "//*[@id='refine-range-btn']",
-      "humanXPath": "#refine-range-btn",
-      "notes": "control-match; static-control",
-      "tag": "button",
-      "id": "refine-range-btn"
-    },
-    {
-      "key": "ml-add-all",
-      "name": "Add all search results",
-      "category": "control",
-      "xpath": "//*[@id='ml-add-all']",
-      "humanXPath": "#ml-add-all",
-      "notes": "control-match; static-control",
-      "tag": "button",
-      "id": "ml-add-all"
-    },
-    {
-      "key": "control-track-add",
-      "name": "Add track",
-      "category": "control",
-      "xpath": "(//button[contains(concat(' ', normalize-space(@class), ' '), ' r-add ')])[1]",
-      "humanXPath": "button.r-add (first row)",
-      "notes": "control-match; static-control",
-      "tag": "button"
-    },
-    {
       "key": "btn-play",
       "name": "Play / Pause",
       "category": "control",
@@ -336,6 +297,45 @@
       "notes": "control-match; text-match",
       "tag": "input",
       "id": "seek"
+    },
+    {
+      "key": "ml-random",
+      "name": "Browse random tracks",
+      "category": "control",
+      "xpath": "//*[@id='ml-random']",
+      "humanXPath": "#ml-random",
+      "notes": "control-match; static-control",
+      "tag": "button",
+      "id": "ml-random"
+    },
+    {
+      "key": "refine-range-btn",
+      "name": "Result page",
+      "category": "control",
+      "xpath": "//*[@id='refine-range-btn']",
+      "humanXPath": "#refine-range-btn",
+      "notes": "control-match; static-control",
+      "tag": "button",
+      "id": "refine-range-btn"
+    },
+    {
+      "key": "ml-add-all",
+      "name": "Add all search results",
+      "category": "control",
+      "xpath": "//*[@id='ml-add-all']",
+      "humanXPath": "#ml-add-all",
+      "notes": "control-match; static-control",
+      "tag": "button",
+      "id": "ml-add-all"
+    },
+    {
+      "key": "control-track-add",
+      "name": "Add track",
+      "category": "control",
+      "xpath": "(//button[contains(concat(' ', normalize-space(@class), ' '), ' r-add ')])[1]",
+      "humanXPath": "button.r-add (first row)",
+      "notes": "control-match; static-control",
+      "tag": "button"
     }
   ]
 }

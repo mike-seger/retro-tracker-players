@@ -8,6 +8,7 @@ export function persistContext() {
       mode:    S.searchMode,
       filter:  elFilter.value,
       folders: [...S.selectedFolders],
+      playlists: [...S.selectedPlaylists],
       artists: [...S.selectedArtists],
       formats: [...S.selectedFormats],
     }));

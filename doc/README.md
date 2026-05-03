@@ -3,7 +3,7 @@
 <!-- AUTO:DOC_META:START -->
 | Version | Updated |
 |:--|:--|
-| 0.9.7-7 | 2026-05-03 04:27 |
+| 0.9.7-8 | 2026-05-03 13:53 |
 <!-- AUTO:DOC_META:END -->
 
 A browser-based player for classic tracker module formats (MOD, XM, S3M, IT, AHX, SID) with local file lists and Modland search.
@@ -21,13 +21,13 @@ Description of the UI elements from the screenshot.
 
 | # | Name | Selector |
 |:--|:--|:--|
-| 01 | Engine label | html > body > div#player > div#info > div.info-field > span.label |
+| 01 | Copy Engine value | html > body > div#player > div#info > div.info-field > span.label |
 | 02 | Engine value | html > body > div#player > div#info > div.info-field > span.val |
-| 03 | Tracker label | html > body > div#player > div#info > div.info-field > span.label |
+| 03 | Copy Tracker value | html > body > div#player > div#info > div.info-field > span.label |
 | 04 | Tracker value | html > body > div#player > div#info > div.info-field > span.val |
-| 05 | Title label | html > body > div#player > div#info > div.info-field > span.label |
+| 05 | Copy Title value | html > body > div#player > div#info > div.info-field > span.label |
 | 06 | Title value | html > body > div#player > div#info > div.info-field > span.val |
-| 07 | Type label | html > body > div#player > div#info > div.info-field > span.label |
+| 07 | Copy Type value | html > body > div#player > div#info > div.info-field > span.label |
 | 08 | Type value | html > body > div#player > div#info > div.info-field > span.val |
 | 09 | Share / copy link | #share-btn |
 | 10 | Search tracks … | #filter |
@@ -51,6 +51,10 @@ Description of the UI elements from the screenshot.
 | 28 | Track Time | #time |
 | 29 | Track Length | #duration |
 | 30 | Track seekbar | #seek |
+| 31 | Browse random tracks | #ml-random |
+| 32 | Result page | #refine-range-btn |
+| 33 | Add all search results | #ml-add-all |
+| 34 | Add track | button.r-add (first row) |
 
 </div>
 <!-- AUTO:UI_ELEMENT_TABLE:END -->

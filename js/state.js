@@ -30,12 +30,16 @@ export const S = {
   _allFormatOptions: new Set(),
   selectedFolders:   new Set(),
   _allFolderOptions: new Set(),
+  selectedPlaylists: new Set(),
+  _allPlaylistOptions: new Set(),
+  _playlistTrackSets: new Map(),
   selectedArtists:   new Set(),
   _allArtistOptions: new Set(),
   _currentRange:     0,
   _localCtx:         null,   // saved local filter context across mode switches
   _modlandCtx:       null,   // saved modland filter context across mode switches
   _localUrllistTracks: [],   // URL-based tracks from urllists.json
+  _userPlaylistTracks: [],   // visible user-playlist tracks merged into local mode
   _lastSearchResults:  [],
   _lastSearchSkip:     0,
   _lastSearchTotal:    0,

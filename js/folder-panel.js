@@ -1,9 +1,12 @@
-// js/folder-panel.js — Folder multi-select dropdown panel
+// js/folder-panel.js — List (folder/playlist) multi-select dropdown panel
 import { S, elRefineFolderBtn, elRefineFolderPanel } from './state.js';
 import { openDropdown, registerDropdown } from './dropdown-keys.js';
+import * as pm from './playlist-manager.js';
 
 let _savedFolders = null;
+let _savedPlaylists = null;
 let _openedFolders = null;
+let _openedPlaylists = null;
 let _openedFolderState = null;
 
 function selectionState(selectedSize, totalSize) {
@@ -12,9 +15,17 @@ function selectionState(selectedSize, totalSize) {
   return 'some';
 }
 
+function selectedListCount() {
+  return S.selectedFolders.size + S.selectedPlaylists.size;
+}
+
+function allListCount() {
+  return S._allFolderOptions.size + S._allPlaylistOptions.size;
+}
+
 function cycleMasterFolders() {
-  const totalSize = S._allFolderOptions.size;
-  const current = selectionState(S.selectedFolders.size, totalSize);
+  const totalSize = allListCount();
+  const current = selectionState(selectedListCount(), totalSize);
   const opened = _openedFolderState || current;
 
   let next;
@@ -28,11 +39,15 @@ function cycleMasterFolders() {
 
   if (next === 'all') {
     S.selectedFolders = new Set(S._allFolderOptions);
+    S.selectedPlaylists = new Set(S._allPlaylistOptions);
   } else if (next === 'none') {
     S.selectedFolders = new Set();
+    S.selectedPlaylists = new Set();
   } else {
     const restored = [...(_openedFolders || [])].filter(f => S._allFolderOptions.has(f));
+    const restoredPlaylists = [...(_openedPlaylists || [])].filter(id => S._allPlaylistOptions.has(id));
     S.selectedFolders = new Set(restored);
+    S.selectedPlaylists = new Set(restoredPlaylists);
   }
 
   updateFolderBtn();
@@ -43,11 +58,40 @@ function cycleMasterFolders() {
 let _onFolderChange = null;
 export function setFolderChangeHandler(fn) { _onFolderChange = fn; }
 
-export function buildFolderPanel(folders) {
+export async function buildFolderPanel(folders) {
   const sorted = [...folders].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
-  S._allFolderOptions = new Set(sorted);
+  // System folders (e.g. 'unknown') are hidden from the List panel by default;
+  // only include them if the user has opted in via the manager's visibility panel.
+  const visibleSorted = sorted.filter(name => !pm.isSystemFolder(name) || pm.isSystemFolderVisible(name));
+
+  const prevAllFolderCount = S._allFolderOptions.size;
+  const hadAllFoldersSelected = prevAllFolderCount > 0 && S.selectedFolders.size === prevAllFolderCount;
+  S._allFolderOptions = new Set(visibleSorted);
+
+  const allPlaylists = await pm.getAll();
+  const visiblePlaylists = allPlaylists.filter(pl => !pm.isListHidden(pm.hiddenListKeyForPlaylist(pl.id)));
+  const prevAllPlaylistCount = S._allPlaylistOptions.size;
+  const hadAllPlaylistsSelected = prevAllPlaylistCount > 0 && S.selectedPlaylists.size === prevAllPlaylistCount;
+  S._allPlaylistOptions = new Set(visiblePlaylists.map(pl => pl.id));
+  S._playlistTrackSets = new Map(visiblePlaylists.map(pl => [pl.id, pm.buildTrackSet(pl.tracks)]));
+
   const kept = new Set([...S.selectedFolders].filter(f => S._allFolderOptions.has(f)));
-  S.selectedFolders = kept.size > 0 ? kept : new Set(S._allFolderOptions);
+  if (prevAllFolderCount === 0 && S.selectedFolders.size === 0) {
+    S.selectedFolders = new Set(S._allFolderOptions);
+  } else if (hadAllFoldersSelected) {
+    S.selectedFolders = new Set(S._allFolderOptions);
+  } else if (S.selectedFolders.size > 0) {
+    S.selectedFolders = kept;
+  }
+
+  const keptPlaylists = new Set([...S.selectedPlaylists].filter(id => S._allPlaylistOptions.has(id)));
+  if (prevAllPlaylistCount === 0 && S.selectedPlaylists.size === 0) {
+    S.selectedPlaylists = new Set(S._allPlaylistOptions);
+  } else if (hadAllPlaylistsSelected) {
+    S.selectedPlaylists = new Set(S._allPlaylistOptions);
+  } else if (S.selectedPlaylists.size > 0) {
+    S.selectedPlaylists = keptPlaylists;
+  }
 
   const panel = elRefineFolderPanel;
   panel.innerHTML = '';
@@ -57,7 +101,7 @@ export function buildFolderPanel(folders) {
 
   const title = document.createElement('div');
   title.className = 'panel-title';
-  title.textContent = 'Folder';
+  title.textContent = 'List';
   head.appendChild(title);
 
   const master = document.createElement('label');
@@ -67,29 +111,61 @@ export function buildFolderPanel(folders) {
   masterCb.type = 'checkbox';
   masterCb.value = '__master__';
   masterCb.checked = true;
+  masterCb.dataset.kind = 'master';
   masterCb.addEventListener('change', cycleMasterFolders);
   master.appendChild(masterCb);
   master.appendChild(document.createTextNode('*'));
   head.appendChild(master);
   panel.appendChild(head);
 
-  for (const f of sorted) {
+  const folderOptions = visibleSorted
+    .map(name => ({
+      type: 'folder',
+      id: name,
+      name: pm.isSystemFolder(name) ? pm.getSystemFolderLabel(name) : name,
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+
+  const playlistOptions = visiblePlaylists
+    .map(pl => ({ type: 'playlist', id: pl.id, name: pl.name }))
+    .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+
+  const options = [...folderOptions, ...playlistOptions];
+
+  for (const opt of options) {
     const label = document.createElement('label');
-    label.className = 'fmt-opt';
+    label.className = 'fmt-opt' + (opt.type === 'playlist' ? ' pl-opt' : '');
     label.tabIndex = -1;
+
     const cb = document.createElement('input');
     cb.type = 'checkbox';
-    cb.value = f;
-    cb.checked = S.selectedFolders.has(f);
+    cb.value = opt.id;
+    cb.dataset.kind = opt.type;
+    cb.checked = opt.type === 'folder'
+      ? S.selectedFolders.has(opt.id)
+      : S.selectedPlaylists.has(opt.id);
+
     cb.addEventListener('change', () => {
-      if (cb.checked) S.selectedFolders.add(f);
-      else S.selectedFolders.delete(f);
+      if (opt.type === 'folder') {
+        if (cb.checked) S.selectedFolders.add(opt.id);
+        else S.selectedFolders.delete(opt.id);
+      } else {
+        if (cb.checked) S.selectedPlaylists.add(opt.id);
+        else S.selectedPlaylists.delete(opt.id);
+      }
       updateFolderBtn();
       syncFolderCheckboxes();
       _onFolderChange?.();
     });
+
     label.appendChild(cb);
-    label.appendChild(document.createTextNode(f));
+    if (opt.type === 'playlist') {
+      const badge = document.createElement('span');
+      badge.className = 'pl-badge';
+      badge.textContent = 'P';
+      label.appendChild(badge);
+    }
+    label.appendChild(document.createTextNode(opt.name));
     panel.appendChild(label);
   }
 
@@ -98,32 +174,39 @@ export function buildFolderPanel(folders) {
 }
 
 export function syncFolderCheckboxes() {
-  const allSelected = S._allFolderOptions.size > 0 &&
-    S.selectedFolders.size === S._allFolderOptions.size;
-  const partial = S.selectedFolders.size > 0 &&
-    S.selectedFolders.size < S._allFolderOptions.size;
+  const total = allListCount();
+  const selected = selectedListCount();
+  const allSelected = total > 0 && selected === total;
+  const partial = selected > 0 && selected < total;
+
   for (const cb of elRefineFolderPanel.querySelectorAll('input[type="checkbox"]')) {
-    if (cb.value === '__master__') {
+    if (cb.dataset.kind === 'master') {
       cb.checked = allSelected;
       cb.indeterminate = partial;
       cb.classList.toggle('indeterminate', partial);
       continue;
     }
+
     cb.indeterminate = false;
     cb.classList.remove('indeterminate');
-    cb.checked = S.selectedFolders.has(cb.value);
+    if (cb.dataset.kind === 'playlist') cb.checked = S.selectedPlaylists.has(cb.value);
+    else cb.checked = S.selectedFolders.has(cb.value);
   }
 }
 
 export function updateFolderBtn() {
-  const active = S.selectedFolders.size > 0 && S.selectedFolders.size < S._allFolderOptions.size;
-  elRefineFolderBtn.textContent = 'F';
+  const total = allListCount();
+  const selected = selectedListCount();
+  const active = total > 0 && selected < total;
+  elRefineFolderBtn.textContent = 'L';
   elRefineFolderBtn.classList.toggle('active', active);
-  elRefineFolderBtn.hidden = S._allFolderOptions.size === 0;
+  elRefineFolderBtn.title = 'Filter by list';
+  elRefineFolderBtn.hidden = total === 0;
 }
 
 export function clearFolderFilter() {
   S.selectedFolders = new Set(S._allFolderOptions);
+  S.selectedPlaylists = new Set(S._allPlaylistOptions);
   updateFolderBtn();
   syncFolderCheckboxes();
 }
@@ -139,14 +222,19 @@ registerDropdown({
   panel: elRefineFolderPanel,
   saveState: () => {
     _savedFolders = new Set(S.selectedFolders);
+    _savedPlaylists = new Set(S.selectedPlaylists);
     _openedFolders = new Set(S.selectedFolders);
-    _openedFolderState = selectionState(S.selectedFolders.size, S._allFolderOptions.size);
+    _openedPlaylists = new Set(S.selectedPlaylists);
+    _openedFolderState = selectionState(selectedListCount(), allListCount());
   },
   restoreState: () => {
     if (_savedFolders !== null) {
       S.selectedFolders = _savedFolders;
+      S.selectedPlaylists = _savedPlaylists || new Set();
       _savedFolders = null;
+      _savedPlaylists = null;
       _openedFolders = null;
+      _openedPlaylists = null;
       _openedFolderState = null;
       updateFolderBtn();
       syncFolderCheckboxes();

@@ -9,6 +9,7 @@ import { toggleSelect } from './selection.js';
 import { deleteModlandTrack, searchByArtist } from './modland.js';
 import { updateSelCount } from './selection.js';
 import { localPlaceholder, modlandPlaceholder } from './refine.js';
+import * as pm from './playlist-manager.js';
 
 // ── active list helpers ───────────────────────────────
 export function activeFiles() {
@@ -27,17 +28,40 @@ export function setActiveSelected(s) {
 
 // ── merge local file lists ────────────────────────────
 export function rebuildMergedFiles() {
+  const hidden = pm.getHiddenListKeys();
+  const isHiddenList = (name) => {
+    const slash = name.lastIndexOf('/');
+    if (slash < 0) return false;
+    const folder = name.substring(0, slash);
+    return hidden.has(pm.hiddenListKeyForFolder(folder));
+  };
+
   S.mergedFiles = [];
+  const seen = new Set();
+
+  const pushUnique = (entry) => {
+    const key = entry.url || (entry.playerId + ':' + entry.name);
+    if (seen.has(key)) return;
+    seen.add(key);
+    S.mergedFiles.push(entry);
+  };
+
   for (const p of S.players) {
     if (!S.enabledPlayers[p.id]) continue;
     const files = S.fileLists[p.id] || [];
     files.forEach((name, origIdx) => {
-      S.mergedFiles.push({ name, ext: extOf(name), playerId: p.id, origIdx });
+      if (p.id !== 'ahx' && isHiddenList(name)) return;
+      pushUnique({ name, ext: extOf(name), playerId: p.id, origIdx });
     });
   }
   for (const t of S._localUrllistTracks) {
     if (!S.enabledPlayers[t.playerId]) continue;
-    S.mergedFiles.push(t);
+    if (t.playerId !== 'ahx' && isHiddenList(t.name || '')) continue;
+    pushUnique(t);
+  }
+  for (const t of S._userPlaylistTracks) {
+    if (!S.enabledPlayers[t.playerId]) continue;
+    pushUnique(t);
   }
   S.mergedFiles.sort((a, b) => {
     const sa = a.name.lastIndexOf('/');

@@ -56,10 +56,10 @@ export function parseTrackDisplay(entry) {
   const folder = rawFolder ? (trimDisplayPath(rawFolder) || rawFolder) : '';
   const baseName = slash >= 0 ? decoded.substring(slash + 1) : decoded;
 
-  // Normalise artist: empty or "- unknown" variants → "unknown"
+  // Normalise artist: empty or "- unknown" variants → "Uncategorized"
   const normArtist = s => {
     const t = s.trim();
-    return (!t || /^-?\s*unknown$/i.test(t)) ? 'unknown' : t;
+    return (!t || /^-?\s*unknown$/i.test(t)) ? 'Uncategorized' : t;
   };
   // Folder badge: "<root>" when entry lives at path root (no directory component)
   const rootBadge = rawFolder ? folder : '<root>';

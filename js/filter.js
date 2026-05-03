@@ -7,13 +7,44 @@ import { buildFormatPanel } from './format-panel.js';
 import { activeFiles, updateTrackPos, highlightCurrent, setFocus, syncPlayingTrackByUrl } from './playlist.js';
 import { persistContext } from './persistence.js';
 import { scrollIntoViewSmart } from './playlist.js';
+import { isSystemFolder, isSystemFolderVisible } from './playlist-manager.js';
 
 export function applyFilter() {
   const raw = elFilter.value.trim();
   const terms = raw.toLowerCase().split(/\s+/).filter(Boolean);
-  const foldersActive = S.selectedFolders.size > 0 && S.selectedFolders.size < S._allFolderOptions.size;
+  const totalLists = S._allFolderOptions.size + S._allPlaylistOptions.size;
+  // In local mode, list visibility defines the base dataset and must always apply.
+  const listsActive = S.searchMode === 'local' && totalLists > 0;
   const artistsActive = S.selectedArtists.size > 0 && S.selectedArtists.size < S._allArtistOptions.size;
+
+  const inSelectedPlaylist = (entry) => {
+    if (!entry) return false;
+    if (S.selectedPlaylists.size === 0) return false;
+    const key = entry.url || (entry.playerId + ':' + entry.name);
+    for (const id of S.selectedPlaylists) {
+      if (S._playlistTrackSets.get(id)?.has(key)) return true;
+    }
+    return false;
+  };
+
+  const inSelectedFolder = (entry) => {
+    if (!entry) return false;
+    // User-playlist rows are controlled by playlist selection, not folder selection.
+    if (entry.source === 'user-playlist') return false;
+    if (S.selectedFolders.size === 0) return false;
+    const slash = entry.name.lastIndexOf('/');
+    const ef = slash >= 0 ? entry.name.substring(0, slash) : '';
+    // Hidden system folders must not leak into the visible dataset.
+    if (!S._allFolderOptions.has(ef)) {
+      return isSystemFolder(ef) && isSystemFolderVisible(ef);
+    }
+    return S.selectedFolders.has(ef);
+  };
+
+  const inSelectedLists = (entry) => inSelectedFolder(entry) || inSelectedPlaylist(entry);
+
   let visible = 0;
+  let scopedTotal = 0;
   const files = activeFiles();
   const items = elList.children;
 
@@ -25,11 +56,7 @@ export function applyFilter() {
       const entry = files[i];
       const name = entry ? entry.name.toLowerCase() : '';
       let nameMatch = terms.length === 0 || terms.every(t => name.includes(t));
-      if (nameMatch && foldersActive) {
-        const slash = name.lastIndexOf('/');
-        const ef = slash >= 0 ? entry.name.substring(0, slash) : '';
-        nameMatch = S.selectedFolders.has(ef);
-      }
+      if (nameMatch && listsActive) nameMatch = inSelectedLists(entry);
       if (nameMatch && artistsActive) {
         const a = entry ? extractArtist(entry) : '';
         nameMatch = S.selectedArtists.has(a);
@@ -44,11 +71,7 @@ export function applyFilter() {
     const entry = files[i];
     const name = entry ? entry.name.toLowerCase() : '';
     let nameMatch = terms.length === 0 || terms.every(t => name.includes(t));
-    if (nameMatch && foldersActive) {
-      const slash = name.lastIndexOf('/');
-      const ef = slash >= 0 ? entry.name.substring(0, slash) : '';
-      nameMatch = S.selectedFolders.has(ef);
-    }
+    if (nameMatch && listsActive) nameMatch = inSelectedLists(entry);
     if (nameMatch && artistsActive) {
       const a = entry ? extractArtist(entry) : '';
       nameMatch = S.selectedArtists.has(a);
@@ -57,14 +80,28 @@ export function applyFilter() {
       nameMatch = entry && S.selectedFormats.has(entry.ext);
     }
     const typeMatch = !entry || !entry.playerId || S.enabledPlayers[entry.playerId] !== false;
+    const inScopeBeforeFormat = (() => {
+      const e = entry;
+      const n = e ? e.name.toLowerCase() : '';
+      let m = terms.length === 0 || terms.every(t => n.includes(t));
+      if (m && listsActive) m = inSelectedLists(e);
+      if (m && artistsActive) {
+        const a = e ? extractArtist(e) : '';
+        m = S.selectedArtists.has(a);
+      }
+      const tMatch = !e || !e.playerId || S.enabledPlayers[e.playerId] !== false;
+      return m && tMatch;
+    })();
+    if (inScopeBeforeFormat) scopedTotal++;
+
     const show = nameMatch && typeMatch;
     items[i].classList.toggle('hidden', !show);
     if (show) visible++;
   }
 
   const fmtActive = S.selectedFormats.size > 0 && S.selectedFormats.size < S._allFormatOptions.size;
-  elFilterCnt.textContent = (terms.length || foldersActive || artistsActive || fmtActive)
-    ? `${visible} / ${files.length}` : '';
+  elFilterCnt.textContent = (terms.length || listsActive || artistsActive || fmtActive)
+    ? `${visible} / ${scopedTotal}` : '';
 
   // Re-number visible rows relative to the displayed list
   const pad = Math.max(2, String(visible || files.length).length);

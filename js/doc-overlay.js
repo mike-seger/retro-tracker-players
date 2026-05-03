@@ -1,5 +1,6 @@
 // js/doc-overlay.js — Help overlay with lazy-fetched + rendered README
 import { btnHelp } from './state.js';
+import { openPlaylistOverlay } from './playlist-overlay.js';
 
 let _helpCache = null;
 let _uiMapPopup = null;
@@ -578,8 +579,39 @@ function hideHelp() {
   btnHelp.classList.remove('active');
 }
 
-btnHelp.addEventListener('click', () => {
-  if (overlay?.hidden === false) hideHelp(); else showHelp();
+const optionsPanel = document.getElementById('options-panel');
+
+function toggleOptionsPanel() {
+  if (!optionsPanel) return;
+  const open = !optionsPanel.hidden;
+  optionsPanel.hidden = open;
+  btnHelp.classList.toggle('active', !open);
+}
+
+function closeOptionsPanel() {
+  if (optionsPanel) optionsPanel.hidden = true;
+  btnHelp.classList.remove('active');
+}
+
+btnHelp.addEventListener('click', (e) => {
+  e.stopPropagation();
+  toggleOptionsPanel();
+});
+
+optionsPanel?.addEventListener('click', (e) => {
+  const opt = e.target.closest('.opts-opt');
+  if (!opt) return;
+  closeOptionsPanel();
+  const action = opt.dataset.action;
+  if (action === 'help') showHelp();
+  else if (action === 'live-help') window.open('https://github.com/mike-seger/retro-tracker-players/issues', '_blank');
+  else if (action === 'playlists') openPlaylistOverlay();
+});
+
+document.addEventListener('click', (e) => {
+  if (!optionsPanel?.hidden && !btnHelp.contains(e.target) && !optionsPanel.contains(e.target)) {
+    closeOptionsPanel();
+  }
 });
 
 closeBtn?.addEventListener('click', hideHelp);
