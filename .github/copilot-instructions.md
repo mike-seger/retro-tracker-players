@@ -49,7 +49,6 @@ Engines live in `engines/{id}/engine.js`. Each exports: `init()`, `load(url)`, `
 | `jssid` | .sid | Pure-JS MOS 6510 + SID emulator. ScriptProcessorNode. |
 | `ahx` | .ahx | Abyss' Highest eXperience 4-voice Amiga wavetable. |
 | `mod` | .mod .xm .s3m .it | libopenmpt. **AudioWorklet (chiptune3) on desktop/HTTPS; ScriptProcessorNode (chiptune2) on mobile/HTTP.** |
-| `websid` | .sid | Alternative SID engine (WASM). Currently disabled: `USE_WEBSID = false` in `state.js`. |
 
 Routing: `js/engines.js` `ensureEngine(playerId)` lazy-loads on first `getEngine()`, calls `init()`, sets volume, registers `onEnd`, pauses other engines.
 
@@ -93,4 +92,4 @@ Bulk checkbox cycles: **restore previous** → **all** → **none** → **restor
 | `scripts/sort-urllists.py` | Sorts `urllists.json` entries. |
 | `scripts/extract-ui-elements.mjs` | Playwright tool: screenshots + dumps UI elements to `doc/elements.json`. Needs `npm install` in `scripts/`. |
 | `scripts/build-modland-index.sh` | Builds remote-search index. |
-| `engines/*/sid-compat-scan/` | Scans SID files for jssid vs websid compatibility. |
+| `engines/*/sid-compat-scan/` | Scans SID files for compatibility checks. |

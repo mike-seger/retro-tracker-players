@@ -26,7 +26,6 @@ Promise.all([
   import('../engines/mod/engine.js'),
   import('../engines/ahx/engine.js'),
   import('../engines/jssid/engine.js'),
-  import('../engines/websid/engine.js'),
 ]).catch(() => {});
 ```
 

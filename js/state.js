@@ -45,9 +45,7 @@ export const S = {
 
 // ── constants ─────────────────────────────────────────
 export const FIXED_VOLUME        = 1.0;
-export const USE_WEBSID          = false;
 export const SID_TRACK_PLAYER_ID = 'jssid';
-export const SID_ENGINE_PLAYER_ID = USE_WEBSID ? 'websid' : 'jssid';
 export const MIN_FONT = 8;
 export const MAX_FONT = 24;
 export const CACHE_NAME = 'track-files-v1';
