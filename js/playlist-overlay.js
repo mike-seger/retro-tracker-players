@@ -211,22 +211,6 @@ async function render() {
 
   const visWrap = document.createElement('div');
   visWrap.className = 'pm-vis-wrap';
-  const visBtn = document.createElement('button');
-  visBtn.type = 'button';
-  visBtn.id = 'pm-visible-btn';
-  visBtn.className = 'pm-btn';
-  visBtn.textContent = 'Visibility ▾';
-  visBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    _visibilityPanelOpen = !_visibilityPanelOpen;
-    render();
-  });
-  visWrap.appendChild(visBtn);
-
-  const visPanel = document.createElement('div');
-  visPanel.id = 'pm-visible-panel';
-  visPanel.hidden = !_visibilityPanelOpen;
-  visPanel.addEventListener('click', (e) => e.stopPropagation());
 
   const visOptions = [
     // System folders: hidden by default; checkbox = opt-in to show
@@ -247,17 +231,65 @@ async function render() {
     })),
   ].sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: 'base' }));
 
+  const rowVisible = (row) =>
+    row.kind === 'system' ? pm.isSystemKeyVisible(row.key) : !hidden.has(row.key);
+  const allVisible = visOptions.length === 0 || visOptions.every(rowVisible);
+  const noneVisible = visOptions.length > 0 && visOptions.every(r => !rowVisible(r));
+
+  const visBtn = document.createElement('button');
+  visBtn.type = 'button';
+  visBtn.id = 'pm-visible-btn';
+  visBtn.textContent = 'V';
+  visBtn.classList.toggle('active', !allVisible);
+  visBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    _visibilityPanelOpen = !_visibilityPanelOpen;
+    render();
+  });
+  visWrap.appendChild(visBtn);
+
+  const visPanel = document.createElement('div');
+  visPanel.id = 'pm-visible-panel';
+  visPanel.hidden = !_visibilityPanelOpen;
+  visPanel.addEventListener('click', (e) => e.stopPropagation());
+
+  // Panel head: title + master * checkbox
+  const visPanelHead = document.createElement('div');
+  visPanelHead.className = 'panel-head';
+  const visPanelTitle = document.createElement('div');
+  visPanelTitle.className = 'panel-title';
+  visPanelTitle.textContent = 'Visibility';
+  visPanelHead.appendChild(visPanelTitle);
+  const visMasterLabel = document.createElement('label');
+  visMasterLabel.className = 'fmt-opt fmt-master';
+  visMasterLabel.tabIndex = -1;
+  const visMasterCb = document.createElement('input');
+  visMasterCb.type = 'checkbox';
+  visMasterCb.checked = allVisible;
+  visMasterCb.indeterminate = !allVisible && !noneVisible;
+  visMasterCb.classList.toggle('indeterminate', !allVisible && !noneVisible);
+  visMasterCb.addEventListener('change', () => {
+    const makeVisible = visMasterCb.checked;
+    for (const row of visOptions) {
+      if (row.kind === 'system') pm.setSystemFolderVisible(row.key, makeVisible);
+      else pm.setListHidden(row.key, !makeVisible);
+    }
+  });
+  visMasterLabel.appendChild(visMasterCb);
+  visMasterLabel.appendChild(document.createTextNode('*'));
+  visPanelHead.appendChild(visMasterLabel);
+  visPanel.appendChild(visPanelHead);
+
   for (const row of visOptions) {
     const label = document.createElement('label');
-    label.className = 'pm-vis-opt';
+    label.className = 'fmt-opt';
 
     const cb = document.createElement('input');
     cb.type = 'checkbox';
+    cb.checked = rowVisible(row);
     if (row.kind === 'system') {
-      cb.checked = pm.isSystemKeyVisible(row.key);
       cb.addEventListener('change', () => pm.setSystemFolderVisible(row.key, cb.checked));
     } else {
-      cb.checked = !hidden.has(row.key);
       cb.addEventListener('change', () => pm.setListHidden(row.key, !cb.checked));
     }
 
@@ -265,7 +297,7 @@ async function render() {
     text.textContent = row.label;
     const kind = document.createElement('span');
     kind.className = 'pm-vis-kind';
-    kind.textContent = row.kind === 'system' ? 'System' : row.kind === 'default' ? 'Default' : 'Playlist';
+    kind.textContent = row.kind === 'system' ? 'SYSTEM' : row.kind === 'default' ? 'DEFAULT' : 'PLAYLIST';
 
     label.append(cb, text, kind);
     visPanel.appendChild(label);
