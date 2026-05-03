@@ -1,12 +1,10 @@
 // js/playlist-overlay.js — Playlist Manager overlay UI
 import * as pm from './playlist-manager.js';
-import { esc } from './utils.js';
 import { S } from './state.js';
 
 let _overlay = null;
 let _content = null;
 let _unsubscribe = null;
-let _editorFilterPlaylistId = '__all__';
 let _visibilityPanelOpen = false;
 
 function keepPanelInViewport(panel) {
@@ -44,168 +42,6 @@ export function closePlaylistOverlay() {
   _visibilityPanelOpen = false;
 }
 
-function buildEditorFilterCombo(lists) {
-  const options = [
-    { id: '__all__', label: 'Edit…' },
-    ...lists.map(pl => ({ id: pl.id, label: pl.name })),
-  ];
-
-  if (_editorFilterPlaylistId !== '__all__' && !options.some(o => o.id === _editorFilterPlaylistId)) {
-    _editorFilterPlaylistId = '__all__';
-  }
-
-  const selected = options.find(o => o.id === _editorFilterPlaylistId) || options[0];
-  const wrap = document.createElement('div');
-  wrap.className = 'pm-combo';
-
-  const input = document.createElement('input');
-  input.type = 'text';
-  input.id = 'pm-editor-filter';
-  input.className = 'pm-combo-input';
-  input.setAttribute('autocomplete', 'off');
-  input.setAttribute('role', 'combobox');
-  input.setAttribute('aria-expanded', 'false');
-  input.setAttribute('aria-autocomplete', 'list');
-  input.setAttribute('aria-controls', 'pm-editor-filter-list');
-  input.value = selected.label;
-
-  const toggle = document.createElement('button');
-  toggle.type = 'button';
-  toggle.className = 'pm-combo-toggle';
-  toggle.textContent = '▾';
-
-  const panel = document.createElement('div');
-  panel.id = 'pm-editor-filter-list';
-  panel.className = 'pm-combo-panel';
-  panel.hidden = true;
-
-  let open = false;
-  let visible = options;
-  let activeIdx = -1;
-
-  const setClosed = (restoreValue = true) => {
-    open = false;
-    panel.hidden = true;
-    wrap.classList.remove('open');
-    input.setAttribute('aria-expanded', 'false');
-    if (restoreValue) {
-      const cur = options.find(o => o.id === _editorFilterPlaylistId) || options[0];
-      input.value = cur.label;
-    }
-  };
-
-  const setOpen = () => {
-    if (open) return;
-    open = true;
-    panel.hidden = false;
-    wrap.classList.add('open');
-    input.setAttribute('aria-expanded', 'true');
-  };
-
-  const pick = (id) => {
-    if (_editorFilterPlaylistId === id) {
-      setClosed(true);
-      return;
-    }
-    _editorFilterPlaylistId = id;
-    render();
-  };
-
-  const renderOptions = () => {
-    const q = input.value.trim().toLowerCase();
-    visible = q ? options.filter(o => o.label.toLowerCase().includes(q)) : options;
-    activeIdx = visible.findIndex(o => o.id === _editorFilterPlaylistId);
-    panel.innerHTML = '';
-
-    if (!visible.length) {
-      const empty = document.createElement('div');
-      empty.className = 'pm-combo-empty';
-      empty.textContent = 'No matching playlists.';
-      panel.appendChild(empty);
-      return;
-    }
-
-    visible.forEach((opt, idx) => {
-      const row = document.createElement('button');
-      row.type = 'button';
-      row.className = 'pm-combo-opt';
-      if (opt.id === _editorFilterPlaylistId) row.classList.add('selected');
-      if (idx === activeIdx) row.classList.add('active');
-      row.textContent = opt.label;
-      row.addEventListener('click', () => pick(opt.id));
-      panel.appendChild(row);
-    });
-  };
-
-  const syncActive = () => {
-    const rows = panel.querySelectorAll('.pm-combo-opt');
-    rows.forEach((row, idx) => row.classList.toggle('active', idx === activeIdx));
-    const active = rows[activeIdx];
-    if (active) active.scrollIntoView({ block: 'nearest' });
-  };
-
-  input.addEventListener('focus', () => {
-    setOpen();
-    input.select();
-    renderOptions();
-  });
-  input.addEventListener('input', () => {
-    setOpen();
-    renderOptions();
-  });
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      setOpen();
-      if (!visible.length) return;
-      activeIdx = Math.min(visible.length - 1, activeIdx + 1);
-      syncActive();
-      return;
-    }
-    if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setOpen();
-      if (!visible.length) return;
-      activeIdx = Math.max(0, activeIdx - 1);
-      syncActive();
-      return;
-    }
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      if (open && visible.length) {
-        const target = visible[Math.max(0, activeIdx)] || visible[0];
-        pick(target.id);
-      }
-      return;
-    }
-    if (e.key === 'Escape') {
-      e.preventDefault();
-      setClosed(true);
-    }
-  });
-
-  toggle.addEventListener('click', (e) => {
-    e.stopPropagation();
-    if (open) {
-      setClosed(true);
-      return;
-    }
-    setOpen();
-    input.focus();
-    input.select();
-    renderOptions();
-  });
-
-  panel.addEventListener('click', (e) => e.stopPropagation());
-  wrap.addEventListener('focusout', (e) => {
-    if (!wrap.contains(e.relatedTarget)) setClosed(true);
-  });
-
-  wrap.append(input, toggle, panel);
-  renderOptions();
-  return wrap;
-}
-
 async function render() {
   _content = _content || document.getElementById('pm-content');
   if (!_content) return;
@@ -221,7 +57,6 @@ async function render() {
   newBtn.type = 'button'; newBtn.id = 'pm-new-btn'; newBtn.textContent = '+';
   newBtn.addEventListener('click', createNew);
   toolbar.appendChild(newBtn);
-  toolbar.appendChild(buildEditorFilterCombo(lists));
 
   const visWrap = document.createElement('div');
   visWrap.className = 'pm-vis-wrap';
@@ -340,11 +175,7 @@ async function render() {
     return;
   }
 
-  const visibleCards = _editorFilterPlaylistId === '__all__'
-    ? lists
-    : lists.filter(pl => pl.id === _editorFilterPlaylistId);
-
-  for (const pl of visibleCards) _content.appendChild(buildPlaylistCard(pl));
+  for (const pl of lists) _content.appendChild(buildPlaylistCard(pl));
 }
 
 function onOutsideVisibilityClick() {
@@ -403,24 +234,6 @@ function buildPlaylistCard(pl) {
   actions.append(exportBtn, importBtn, delBtn);
   header.appendChild(actions);
   div.appendChild(header);
-
-  // — track list —
-  if (pl.tracks.length > 0) {
-    const ul = document.createElement('ul');
-    ul.className = 'pm-track-list';
-    for (const t of pl.tracks) {
-      const li  = document.createElement('li');
-      li.className = 'pm-track-item';
-      const slash = (t.name || '').lastIndexOf('/');
-      const disp  = slash >= 0 ? t.name.substring(slash + 1) : t.name;
-      li.innerHTML = `<span class="pm-track-name">${esc(disp)}</span><span class="pm-track-ext">${esc(t.ext || '')}</span>`;
-      const rmBtn = makeBtn('✕', 'Remove from playlist', () => pm.removeTrack(pl.id, pm.trackKey(t)));
-      rmBtn.className = 'pm-rm-btn';
-      li.appendChild(rmBtn);
-      ul.appendChild(li);
-    }
-    div.appendChild(ul);
-  }
 
   return div;
 }
@@ -494,7 +307,6 @@ function startRename(id, span, currentName) {
 
 async function doDelete(id, name) {
   if (!confirm(`Delete playlist "${name}"?`)) return;
-  if (_editorFilterPlaylistId === id) _editorFilterPlaylistId = '__all__';
   await pm.remove(id);
 }
 

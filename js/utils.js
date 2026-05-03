@@ -55,6 +55,14 @@ export function parseTrackDisplay(entry) {
   const rawFolder = slash >= 0 ? decoded.substring(0, slash) : '';
   const folder = rawFolder ? (trimDisplayPath(rawFolder) || rawFolder) : '';
   const baseName = slash >= 0 ? decoded.substring(slash + 1) : decoded;
+  const membership = Array.isArray(entry?.userPlaylistNames) && entry.userPlaylistNames.length
+    ? entry.userPlaylistNames.join(', ')
+    : '';
+  const addMembership = (badge) => {
+    if (!membership) return badge;
+    if (!badge || badge === '<root>') return membership;
+    return badge + ' | ' + membership;
+  };
 
   // Normalise artist: empty or "- unknown" variants → "Uncategorized"
   const normArtist = s => {
@@ -73,14 +81,14 @@ export function parseTrackDisplay(entry) {
     // artist from filename left-of-dash; folder badge from path prefix (or <root>)
     const artistStr = baseName.substring(0, dashIdx).replace(/_/g, ' ');
     const title = baseName.substring(dashIdx + 3).replace(/\.\w+$/i, '').replace(/_/g, ' ');
-    return { artist: normArtist(artistStr), title, folder: rootBadge };
+    return { artist: normArtist(artistStr), title, folder: addMembership(rootBadge) };
   }
 
   // No dash: path prefix IS the artist — put it in artist slot, no folder badge
   return {
     artist: normArtist(folder),
     title: baseName.replace(/\.\w+$/i, '').replace(/_/g, ' '),
-    folder: rawFolder ? '' : '<root>'
+    folder: addMembership(rawFolder ? '' : '<root>')
   };
 }
 

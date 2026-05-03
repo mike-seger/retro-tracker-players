@@ -1,6 +1,6 @@
 // js/app.js — Thin init entry point; imports all modules and runs startup
 import * as remoteSearch from './remote-search.js';
-import { S, elFilter, elFilterClr, elSearchMode, elSelBulk, debugLog, elTransport, SID_TRACK_PLAYER_ID } from './state.js';
+import { S, elFilter, elFilterClr, elSearchMode, elSelBulk, elPlDel, debugLog, elTransport, SID_TRACK_PLAYER_ID } from './state.js';
 import { extOf, dbg, tlog } from './utils.js';
 import { setFormatChangeHandler, clearFormatFilter } from './format-panel.js';
 import { setFolderChangeHandler, clearFolderFilter } from './folder-panel.js';
@@ -16,7 +16,7 @@ import { loadModlandTracks } from './modland.js';
 import { doModlandSearch, doRandomBrowse } from './modland.js';
 import { switchMode, restorePersistedContext } from './mode.js';
 import { loadDeepLinkedTrack, applyDeepLinkFilters } from './deeplink.js';
-import { showResumePrompt } from './prompts.js';
+import { showResumePrompt, showDeleteConfirm } from './prompts.js';
 import { loadAndPlay } from './player.js';
 import { closeAllDropdowns } from './dropdown-keys.js';
 
@@ -52,11 +52,19 @@ async function refreshUserPlaylistTracks() {
         playerId: t.playerId,
         source: 'user-playlist',
         playlistId: pl.id,
+        playlistName: pl.name,
         ...(t.url ? { url: t.url } : {}),
       });
     }
   }
   S._userPlaylistTracks = tracks;
+}
+
+export async function refreshUserPlaylistTracksAndRebuild() {
+  await refreshUserPlaylistTracks();
+  rebuildMergedFiles();
+  buildPlaylist();
+  updateSelCount();
 }
 
 // ── format change callback — breaks format-panel ↔ filter circular dep ──
@@ -261,6 +269,24 @@ elFilterClr.addEventListener('click', () => {
   await pm.init();
   await refreshUserPlaylistTracks();
   document.getElementById('pm-close')?.addEventListener('click', closePlaylistOverlay);
+
+  elPlDel.addEventListener('click', () => {
+    const sel = S.localSelected;
+    const files = activeFiles();
+    const targets = [...sel]
+      .map(i => files[i])
+      .filter(t => Array.isArray(t?.userPlaylistIds) && t.userPlaylistIds.length > 0);
+    if (!targets.length) return;
+    showDeleteConfirm(targets.length, async () => {
+      for (const t of targets) {
+        const key = pm.trackKey(t);
+        for (const id of (t.userPlaylistIds || [])) {
+          await pm.removeTrack(id, key);
+        }
+      }
+      await refreshUserPlaylistTracksAndRebuild();
+    });
+  });
   pm.onChange(async () => {
     await refreshUserPlaylistTracks();
     if (!S._appReady) return;

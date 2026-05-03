@@ -1,5 +1,5 @@
 // js/playlist.js — Playlist rendering, scroll helpers, file list management
-import { S, elList, elTrackPos, elSelBulk, elFilter, elInfo } from './state.js';
+import { S, elList, elTrackPos, elSelBulk, elFilter, elInfo, elPlDel } from './state.js';
 import { esc, extOf, trackUrl, addLongPress, isMobile, parseTrackDisplay, toAbsoluteUrl, dbg } from './utils.js';
 // Note: circular imports below (filter.js ↔ playlist.js, etc.) are safe —
 // all cross-module calls happen inside function bodies, never at eval time.
@@ -37,12 +37,38 @@ export function rebuildMergedFiles() {
   };
 
   S.mergedFiles = [];
-  const seen = new Set();
+  const seen = new Map();
+
+  const membershipByKey = new Map();
+  for (const t of S._userPlaylistTracks) {
+    const key = t.url || (t.playerId + ':' + t.name);
+    let m = membershipByKey.get(key);
+    if (!m) {
+      m = { ids: new Set(), names: new Set() };
+      membershipByKey.set(key, m);
+    }
+    if (t.playlistId) m.ids.add(t.playlistId);
+    if (t.playlistName) m.names.add(t.playlistName);
+  }
+
+  const applyMembership = (entry, key) => {
+    const m = membershipByKey.get(key);
+    if (!m) return;
+    entry.userPlaylistIds = [...m.ids];
+    entry.userPlaylistNames = [...m.names]
+      .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+    if (!entry.playlistId && entry.userPlaylistIds.length) entry.playlistId = entry.userPlaylistIds[0];
+  };
 
   const pushUnique = (entry) => {
     const key = entry.url || (entry.playerId + ':' + entry.name);
-    if (seen.has(key)) return;
-    seen.add(key);
+    const existingIdx = seen.get(key);
+    if (existingIdx !== undefined) {
+      applyMembership(S.mergedFiles[existingIdx], key);
+      return;
+    }
+    applyMembership(entry, key);
+    seen.set(key, S.mergedFiles.length);
     S.mergedFiles.push(entry);
   };
 
@@ -140,6 +166,8 @@ export function buildPlaylist() {
         (!isMobile ? `<button class="r-dl" title="Download track" aria-label="Download track">D↧</button>` : '') +
         (S.searchMode === 'modland' && entry.url
           ? `<button class="r-del" title="Remove">&times;</button>` : '') +
+        (S.searchMode === 'local' && Array.isArray(entry.userPlaylistIds) && entry.userPlaylistIds.length > 0
+          ? `<button class="r-pl-del" title="Remove from playlist" aria-label="Remove from playlist">X</button>` : '') +
       `</div>`;
 
     const dlBtn = li.querySelector('.r-dl');
@@ -169,10 +197,23 @@ export function buildPlaylist() {
       });
     }
 
+    const plDelBtn = li.querySelector('.r-pl-del');
+    if (plDelBtn) {
+      plDelBtn.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        const ids = (entry.userPlaylistIds || []).slice();
+        const key = pm.trackKey(entry);
+        Promise.all(ids.map(id => pm.removeTrack(id, key))).then(() => {
+          import('./app.js').then(m => m.refreshUserPlaylistTracksAndRebuild());
+        });
+      });
+    }
+
     li.addEventListener('click', (ev) => {
       if (ev.target.classList.contains('sel-cb') ||
           ev.target.classList.contains('r-del') ||
-          ev.target.classList.contains('r-dl')) return;
+          ev.target.classList.contains('r-dl') ||
+          ev.target.classList.contains('r-pl-del')) return;
       loadAndPlay(i);
     });
 
@@ -193,7 +234,8 @@ export function buildPlaylist() {
       };
       li.addEventListener('dblclick', (ev) => {
         if (ev.target.classList.contains('sel-cb') ||
-            ev.target.classList.contains('r-dl')) return;
+            ev.target.classList.contains('r-dl') ||
+            ev.target.classList.contains('r-pl-del')) return;
         goToArtist();
       });
       addLongPress(li, goToArtist);

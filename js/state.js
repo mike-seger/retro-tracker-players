@@ -72,6 +72,7 @@ export const elMlDelAll          = document.getElementById('ml-del-all');
 export const elMlRandom          = document.getElementById('ml-random');
 export const btnCopy             = document.getElementById('btn-copy');
 export const btnZip              = document.getElementById('btn-zip');
+export const elPlDel             = document.getElementById('btn-pl-del');
 export const btnShare            = document.getElementById('share-btn');
 export const elBulkCb            = document.getElementById('sel-bulk-cb');
 export const elSelCount          = document.getElementById('sel-count');

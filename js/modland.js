@@ -512,19 +512,70 @@ document.addEventListener('click', () => closeAddDropdown());
 window.addEventListener('resize', () => refreshOpenAddDropdown());
 elList.addEventListener('scroll', () => refreshOpenAddDropdown());
 
-// ── ML button listeners ───────────────────────────────
-elMlAddAll.addEventListener('click', () => {
-  if (S._lastSearchResults.length === 0) return;
-  const count = S._lastSearchResults.length;
-  showAddConfirm(count, () => {
-    addModlandTracks(S._lastSearchResults);
-    elFilter.value = '';
-    S._lastSearchResults = [];
-    updateMlButtons();
-    buildPlaylist();
-    restoreSelection();
+// ── Global add-all dropdown ──────────────────────────
+let _addAllPanel = null;
+
+function closeAddAllDropdown() {
+  if (_addAllPanel) { _addAllPanel.remove(); _addAllPanel = null; }
+}
+
+function openAddAllDropdown(btn) {
+  closeAddAllDropdown();
+  const tracks = S._lastSearchResults;
+  if (!tracks.length) return;
+
+  pm.getAll().then(playlists => {
+    playlists = playlists.filter(pl => !pm.isListHidden(pm.hiddenListKeyForPlaylist(pl.id)));
+
+    const panel = document.createElement('div');
+    panel.id = 'r-add-all-dropdown';
+    panel.className = 'r-add-panel';
+    _addAllPanel = panel;
+
+    const head = document.createElement('div');
+    head.className = 'r-add-head r-add-all-head';
+    head.textContent = `Add ${tracks.length} track${tracks.length !== 1 ? 's' : ''} to…`;
+    panel.appendChild(head);
+
+    const buildSimpleRow = (text, strong, onClick) => {
+      const row = document.createElement('div');
+      row.className = 'r-add-opt r-add-row' + (strong ? ' r-add-scratch' : '');
+      const lbl = document.createElement(strong ? 'em' : 'span');
+      lbl.textContent = text;
+      row.appendChild(lbl);
+      row.addEventListener('click', (e) => { e.stopPropagation(); onClick(); closeAddAllDropdown(); });
+      return row;
+    };
+
+    panel.appendChild(buildSimpleRow('Scratchpad', true, () => {
+      addModlandTracks(tracks);
+      elFilter.value = '';
+      S._lastSearchResults = [];
+      updateMlButtons();
+      buildPlaylist();
+      restoreSelection();
+    }));
+
+    for (const pl of playlists) {
+      panel.appendChild(buildSimpleRow(pl.name, false, async () => {
+        for (const t of tracks) await pm.addTrack(pl.id, t);
+      }));
+    }
+
+    panel.addEventListener('click', (e) => e.stopPropagation());
+    document.body.appendChild(panel);
+    positionAddDropdown(panel, btn);
   });
+}
+
+// ── ML button listeners ───────────────────────────────
+elMlAddAll.addEventListener('click', (e) => {
+  e.stopPropagation();
+  if (_addAllPanel) { closeAddAllDropdown(); return; }
+  openAddAllDropdown(elMlAddAll);
 });
+
+document.addEventListener('click', () => closeAddAllDropdown());
 
 elMlDelAll.addEventListener('click', () => {
   // If items are selected, only delete those

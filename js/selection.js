@@ -1,5 +1,5 @@
 // js/selection.js — Track selection, bulk state machine, copy/zip
-import { S, elBulkCb, elSelCount, elSelBulk, btnCopy, btnZip, elInfo, elList } from './state.js';
+import { S, elBulkCb, elSelCount, elSelBulk, btnCopy, btnZip, elPlDel, elInfo, elList } from './state.js';
 import { trackUrl } from './utils.js';
 import { activeFiles, activeSelected, setActiveSelected } from './playlist.js';
 
@@ -65,6 +65,19 @@ export function updateSelCount() {
   btnZip.disabled = n === 0;
   btnCopy.title = n === 0 ? 'Select tracks first to copy file links' : 'Copy selected file links to clipboard';
   btnZip.title = n === 0 ? 'Select tracks first to download as ZIP' : 'Download selected tracks as ZIP';
+
+  // Show global playlist-remove button when selected tracks include user-playlist tracks (local mode only)
+  if (S.searchMode === 'local' && n > 0) {
+    const files = activeFiles();
+    const hasPlaylistTracks = [...sel].some(i => {
+      const ids = files[i]?.userPlaylistIds;
+      return Array.isArray(ids) && ids.length > 0;
+    });
+    elPlDel.style.display = hasPlaylistTracks ? '' : 'none';
+  } else {
+    elPlDel.style.display = 'none';
+  }
+
   syncBulkState();
 }
 
