@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-03T14:46:16.772Z",
+  "generatedAt": "2026-05-03T15:06:43.422Z",
   "sourceUrl": "http://127.0.0.1:8080/index.html",
   "screenshotPath": "doc/elements-view.png",
   "viewport": {
@@ -210,7 +210,7 @@
       "name": "Track artist",
       "category": "information",
       "xpath": "/html[1]/body[1]/div[1]/ul[1]/li[1]/div[1]/span[1]",
-      "humanXPath": "body > div#player > ul#playlist > li.current > div.row-top > span.artist",
+      "humanXPath": "body > div#player > ul#playlist > li.remote > div.row-top > span.artist",
       "notes": "text-match",
       "tag": "span"
     },
@@ -219,7 +219,7 @@
       "name": "Track group",
       "category": "information",
       "xpath": "/html[1]/body[1]/div[1]/ul[1]/li[1]/div[1]/span[2]",
-      "humanXPath": "body > div#player > ul#playlist > li.current > div.row-top > span.folder",
+      "humanXPath": "body > div#player > ul#playlist > li.remote > div.row-top > span.folder",
       "notes": "text-match",
       "tag": "span"
     },
@@ -228,7 +228,7 @@
       "name": "Track index",
       "category": "information",
       "xpath": "/html[1]/body[1]/div[1]/ul[1]/li[1]/span[1]",
-      "humanXPath": "html > body > div#player > ul#playlist > li.current > span.idx",
+      "humanXPath": "html > body > div#player > ul#playlist > li.remote > span.idx",
       "notes": "text-match",
       "tag": "span"
     },
@@ -237,7 +237,7 @@
       "name": "Track selector checkbox",
       "category": "control",
       "xpath": "/html[1]/body[1]/div[1]/ul[1]/li[1]/input[1]",
-      "humanXPath": "html > body > div#player > ul#playlist > li.current > input.sel-cb",
+      "humanXPath": "html > body > div#player > ul#playlist > li.remote > input.sel-cb",
       "notes": "control-match; text-match",
       "tag": "input"
     },
@@ -246,7 +246,7 @@
       "name": "Track title",
       "category": "information",
       "xpath": "/html[1]/body[1]/div[1]/ul[1]/li[1]/div[2]/span[1]",
-      "humanXPath": "body > div#player > ul#playlist > li.current > div.row-bot > span.title",
+      "humanXPath": "body > div#player > ul#playlist > li.remote > div.row-bot > span.title",
       "notes": "text-match",
       "tag": "span"
     },
@@ -255,7 +255,7 @@
       "name": "Track format",
       "category": "information",
       "xpath": "/html[1]/body[1]/div[1]/ul[1]/li[1]/div[2]/span[2]",
-      "humanXPath": "body > div#player > ul#playlist > li.current > div.row-bot > span.ext",
+      "humanXPath": "body > div#player > ul#playlist > li.remote > div.row-bot > span.ext",
       "notes": "text-match",
       "tag": "span"
     },
@@ -264,7 +264,7 @@
       "name": "Download track",
       "category": "control",
       "xpath": "/html[1]/body[1]/div[1]/ul[1]/li[1]/div[2]/button[1]",
-      "humanXPath": "body > div#player > ul#playlist > li.current > div.row-bot > button.r-dl",
+      "humanXPath": "body > div#player > ul#playlist > li.remote > div.row-bot > button.r-dl",
       "notes": "control-match; text-match",
       "tag": "button"
     },

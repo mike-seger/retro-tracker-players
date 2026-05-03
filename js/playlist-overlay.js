@@ -32,7 +32,7 @@ export function closePlaylistOverlay() {
 
 function buildEditorFilterCombo(lists) {
   const options = [
-    { id: '__all__', label: 'All user playlists' },
+    { id: '__all__', label: 'Edit…' },
     ...lists.map(pl => ({ id: pl.id, label: pl.name })),
   ];
 
@@ -204,7 +204,7 @@ async function render() {
   toolbar.id = 'pm-toolbar';
 
   const newBtn = document.createElement('button');
-  newBtn.type = 'button'; newBtn.id = 'pm-new-btn'; newBtn.textContent = '+ New playlist';
+  newBtn.type = 'button'; newBtn.id = 'pm-new-btn'; newBtn.textContent = '+';
   newBtn.addEventListener('click', createNew);
   toolbar.appendChild(newBtn);
   toolbar.appendChild(buildEditorFilterCombo(lists));
@@ -215,7 +215,7 @@ async function render() {
   visBtn.type = 'button';
   visBtn.id = 'pm-visible-btn';
   visBtn.className = 'pm-btn';
-  visBtn.textContent = 'Visible lists ▾';
+  visBtn.textContent = 'Visibility ▾';
   visBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     _visibilityPanelOpen = !_visibilityPanelOpen;

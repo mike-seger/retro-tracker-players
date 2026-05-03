@@ -3,7 +3,7 @@
 <!-- AUTO:DOC_META:START -->
 | Version | Updated |
 |:--|:--|
-| 0.9.8-1 | 2026-05-03 16:46 |
+| 0.9.8-2 | 2026-05-03 17:06 |
 <!-- AUTO:DOC_META:END -->
 
 A browser-based player for classic tracker module formats (MOD, XM, S3M, IT, AHX, SID) with local file lists and Modland search.
@@ -41,13 +41,13 @@ Description of the UI elements from the screenshot.
 | 18 | Options | #help-btn |
 | 19 | Track number / total found | #track-pos |
 | 20 | Toggle all, none, or restore track selection | #sel-bulk-cb |
-| 21 | Track artist | body > div#player > ul#playlist > li.current > div.row-top > span.artist |
-| 22 | Track group | body > div#player > ul#playlist > li.current > div.row-top > span.folder |
-| 23 | Track index | html > body > div#player > ul#playlist > li.current > span.idx |
-| 24 | Track selector checkbox | html > body > div#player > ul#playlist > li.current > input.sel-cb |
-| 25 | Track title | body > div#player > ul#playlist > li.current > div.row-bot > span.title |
-| 26 | Track format | body > div#player > ul#playlist > li.current > div.row-bot > span.ext |
-| 27 | Download track | body > div#player > ul#playlist > li.current > div.row-bot > button.r-dl |
+| 21 | Track artist | body > div#player > ul#playlist > li.remote > div.row-top > span.artist |
+| 22 | Track group | body > div#player > ul#playlist > li.remote > div.row-top > span.folder |
+| 23 | Track index | html > body > div#player > ul#playlist > li.remote > span.idx |
+| 24 | Track selector checkbox | html > body > div#player > ul#playlist > li.remote > input.sel-cb |
+| 25 | Track title | body > div#player > ul#playlist > li.remote > div.row-bot > span.title |
+| 26 | Track format | body > div#player > ul#playlist > li.remote > div.row-bot > span.ext |
+| 27 | Download track | body > div#player > ul#playlist > li.remote > div.row-bot > button.r-dl |
 | 28 | Play / Pause | #btn-play |
 | 29 | Track Time | #time |
 | 30 | Track Length | #duration |
