@@ -1,7 +1,7 @@
 // js/keyboard.js — Keyboard shortcuts + share button
 import { S, elFilter, elSearchMode, btnShare, btnCopy, btnZip, elMlRandom,
   elRefineFolderBtn, elRefineArtistBtn, elRefineFormatBtn, btnHelp, elFilterClr,
-  elMlAddAll, elMlDelAll } from './state.js';
+  elMlAddAll, elMlDelAll, elSeek } from './state.js';
 import { scrub, playPrevNext } from './player.js';
 import { toggleSelect } from './selection.js';
 import { buildDeepLink } from './deeplink.js';
@@ -28,6 +28,27 @@ function isDelKey(e) {
 document.addEventListener('keydown', (e) => {
   const focused = document.activeElement;
   const inInput = focused && (focused.tagName === 'INPUT' || focused.tagName === 'SELECT' || focused.tagName === 'TEXTAREA' || focused.isContentEditable);
+
+  if (focused === elSeek) {
+    switch (e.key) {
+      case 'ArrowRight':
+        e.preventDefault();
+        scrub(5);
+        return;
+      case 'ArrowLeft':
+        e.preventDefault();
+        scrub(-5);
+        return;
+      case 'ArrowDown':
+        e.preventDefault();
+        playPrevNext(1);
+        return;
+      case 'ArrowUp':
+        e.preventDefault();
+        playPrevNext(-1);
+        return;
+    }
+  }
 
   if (e.key === '/' && !inInput) {
     e.preventDefault();

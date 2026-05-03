@@ -1,6 +1,6 @@
 // js/app.js — Thin init entry point; imports all modules and runs startup
 import * as remoteSearch from './remote-search.js';
-import { S, elFilter, elFilterClr, elSearchMode, elSelBulk, debugLog, elTransport } from './state.js';
+import { S, elFilter, elFilterClr, elSearchMode, elSelBulk, debugLog, elTransport, SID_TRACK_PLAYER_ID } from './state.js';
 import { extOf, dbg, tlog } from './utils.js';
 import { setFormatChangeHandler, clearFormatFilter } from './format-panel.js';
 import { setFolderChangeHandler, clearFolderFilter } from './folder-panel.js';
@@ -27,6 +27,14 @@ import './doc-overlay.js';
 // Global debug toggle for URL-based playing-track re-anchor logs.
 const DEBUG_TRACK_REANCHOR_LOG = false;
 S._debugTrackReanchor = DEBUG_TRACK_REANCHOR_LOG;
+
+function detectPlayerIdFromUrl(url) {
+  const ext = url.split('.').pop().toLowerCase();
+  if (ext === 'ahx') return 'ahx';
+  if (ext === 'sid') return SID_TRACK_PLAYER_ID;
+  if (['mod', 'xm', 's3m', 'it'].includes(ext)) return 'mod';
+  return null;
+}
 
 // ── format change callback — breaks format-panel ↔ filter circular dep ──
 setFormatChangeHandler(() => {
@@ -262,7 +270,8 @@ elFilterClr.addEventListener('click', () => {
             const artist = artistSeg.replace(/\//g, '+');
             const displayName = artist ? `${artist} - ${fileName}` : fileName;
             const name = `${folder}/${displayName}`;
-            S._localUrllistTracks.push({ name, ext: extOf(safeUrl), playerId: p.id, url: safeUrl });
+            const detectedPlayerId = detectPlayerIdFromUrl(safeUrl) || p.id;
+            S._localUrllistTracks.push({ name, ext: extOf(safeUrl), playerId: detectedPlayerId, url: safeUrl });
           } catch (_) {}
         }
       }

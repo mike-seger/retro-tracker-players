@@ -19,7 +19,7 @@ function loadScript(src) {
 }
 
 export async function init() {
-  await loadScript(BASE + 'jsSID-modified.js');
+  await loadScript(BASE + 'jsSID.js');
   player = new jsSID(8192, 0.0004);
   player.setendcallback(() => { _onEnd?.(); });
 
