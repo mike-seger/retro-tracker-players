@@ -1,2 +1,4 @@
 - cannot resume audio on iOS after screen lock (broken). it can be resolve by manually reloading the page. can this be automated? if the unlock can be detected, maybe a resume audio confirmation dialog could do the trick
+- "User Interface Highlighter" should remove the highlight from the UI when closed
 - an empty (multi-)select button should be display:none, e.g. when there is no range see (![h(multi)-select-empty](todos/(multi)-select-empty.png)
+- in "User Interface Highlighter" when navigating through row by row using arrow up/sown it sometimes sleects the completely wrong element in the UI

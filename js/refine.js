@@ -31,7 +31,7 @@ export async function populateFolderPanel() {
 
 export function populateLocalArtistPanel() {
   const totalLists = S._allFolderOptions.size + S._allPlaylistOptions.size;
-  const listsActive = totalLists > 0;
+  const listsActive = true;
   const raw = elFilter.value.trim();
   const terms = raw.toLowerCase().split(/\s+/).filter(Boolean);
   const artists = new Set();

@@ -13,8 +13,9 @@ export function applyFilter() {
   const raw = elFilter.value.trim();
   const terms = raw.toLowerCase().split(/\s+/).filter(Boolean);
   const totalLists = S._allFolderOptions.size + S._allPlaylistOptions.size;
-  // In local mode, list visibility defines the base dataset and must always apply.
-  const listsActive = S.searchMode === 'local' && totalLists > 0;
+  // In local mode, list visibility defines the base dataset and must always apply,
+  // including the "no visible lists" case (which should yield zero visible rows).
+  const listsActive = S.searchMode === 'local';
   const artistsActive = S.selectedArtists.size > 0 && S.selectedArtists.size < S._allArtistOptions.size;
 
   const inSelectedPlaylist = (entry) => {
@@ -100,7 +101,7 @@ export function applyFilter() {
   }
 
   const fmtActive = S.selectedFormats.size > 0 && S.selectedFormats.size < S._allFormatOptions.size;
-  elFilterCnt.textContent = (terms.length || listsActive || artistsActive || fmtActive)
+  elFilterCnt.textContent = (terms.length || listsActive || artistsActive || fmtActive || totalLists === 0)
     ? `${visible} / ${scopedTotal}` : '';
 
   // Re-number visible rows relative to the displayed list

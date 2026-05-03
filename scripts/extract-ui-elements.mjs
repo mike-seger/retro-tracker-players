@@ -155,6 +155,38 @@ async function loadPlaywright() {
   }
 }
 
+/**
+ * Load the app once to reach its origin, clear all persisted filter/mode state
+ * from localStorage, then reload so the app starts in a clean local-mode state
+ * with no active folder/artist/format/playlist filters.  This makes the element
+ * extraction deterministic regardless of what the user had selected last time.
+ */
+async function resetToDefaultState(page, url, waitMs) {
+  await page.goto(url, { waitUntil: 'domcontentloaded' });
+
+  await page.evaluate(async () => {
+    // Wipe all persisted filter/mode context so the app starts in clean local mode.
+    localStorage.clear();
+
+    // Force-show the Uncategorized system folder (hidden by default) so local
+    // tracks without an artist folder are visible in the first playlist row.
+    localStorage.setItem('retrotrap-system-lists-shown-v1', JSON.stringify(['__uncategorized__']));
+
+    // Delete user-playlist IndexedDB so playlist list-count doesn't activate the
+    // list filter and hide tracks that don't belong to any user playlist.
+    await new Promise((resolve) => {
+      const req = indexedDB.deleteDatabase('retrotrap');
+      req.onsuccess = resolve;
+      req.onerror = resolve;
+      req.onblocked = resolve;
+    });
+  });
+
+  // Reload with clean state so the app initialises as if opened for the first time.
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  if (waitMs > 0) await page.waitForTimeout(waitMs);
+}
+
 async function dismissBlockingOverlays(page) {
   // Try the safest path first: click explicit cancel/no controls.
   await page.evaluate(() => {
@@ -454,8 +486,8 @@ async function main() {
     const page = await browser.newPage({
       viewport: { width: args.width, height: args.height },
     });
-    await page.goto(args.url, { waitUntil: 'domcontentloaded' });
-    if (args.waitMs > 0) await page.waitForTimeout(args.waitMs);
+    // Load the page, clear persisted filter/mode state, reload with clean local-mode state.
+    await resetToDefaultState(page, args.url, args.waitMs);
 
     if (!args.keepModals) {
       await dismissBlockingOverlays(page);

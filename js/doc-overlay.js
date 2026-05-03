@@ -439,6 +439,7 @@ function popupHTML() {
 }
 
 function openUIMapPopup() {
+  ensureHighlighterStyle();
   if (_uiMapPopup && !_uiMapPopup.closed) {
     _uiMapPopup.focus();
     return;
@@ -604,7 +605,7 @@ optionsPanel?.addEventListener('click', (e) => {
   closeOptionsPanel();
   const action = opt.dataset.action;
   if (action === 'help') showHelp();
-  else if (action === 'live-help') window.open('https://github.com/mike-seger/retro-tracker-players/issues', '_blank');
+  else if (action === 'live-help') openUIMapPopup();
   else if (action === 'playlists') openPlaylistOverlay();
 });
 

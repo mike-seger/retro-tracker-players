@@ -53,7 +53,16 @@
         "https://modland.com/pub/modules/Protracker/Bassline/dead%20chipper.mod",
         "https://modland.com/pub/modules/Fasttracker%202/Quazar/funky%20stars.xm",
         "https://modland.com/pub/modules/Protracker/Dubmood/coop-Josss/starchip.mod",
-        "https://modland.com/pub/modules/Fasttracker%202/Maxus/grey%20voyager.xm"
+        "https://modland.com/pub/modules/Fasttracker%202/Maxus/grey%20voyager.xm",
+        "https://modland.com/pub/modules/Fasttracker%202/Cerror/sirius.xm",
+        "https://modland.com/pub/modules/Protracker/Coma/skogens%20djur%20008.mod",
+        "https://modland.com/pub/modules/Protracker/Coma/skogens%20djur%20014.mod",
+        "https://modland.com/pub/modules/Protracker/Daxx/'95%20raver's%20megamix.mod",
+        "https://modland.com/pub/modules/Protracker/Estrayk/trainer2.mod",
+        "https://modland.com/pub/modules/Fasttracker%202/Kalachnikov/mental%20delivrance.xm",
+        "https://modland.com/pub/modules/Fasttracker%202/LHS/brd.xm",
+        "https://modland.com/pub/modules/Protracker/LHS/chip%20mania.mod",
+        "https://modland.com/pub/modules/Protracker/Pink/razor%201911%20cracks.mod"
     ],
     "goa+acid": [
         "https://modland.com/pub/modules/Fasttracker%202/Biotic/x%20-%20t%20-%20rush.xm",
@@ -312,17 +321,6 @@
         "https://modland.com/pub/modules/Protracker/Zany/progressive-attack.mod",
         "https://modland.com/pub/modules/Impulsetracker/Xcalibur/the quest for the ardesy.it",
         "https://modland.com/pub/modules/Fasttracker%202/Zenith/i'm%20gonna%20trance%20u.xm"
-    ],
-    "unsorted": [
-        "https://modland.com/pub/modules/Fasttracker%202/Cerror/sirius.xm",
-        "https://modland.com/pub/modules/Protracker/Coma/skogens%20djur%20008.mod",
-        "https://modland.com/pub/modules/Protracker/Coma/skogens%20djur%20014.mod",
-        "https://modland.com/pub/modules/Protracker/Daxx/'95%20raver's%20megamix.mod",
-        "https://modland.com/pub/modules/Protracker/Estrayk/trainer2.mod",
-        "https://modland.com/pub/modules/Fasttracker%202/Kalachnikov/mental%20delivrance.xm",
-        "https://modland.com/pub/modules/Fasttracker%202/LHS/brd.xm",
-        "https://modland.com/pub/modules/Protracker/LHS/chip%20mania.mod",
-        "https://modland.com/pub/modules/Protracker/Pink/razor%201911%20cracks.mod"
     ],
     "waltz+polka": [
         "https://modland.com/pub/modules/Protracker/Absys/yodel%20waltz.short.mod",

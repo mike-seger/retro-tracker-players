@@ -60,9 +60,13 @@ export function setFolderChangeHandler(fn) { _onFolderChange = fn; }
 
 export async function buildFolderPanel(folders) {
   const sorted = [...folders].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
-  // System folders (e.g. 'unknown') are hidden from the List panel by default;
-  // only include them if the user has opted in via the manager's visibility panel.
-  const visibleSorted = sorted.filter(name => !pm.isSystemFolder(name) || pm.isSystemFolderVisible(name));
+  // Only include lists that are visible in Playlist Manager's visibility panel.
+  // System folders (e.g. 'unknown') are additionally gated by system visibility.
+  const visibleSorted = sorted.filter((name) => {
+    if (pm.isListHidden(pm.hiddenListKeyForFolder(name))) return false;
+    if (pm.isSystemFolder(name) && !pm.isSystemFolderVisible(name)) return false;
+    return true;
+  });
 
   const prevAllFolderCount = S._allFolderOptions.size;
   const hadAllFoldersSelected = prevAllFolderCount > 0 && S.selectedFolders.size === prevAllFolderCount;
