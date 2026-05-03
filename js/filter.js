@@ -1,5 +1,5 @@
 // js/filter.js — applyFilter + refine visibility
-import { S, elFilter, elFilterCnt,
+import { S, elFilter,
          elRefineFolderWrap, elRefineArtistWrap, elRefineRangeWrap,
          elRefineFormatWrap, elList } from './state.js';
 import { extractArtist } from './utils.js';
@@ -101,8 +101,9 @@ export function applyFilter() {
   }
 
   const fmtActive = S.selectedFormats.size > 0 && S.selectedFormats.size < S._allFormatOptions.size;
-  elFilterCnt.textContent = (terms.length || listsActive || artistsActive || fmtActive || totalLists === 0)
-    ? `${visible} / ${scopedTotal}` : '';
+  S._lastFilteredVisible = visible;
+  S._lastFilteredTotal = (terms.length || listsActive || artistsActive || fmtActive || totalLists === 0)
+    ? scopedTotal : visible;
 
   // Re-number visible rows relative to the displayed list
   const pad = Math.max(2, String(visible || files.length).length);

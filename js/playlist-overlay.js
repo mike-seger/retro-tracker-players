@@ -9,6 +9,20 @@ let _unsubscribe = null;
 let _editorFilterPlaylistId = '__all__';
 let _visibilityPanelOpen = false;
 
+function keepPanelInViewport(panel) {
+  if (!panel || panel.hidden) return;
+  panel.style.transform = 'translateX(0)';
+  const rect = panel.getBoundingClientRect();
+  const pad = 8;
+  const maxRight = (window.innerWidth || document.documentElement.clientWidth) - pad;
+  let shift = 0;
+
+  if (rect.left < pad) shift += (pad - rect.left);
+  if (rect.right > maxRight) shift -= (rect.right - maxRight);
+
+  if (shift) panel.style.transform = `translateX(${Math.round(shift)}px)`;
+}
+
 function el(id) {
   if (!_overlay) _overlay = document.getElementById('playlist-manager-overlay');
   return _overlay?.querySelector('#' + id) ?? document.getElementById(id);
@@ -314,6 +328,7 @@ async function render() {
   _content.appendChild(toolbar);
 
   if (_visibilityPanelOpen) {
+    requestAnimationFrame(() => keepPanelInViewport(visPanel));
     document.addEventListener('click', onOutsideVisibilityClick, { once: true });
   }
 

@@ -43,6 +43,8 @@ export const S = {
   _lastSearchResults:  [],
   _lastSearchSkip:     0,
   _lastSearchTotal:    0,
+  _lastFilteredVisible: 0,
+  _lastFilteredTotal:   0,
   _inSearchResults:    false,
   _randomBrowsing:     false,
 };

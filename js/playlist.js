@@ -210,26 +210,29 @@ export function buildPlaylist() {
 }
 
 export function updateTrackPos() {
+  if (!elTrackPos) return;
   const files = activeFiles();
-  if (S.currentIdx >= 0 && S.currentIdx < files.length) {
-    const items = elList.children;
-    let visibleTotal = 0;
-    let visiblePos = 0;
+  const items = elList.children;
+  let visibleTotal = 0;
+  let visiblePos = 0;
 
-    for (let i = 0; i < items.length; i++) {
-      if (items[i].classList.contains('hidden')) continue;
-      visibleTotal++;
-      if (i === S.currentIdx) visiblePos = visibleTotal;
-    }
-
-    if (visibleTotal > 0) {
-      elTrackPos.textContent = visiblePos > 0 ? `${visiblePos} / ${visibleTotal}` : `- / ${visibleTotal}`;
-    } else {
-      elTrackPos.textContent = '-/-';
-    }
-  } else {
-    elTrackPos.textContent = '-/-';
+  for (let i = 0; i < items.length; i++) {
+    if (items[i].classList.contains('hidden')) continue;
+    visibleTotal++;
+    if (i === S.currentIdx) visiblePos = visibleTotal;
   }
+
+  const filtered = visibleTotal;
+  const total = (() => {
+    if (S.searchMode === 'local') return Math.max(filtered, S._lastFilteredTotal || 0);
+    if (S._inSearchResults) return Math.max(filtered, S._lastSearchTotal || 0);
+    return files.length;
+  })();
+  const pos = (S.currentIdx >= 0 && S.currentIdx < files.length && visiblePos > 0) ? String(visiblePos) : '-';
+
+  elTrackPos.textContent = isMobile
+    ? `${pos} / ${filtered}`
+    : `${pos} / ${filtered} / ${total}`;
 }
 
 // ── scroll + highlight + focus ────────────────────────

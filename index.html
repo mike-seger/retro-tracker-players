@@ -46,25 +46,6 @@
         <button class="share-opt" data-action="facebook">Share on Facebook</button>
       </div>
     </span>
-    <span id="filter-wrap">
-      <input type="text" id="filter" placeholder="Filter tracks…" aria-label="Search tracks …">
-      <button id="filter-clear" type="button" aria-label="Clear">X</button>
-    </span>
-    <div id="search-mode-wrap" class="refine-panel-wrap">
-      <button id="search-mode-btn" type="button" title="Source">Lo</button>
-      <div id="search-mode-panel" hidden>
-        <div class="panel-title">Source</div>
-        <div class="src-opt" tabindex="0" data-value="local">Local</div>
-        <div class="src-opt" tabindex="0" data-value="modland">Modland</div>
-      </div>
-    </div>
-    <span id="filter-count" aria-label="Tracks found / total"></span>
-  </div>
-
-  <div id="sel-row">
-    <span id="sel-bulk" title="Toggle all, none, or restore previous selection">
-      <input type="checkbox" id="sel-bulk-cb" aria-label="Toggle all, none, or restore track selection">
-    </span>
     <button id="btn-copy" title="Copy selected track links to clipboard">C</button>
     <span id="sel-count"></span>
     <button id="btn-zip" title="Download selected tracks as ZIP">Z</button>
@@ -88,6 +69,14 @@
         <button id="refine-format-btn" type="button" aria-label="Select format">T</button>
         <div id="refine-format-panel" hidden></div>
       </div>
+      <div id="search-mode-wrap" class="refine-panel-wrap">
+        <button id="search-mode-btn" type="button" title="Source">Lo</button>
+        <div id="search-mode-panel" hidden>
+          <div class="panel-title">Source</div>
+          <div class="src-opt" tabindex="0" data-value="local">Local</div>
+          <div class="src-opt" tabindex="0" data-value="modland">Modland</div>
+        </div>
+      </div>
       <div id="options-wrap" class="refine-panel-wrap">
         <button id="help-btn" type="button" title="Options">&#x22EE;</button>
         <div id="options-panel" hidden>
@@ -98,7 +87,18 @@
         </div>
       </div>
     </div>
+  </div>
+
+  <div id="sel-row">
+    <span id="sel-bulk" title="Toggle all, none, or restore previous selection">
+      <input type="checkbox" id="sel-bulk-cb" aria-label="Toggle all, none, or restore track selection">
+    </span>
+    <span id="filter-wrap">
+      <input type="text" id="filter" placeholder="Filter tracks…" aria-label="Search tracks …">
+      <button id="filter-clear" type="button" aria-label="Clear">X</button>
+    </span>
     <span id="track-pos" aria-label="Track number / total found"></span>
+    <span id="filter-count" aria-label="Tracks found / total" hidden></span>
   </div>
 
   <ul id="playlist" data-ui-container="track-list"></ul>
