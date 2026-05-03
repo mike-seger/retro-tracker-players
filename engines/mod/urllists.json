@@ -126,6 +126,20 @@
         "https://modland.com/pub/modules/Fasttracker%202/Zalza/branda%20popcorn.xm",
         "https://modland.com/pub/modules/Protracker/Zalza/popcorn.mod"
     ],
+    "russian": [
+        "https://modland.com/pub/modules/Impulsetracker/Artz/russia%20remix%20v2.14c.it",
+        "https://modland.com/pub/modules/Protracker/Deejay%20Jones/da%20party%20russians.mod",
+        "https://modland.com/pub/modules/Fasttracker%202/Fanaty/radio%20russia%202.xm",
+        "https://modland.com/pub/modules/Protracker/Gianluca%20Gaiba/3dws-russia.mod",
+        "https://modland.com/pub/modules/His%20Master's%20Noise/Glue%20Master/russian-vodka.mod",
+        "https://modland.com/pub/modules/Fasttracker%202/Madminder/russian%20agression.xm",
+        "https://modland.com/pub/modules/Protracker/Maestro/naughty%20ones%20russian.mod",
+        "https://modland.com/pub/modules/Protracker/Michael/zangief%20(russian).mod",
+        "https://modland.com/pub/modules/Protracker/Mortimer%20Twang/russia.mod",
+        "https://modland.com/pub/modules/Fasttracker%202/Pekka%20K/russian%20anthem.xm",
+        "https://modland.com/pub/modules/Protracker/TDK/russian-theme.mod",
+        "https://modland.com/pub/modules/Fasttracker%202/The%20Music%20Wizard/spectrums%20in%20russia!.xm"       
+    ],
     "trance": [
         "https://modland.com/pub/modules/Fasttracker%202/-%20unknown/eagle%20trance.xm",
         "https://modland.com/pub/modules/Fasttracker%202/-%20unknown/trance%20waves%20part%201%20%26%203.xm",
@@ -310,5 +324,25 @@
         "https://modland.com/pub/modules/Fasttracker%202/LHS/brd.xm",
         "https://modland.com/pub/modules/Protracker/LHS/chip%20mania.mod",
         "https://modland.com/pub/modules/Protracker/Pink/razor%201911%20cracks.mod"
+    ],
+    "waltz+polka": [
+        "https://modland.com/pub/modules/Protracker/Absys/yodel%20waltz.short.mod",
+        "https://modland.com/pub/modules/Protracker/AM-FM/lam0r%20waltz.mod",
+        "https://modland.com/pub/modules/Fasttracker%202/Aureate/mobius%20waltz.xm",
+        "https://modland.com/pub/modules/Protracker/Cartoon/waltwaltz.mod",
+        "https://modland.com/pub/modules/Fasttracker%202/Cerror/polka%20puke.xm",
+        "https://modland.com/pub/modules/Fasttracker%202/Dalezy/scurvy%20waltz.xm",
+        "https://modland.com/pub/modules/Protracker/Fabian/polkasta.mod",
+        "https://modland.com/pub/modules/Impulsetracker/Grizzly/the%20polka%20of%20your%20life.it",
+        "https://modland.com/pub/modules/Protracker/Heatbeat/kikka-waltz.mod",
+        "https://modland.com/pub/modules/Protracker/Jerry/jerry-polka-ext!.mod",
+        "https://modland.com/pub/modules/Protracker/Kollaps/polka%20abend.mod",
+        "https://modland.com/pub/modules/Fasttracker%202/Metal/olga%20polka.xm",
+        "https://modland.com/pub/modules/Impulsetracker/Nimbus/ot%20waltz.it",
+        "https://modland.com/pub/modules/Protracker/Oxbow/musikverein%20polka%20.%20unusu.mod",
+        "https://modland.com/pub/modules/Protracker/Technix/waltzer%20boy.mod",
+        "https://modland.com/pub/modules/Protracker/The%20Hooligan/sacklake's%20polka.mod",
+        "https://modland.com/pub/modules/Fasttracker%202/Tito/vodka%20polka.xm",
+        "https://modland.com/pub/modules/Protracker/Zixaq/polka%20ba%20jolka.mod"
     ]
 }
