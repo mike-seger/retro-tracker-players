@@ -2,11 +2,24 @@
 import * as pm from './playlist-manager.js';
 import { S } from './state.js';
 import { askConfirm, askText, showInfo } from './prompts.js';
+import { trackUrl } from './utils.js';
 
 let _overlay = null;
 let _content = null;
 let _unsubscribe = null;
 let _currentPlaylistId = null;
+let _downloadType = 'csv';
+let _downloadTypePanel = null;
+
+function formatDownloadTypeLabel(type) {
+  return String(type || 'csv').toUpperCase() + ' ▼';
+}
+
+function onDocumentClick(e) {
+  if (!_overlay || _overlay.hidden || !_downloadTypePanel || _downloadTypePanel.hidden) return;
+  const wrap = document.getElementById('pm-download-type-wrap');
+  if (wrap && !wrap.contains(e.target)) _downloadTypePanel.hidden = true;
+}
 
 export function openPlaylistOverlay() {
   _overlay = document.getElementById('playlist-manager-overlay');
@@ -16,6 +29,7 @@ export function openPlaylistOverlay() {
   render();
   if (!_unsubscribe) _unsubscribe = pm.onChange(render);
   _overlay.addEventListener('keydown', onOverlayKey);
+  document.addEventListener('click', onDocumentClick, true);
   requestAnimationFrame(() => _overlay.focus());
 }
 
@@ -24,6 +38,7 @@ export function closePlaylistOverlay() {
     _overlay.hidden = true;
     _overlay.removeEventListener('keydown', onOverlayKey);
   }
+  document.removeEventListener('click', onDocumentClick, true);
   _unsubscribe?.();
   _unsubscribe = null;
 }
@@ -42,6 +57,14 @@ function onOverlayKey(e) {
   }
 }
 
+function restoreOverlayHotkeyFocus() {
+  if (!_overlay || _overlay.hidden) return;
+  // Ensure key events bubble through the overlay again after modal prompts close.
+  requestAnimationFrame(() => {
+    if (_overlay && !_overlay.hidden) _overlay.focus();
+  });
+}
+
 async function render() {
   _content = _content || document.getElementById('pm-content');
   if (!_content) return;
@@ -50,13 +73,66 @@ async function render() {
   const hidden = pm.getHiddenListKeys();
   _content.innerHTML = '';
 
-  // Toolbar: + button only
+  // Toolbar: + button and download format selector
   const toolbar = document.createElement('div');
   toolbar.id = 'pm-toolbar';
+
   const newBtn = document.createElement('button');
   newBtn.type = 'button'; newBtn.id = 'pm-new-btn'; newBtn.textContent = '+';
   newBtn.addEventListener('click', createNew);
   toolbar.appendChild(newBtn);
+
+  const dlWrap = document.createElement('div');
+  dlWrap.id = 'pm-download-type-wrap';
+
+  const dlBtn = document.createElement('button');
+  dlBtn.type = 'button';
+  dlBtn.id = 'pm-download-type-btn';
+  dlBtn.textContent = formatDownloadTypeLabel(_downloadType);
+  dlBtn.title = 'Download type';
+
+  const dlPanel = document.createElement('div');
+  dlPanel.id = 'pm-download-type-panel';
+  dlPanel.hidden = true;
+
+  const dlTitle = document.createElement('div');
+  dlTitle.className = 'panel-title';
+  dlTitle.textContent = 'Download type';
+  dlPanel.appendChild(dlTitle);
+
+  for (const type of ['csv', 'json']) {
+    const opt = document.createElement('div');
+    opt.className = 'src-opt' + (type === _downloadType ? ' selected' : '');
+    opt.tabIndex = 0;
+    opt.dataset.value = type;
+    opt.textContent = type.toUpperCase();
+    opt.addEventListener('click', (e) => {
+      e.stopPropagation();
+      _downloadType = type;
+      dlBtn.textContent = formatDownloadTypeLabel(type);
+      for (const item of dlPanel.querySelectorAll('.src-opt')) {
+        item.classList.toggle('selected', item.dataset.value === _downloadType);
+      }
+      dlPanel.hidden = true;
+    });
+    opt.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        opt.click();
+      }
+    });
+    dlPanel.appendChild(opt);
+  }
+
+  dlBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    dlPanel.hidden = !dlPanel.hidden;
+  });
+
+  dlWrap.append(dlBtn, dlPanel);
+  toolbar.appendChild(dlWrap);
+  _downloadTypePanel = dlPanel;
+
   _content.appendChild(toolbar);
 
   // Collect all vis options for master checkbox
@@ -76,10 +152,9 @@ async function render() {
   const allVisible = allVisOpts.length === 0 || allVisOpts.every(o => o.visible);
   const noneVisible = allVisOpts.length > 0 && allVisOpts.every(o => !o.visible);
 
-  // List header row (first <li> in the ul for column alignment)
-  const listHeader = document.createElement('li');
+  // List header row (column titles, checkbox first)
+  const listHeader = document.createElement('div');
   listHeader.className = 'pm-list-header';
-  listHeader.appendChild(document.createElement('span')); // idx col spacer
   const masterLabel = document.createElement('label');
   masterLabel.className = 'pm-lh-cb';
   masterLabel.title = 'Toggle all visibility';
@@ -95,7 +170,6 @@ async function render() {
     }
   });
   masterLabel.appendChild(masterCb);
-  listHeader.appendChild(masterLabel);
   const lhContent = document.createElement('div');
   lhContent.className = 'pm-lh-content';
   const lhName = document.createElement('span');
@@ -105,39 +179,51 @@ async function render() {
   lhActions.className = 'pm-lh-actions';
   lhActions.textContent = 'Actions';
   lhContent.append(lhName, lhActions);
-  listHeader.appendChild(lhContent);
+  listHeader.append(masterLabel, lhContent);
 
-  const list = document.createElement('ul');
+  const list = document.createElement('div');
   list.id = 'pm-playlist-list';
   list.appendChild(listHeader);
 
-  // ── User playlists section ───────────────────────────
+  // ── User playlists section ───────────────────────────────────────
+  const userWrap = document.createElement('div');
+  userWrap.className = 'pm-section-wrap';
+  const userList = document.createElement('ul');
+  userList.className = 'pm-section-list';
   const userHead = document.createElement('li');
   userHead.className = 'pm-section-head';
   userHead.textContent = 'User playlists';
-  list.appendChild(userHead);
+  userList.appendChild(userHead);
   if (lists.length === 0) {
     const empty = document.createElement('li');
     empty.className = 'pm-section-empty';
-    empty.textContent = 'No playlists yet. Create one with ‘+’.';
-    list.appendChild(empty);
+    empty.textContent = "No playlists yet. Create one with '+'."; 
+    userList.appendChild(empty);
   } else {
     for (let i = 0; i < lists.length; i++) {
-      list.appendChild(buildPlaylistRow(lists[i], i, lists.length, hidden));
+      userList.appendChild(buildPlaylistRow(lists[i], hidden));
     }
   }
+  userWrap.appendChild(userList);
+  list.appendChild(userWrap);
 
-  // ── Default playlists section ────────────────────────
+  // ── Default playlists section ────────────────────────────────────
+  const defWrap = document.createElement('div');
+  defWrap.className = 'pm-section-wrap';
+  const defList = document.createElement('ul');
+  defList.className = 'pm-section-list';
   const defHead = document.createElement('li');
   defHead.className = 'pm-section-head';
   defHead.textContent = 'Default playlists';
-  list.appendChild(defHead);
+  defList.appendChild(defHead);
   for (let i = 0; i < defaults.length; i++) {
-    list.appendChild(buildDefaultRow(defaults[i], 'default', hidden));
+    defList.appendChild(buildDefaultRow(defaults[i], 'default', hidden));
   }
   for (const e of pm.SYSTEM_FOLDER_ENTRIES) {
-    list.appendChild(buildDefaultRow(e.label, 'system', null, e.key));
+    defList.appendChild(buildDefaultRow(e.label, 'system', null, e.key));
   }
+  defWrap.appendChild(defList);
+  list.appendChild(defWrap);
 
   _content.appendChild(list);
 }
@@ -184,17 +270,12 @@ function buildVisCheckbox(key, kind, hidden) {
   return label;
 }
 
-function buildPlaylistRow(pl, idx, totalCount, hidden) {
+function buildPlaylistRow(pl, hidden) {
   const li = document.createElement('li');
   li.className = 'pm-playlist-row';
   li.dataset.id = pl.id;
   li.tabIndex = 0;
   if (_currentPlaylistId === pl.id) li.classList.add('current');
-
-  const pad = Math.max(2, String(totalCount).length);
-  const idxSpan = document.createElement('span');
-  idxSpan.className = 'idx pm-idx';
-  idxSpan.textContent = String(idx + 1).padStart(pad, '\u2007');
 
   const visCb = buildVisCheckbox(pm.hiddenListKeyForPlaylist(pl.id), 'user', hidden);
 
@@ -211,13 +292,12 @@ function buildPlaylistRow(pl, idx, totalCount, hidden) {
   const actions = document.createElement('span');
   actions.className = 'pm-playlist-actions';
 
-  const count = document.createElement('span');
-  count.className = 'folder pm-playlist-count';
-  count.textContent = pl.tracks.length + ' track' + (pl.tracks.length !== 1 ? 's' : '');
-  actions.appendChild(count);
-
-  const exportBtn = makeBtn('↓ CSV', 'Export as CSV', () => doExport(pl));
-  const importBtn = makeBtn('↑ CSV', 'Import tracks from CSV', () => doImport(pl.id));
+  const exportBtn = makeBtn(
+    '▼',
+    'Export as ' + _downloadType.toUpperCase(),
+    () => doExport(pl)
+  );
+  const importBtn = makeBtn('▲', 'Import tracks from CSV', () => doImport(pl.id));
   const delBtn = makeBtn('✕', 'Delete playlist', () => doDelete(pl.id, pl.name));
   delBtn.className = 'pm-del-btn';
 
@@ -232,7 +312,7 @@ function buildPlaylistRow(pl, idx, totalCount, hidden) {
     setCurrentPlaylistRow(li);
   });
 
-  li.append(idxSpan, visCb, top);
+  li.append(visCb, top);
   return li;
 }
 
@@ -240,10 +320,6 @@ function buildDefaultRow(displayName, kind, hidden, systemKey) {
   const li = document.createElement('li');
   li.className = 'pm-playlist-row pm-default-row';
   li.tabIndex = -1;
-
-  const idxSpan = document.createElement('span');
-  idxSpan.className = 'idx pm-idx';
-  idxSpan.textContent = '\u2007\u2007';
 
   const key = kind === 'system' ? systemKey : pm.hiddenListKeyForFolder(displayName);
   const visCb = buildVisCheckbox(key, kind, hidden);
@@ -256,7 +332,7 @@ function buildDefaultRow(displayName, kind, hidden, systemKey) {
   nameSpan.textContent = displayName;
   top.appendChild(nameSpan);
 
-  li.append(idxSpan, visCb, top);
+  li.append(visCb, top);
   return li;
 }
 
@@ -274,11 +350,16 @@ async function createNew() {
     yesLabel: 'Create',
     placeholder: 'New playlist',
   });
-  if (!name) return;
+  if (!name) {
+    restoreOverlayHotkeyFocus();
+    return;
+  }
   try {
     await pm.create(name);
   } catch (e) {
     showInfo({ message: 'Error: ' + e.message });
+  } finally {
+    restoreOverlayHotkeyFocus();
   }
 }
 
@@ -341,11 +422,24 @@ async function doDelete(id, name) {
 }
 
 function doExport(pl) {
-  const csv  = pm.exportCsv(pl);
-  const blob = new Blob([csv], { type: 'text/csv' });
-  const a    = document.createElement('a');
-  a.href     = URL.createObjectURL(blob);
-  a.download = pl.name.replace(/[^a-z0-9_-]/gi, '_') + '.csv';
+  const a = document.createElement('a');
+  let blob;
+  let ext;
+
+  if (_downloadType === 'json') {
+    const payload = {
+      [pl.name]: (pl.tracks || []).map(t => trackUrl(t)),
+    };
+    blob = new Blob([JSON.stringify(payload, null, 4)], { type: 'application/json' });
+    ext = '.json';
+  } else {
+    const csv = pm.exportCsv(pl);
+    blob = new Blob([csv], { type: 'text/csv' });
+    ext = '.csv';
+  }
+
+  a.href = URL.createObjectURL(blob);
+  a.download = pl.name.replace(/[^a-z0-9_-]/gi, '_') + ext;
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }

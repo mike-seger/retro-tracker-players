@@ -653,16 +653,22 @@ body.mode-modland {
 
 /* ── playlist manager overlay ───────────────────────── */
 #playlist-manager-overlay {
-  position: absolute; inset: 0; background: #141414;
-  overflow-y: auto; overflow-x: hidden; z-index: 200; padding: 12px 16px 24px;
+  position: fixed; inset: 0; background: #141414;
+  overflow: hidden; z-index: 200;
+  display: flex;
+  flex-direction: column;
   box-sizing: border-box;
 }
 #playlist-manager-overlay[hidden] { display: none; }
 #pm-header {
-  position: sticky; top: -12px; z-index: 10; margin: -12px -16px 12px;
+  position: relative;
+  top: 0;
+  z-index: 10;
+  margin: 0;
   padding: 10px 16px; background: #141414;
   display: flex; align-items: center; justify-content: space-between;
   border-bottom: 1px solid #2a2a2a;
+  flex-shrink: 0;
 }
 #pm-title {
   font-size: 14px; font-weight: 600; color: #bbb; letter-spacing: 0.03em;
@@ -673,27 +679,74 @@ body.mode-modland {
   padding: 2px 8px;
 }
 #pm-close:hover { color: #faa; border-color: #faa; }
-#pm-content { max-width: 680px; width: min(680px, 100%); margin: 0 auto; }
+#pm-content {
+  max-width: 680px;
+  width: min(680px, 100%);
+  margin: 0 auto;
+  padding: 12px 16px 24px;
+  min-height: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
 #pm-toolbar {
   display: flex; gap: 8px; align-items: center; margin-bottom: 12px;
   flex-wrap: wrap;
 }
 #pm-new-btn {
   background: #2a2a2a; border: 1px solid #555; color: #ccc;
-  padding: 4px 12px; border-radius: 3px; cursor: pointer; font: inherit; font-size: 13px;
+  padding: 0 12px; border-radius: 3px; cursor: pointer; font: inherit; font-size: 12px;
+  min-height: var(--toolbar-ctl-h);
+  line-height: 1.1;
   flex: 0 0 auto;
 }
 #pm-new-btn:hover { background: #333; border-color: #888; }
+#pm-download-type-wrap {
+  position: relative;
+  flex: 0 0 auto;
+}
+#pm-download-type-btn {
+  background: #2a2a3a;
+  color: #88f;
+  border: 1px solid #448;
+  padding: 4px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  min-height: var(--toolbar-ctl-h);
+  line-height: 1.1;
+  text-align: center;
+  min-width: 5.2em;
+}
+#pm-download-type-btn:hover { background: #3a3a4a; color: #aaf; }
+#pm-download-type-panel {
+  position: absolute;
+  z-index: 220;
+  background: #222;
+  border: 1px solid #555;
+  border-radius: 4px;
+  top: calc(100% + 2px);
+  left: 0;
+  min-width: 110px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
 
 /* ── Playlist Manager list header ─────────────────────── */
-#pm-playlist-list li.pm-list-header {
+#pm-playlist-list .pm-list-header {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 6px;
+  padding: 4px var(--playlist-row-pad-x);
+  align-items: center;
   background: #1c1c1c;
   cursor: default;
-  border-bottom: 2px solid #333;
+  border-bottom: 1px solid #333;
 }
-#pm-playlist-list li.pm-list-header:hover { background: #1c1c1c; }
+#pm-playlist-list .pm-list-header:hover { background: #1c1c1c; }
 .pm-lh-cb {
-  grid-column: 2;
+  grid-column: 1;
   display: flex; align-items: center; cursor: pointer;
 }
 .pm-lh-cb input { margin: 0; }
@@ -715,10 +768,21 @@ body.mode-modland {
 #pm-playlist-list {
   list-style: none;
   border: 1px solid #333;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+  overflow: hidden;
 }
+.pm-section-wrap {
+  overflow-y: auto;
+  min-height: 0;
+  flex: 1 1 0;
+}
+.pm-section-list { list-style: none; padding: 0; margin: 0; }
 #pm-playlist-list li {
   display: grid;
-  grid-template-columns: auto auto 1fr;
+  grid-template-columns: auto 1fr;
   grid-template-rows: auto;
   column-gap: 6px;
   padding: 4px var(--playlist-row-pad-x);
@@ -726,10 +790,10 @@ body.mode-modland {
   border-bottom: 1px solid #1a1a1a;
 }
 #pm-playlist-list li:last-child { border-bottom: none; }
-#pm-playlist-list li:hover { background: var(--hover-bg); }
+#pm-playlist-list li:hover { background: #171717; }
 #pm-playlist-list li.current {
-  background: var(--current-bg);
-  color: var(--current-text);
+  background: #171717;
+  color: #ccc;
 }
 #pm-playlist-list li:focus,
 #pm-playlist-list li:focus-within {
@@ -745,7 +809,7 @@ body.mode-modland {
   text-align: right;
 }
 .pm-vis-cb {
-  grid-column: 2;
+  grid-column: 1;
   grid-row: 1;
   align-self: center;
   display: flex; align-items: center;
@@ -757,7 +821,7 @@ body.mode-modland {
   align-items: baseline;
   gap: 5px;
   min-width: 0;
-  grid-column: 3;
+  grid-column: 2;
 }
 #pm-playlist-list li .pm-playlist-actions {
   margin-left: auto;
@@ -768,6 +832,9 @@ body.mode-modland {
 /* Section headers inside the list */
 #pm-playlist-list li.pm-section-head {
   grid-template-columns: 1fr;
+  position: sticky;
+  top: 0;
+  z-index: 1;
   background: #1c1c1c;
   color: #666;
   font-size: 11px;
@@ -799,14 +866,28 @@ body.mode-modland {
 }
 .pm-btn {
   background: #2a2a2a; border: 1px solid #444; color: #888;
-  padding: 2px 7px; border-radius: 3px; cursor: pointer; font: inherit; font-size: 12px;
+  padding: 0 8px;
+  min-height: var(--toolbar-ctl-h);
+  line-height: 1.1;
+  border-radius: 3px; cursor: pointer; font: inherit; font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 .pm-btn:hover { background: #333; color: #ccc; border-color: #666; }
 .pm-btn.danger:hover { color: #faa; border-color: #f88; }
 
 .pm-del-btn {
   background: #3a2222; border: 1px solid #644; border-radius: 3px; color: #c88;
-  cursor: pointer; padding: 0 6px; line-height: 1.6; font-size: 12px; flex-shrink: 0;
+  cursor: pointer;
+  padding: 0 8px;
+  min-height: var(--toolbar-ctl-h);
+  line-height: 1.1;
+  font-size: 12px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 .pm-del-btn:hover { background: #4a2a2a; color: #faa; border-color: #a44; }
 
