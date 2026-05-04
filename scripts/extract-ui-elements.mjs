@@ -172,14 +172,29 @@ async function resetToDefaultState(page, url, waitMs) {
     // tracks without an artist folder are visible in the first playlist row.
     localStorage.setItem('retrotrap-system-lists-shown-v1', JSON.stringify(['__uncategorized__']));
 
-    // Delete user-playlist IndexedDB so playlist list-count doesn't activate the
-    // list filter and hide tracks that don't belong to any user playlist.
+    // Clear all user-playlist records from IndexedDB. Doing this via clear() on
+    // the object store avoids the deleteDatabase() blocked-connection problem
+    // (the app already opened a connection on domcontentloaded, so deleteDatabase
+    // resolves on 'blocked' without actually removing the data).
     await new Promise((resolve) => {
-      const req = indexedDB.deleteDatabase('retrotrap');
-      req.onsuccess = resolve;
-      req.onerror = resolve;
-      req.onblocked = resolve;
+      const req = indexedDB.open('retrotrap', 1);
+      req.onsuccess = (e) => {
+        const db = e.target.result;
+        try {
+          const tx = db.transaction('playlists', 'readwrite');
+          tx.objectStore('playlists').clear();
+          tx.oncomplete = () => { db.close(); resolve(); };
+          tx.onerror    = () => { db.close(); resolve(); };
+        } catch (_) { db.close(); resolve(); }
+      };
+      req.onerror   = resolve;
+      // If the DB doesn't exist yet, deleteDatabase is safe here.
+      req.onupgradeneeded = () => {};
     });
+
+    // Also hide any user-playlist visibility keys that may be lingering in
+    // localStorage from a prior run. Since we cleared localStorage above,
+    // the hidden set is already empty so all default folders are shown.
   });
 
   // Reload with clean state so the app initialises as if opened for the first time.
@@ -216,8 +231,16 @@ async function dismissBlockingOverlays(page) {
 }
 
 async function ensureInfoMetadataReady(page) {
-  const taggedCount = await page.evaluate(() => document.querySelectorAll('#info span[data-ui-doc="1"]').length);
-  if (taggedCount > 0) return;
+  // Check whether real metadata (non-placeholder) is already displayed.
+  const hasRealMeta = () => page.evaluate(() => {
+    const vals = Array.from(document.querySelectorAll('#info .info-field .val'));
+    return vals.length > 0 && vals.some((v) => {
+      const t = (v.textContent || '').trim();
+      return t && t !== '—' && t !== 'Loading…';
+    });
+  });
+
+  if (await hasRealMeta()) return;
 
   // Trigger one user-like action so metadata spans are rendered into #info.
   await page.evaluate(() => {
@@ -228,8 +251,19 @@ async function ensureInfoMetadataReady(page) {
     if (row && row instanceof HTMLElement) row.click();
   });
 
-  // Give async metadata population a short window.
-  await page.waitForTimeout(700);
+  // Wait for real metadata to appear (engine.load() completes asynchronously).
+  try {
+    await page.waitForFunction(() => {
+      const vals = Array.from(document.querySelectorAll('#info .info-field .val'));
+      return vals.length > 0 && vals.some((v) => {
+        const t = (v.textContent || '').trim();
+        return t && t !== '—' && t !== 'Loading…';
+      });
+    }, { timeout: 6000 });
+  } catch (_) {
+    // Fallback: give a generous fixed window if waitForFunction times out.
+    await page.waitForTimeout(1500);
+  }
 }
 
 async function focusFirstTrack(page) {
@@ -493,18 +527,18 @@ async function main() {
       await dismissBlockingOverlays(page);
     }
 
-    await ensureInfoMetadataReady(page);
     await focusFirstTrack(page);
+    await ensureInfoMetadataReady(page);
 
     if (args.plainScreenshot) {
       await page.setViewportSize({ width: args.plainWidth, height: args.plainHeight });
-      await ensureInfoMetadataReady(page);
       await focusFirstTrack(page);
+      await ensureInfoMetadataReady(page);
       fs.mkdirSync(path.dirname(args.plainScreenshot), { recursive: true });
       await page.screenshot({ path: args.plainScreenshot, fullPage: false });
       await page.setViewportSize({ width: args.width, height: args.height });
-      await ensureInfoMetadataReady(page);
       await focusFirstTrack(page);
+      await ensureInfoMetadataReady(page);
     }
 
     const raw = await page.evaluate((includeAllVisibleListItems) => {

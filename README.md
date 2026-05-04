@@ -3,7 +3,7 @@
 <!-- AUTO:DOC_META:START -->
 | Version | Updated |
 |:--|:--|
-| 0.9.8-11 | 2026-05-04 07:29 |
+| 0.9.8-13 | 2026-05-04 19:55 |
 <!-- AUTO:DOC_META:END -->
 
 A single-page browser-based chiptune player for the golden age of demoscene music, from C64 SID chips to Amiga tracker modules. It includes built-in local playlists and instant access to the Modland archive with 225K+ compatible tracker modules. Results can be narrowed with smart filters, and you can build your own custom lists from what you find.

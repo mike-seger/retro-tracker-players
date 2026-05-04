@@ -386,7 +386,7 @@ body.mode-modland {
   cursor: pointer;
   border-bottom: 1px solid #1a1a1a;
 }
-#playlist li:hover { background: var(--hover-bg); }
+#playlist li:hover { background: #171717; }
 #playlist li.current {
   background: var(--current-bg);
   color: var(--current-text);

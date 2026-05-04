@@ -205,10 +205,13 @@ export function buildPlaylist() {
     if (plDelBtn) {
       plDelBtn.addEventListener('click', (ev) => {
         ev.stopPropagation();
+        const visibleRows = [...elList.children].filter((row) => !row.classList.contains('hidden'));
+        let preferredVisibleRow = visibleRows.indexOf(li);
+        if (preferredVisibleRow < 0) preferredVisibleRow = 0;
         const ids = (entry.userPlaylistIds || []).slice();
         const key = pm.trackKey(entry);
         Promise.all(ids.map(id => pm.removeTrack(id, key))).then(() => {
-          import('./app.js').then(m => m.refreshUserPlaylistTracksAndRebuild());
+          import('./app.js').then(m => m.refreshUserPlaylistTracksAndRebuild({ preferredVisibleRow }));
         });
       });
     }

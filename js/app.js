@@ -7,7 +7,7 @@ import { setFolderChangeHandler, clearFolderFilter } from './folder-panel.js';
 import { setArtistChangeHandler, clearArtistFilter } from './artist-panel.js';
 import { setRangeChangeHandler, getRangeSkip, clearRangeFilter } from './range-panel.js';
 import { buildPlaylist, rebuildMergedFiles, renderToggles, loadEnabledPlayers,
-         activeFiles, highlightCurrent, setFocus, setPlaylistFontSize } from './playlist.js';
+         activeFiles, highlightCurrent, setFocus, getVisibleIndices, setPlaylistFontSize } from './playlist.js';
 import { applyFilter, updateRefineVisibility } from './filter.js';
 import { populateFolderPanel, populateLocalArtistPanel, populateLocalFormatDropdown,
          modlandPlaceholder, localPlaceholder } from './refine.js';
@@ -60,10 +60,26 @@ async function refreshUserPlaylistTracks() {
   S._userPlaylistTracks = tracks;
 }
 
-export async function refreshUserPlaylistTracksAndRebuild() {
+export async function refreshUserPlaylistTracksAndRebuild(opts = {}) {
   await refreshUserPlaylistTracks();
   rebuildMergedFiles();
   buildPlaylist();
+
+  const preferredVisibleRow = Number.isInteger(opts?.preferredVisibleRow) ? opts.preferredVisibleRow : -1;
+  const preferredIdx = Number.isInteger(opts?.preferredFocusIdx) ? opts.preferredFocusIdx : -1;
+  if (S.searchMode === 'local' && (preferredVisibleRow >= 0 || preferredIdx >= 0)) {
+    const visible = getVisibleIndices();
+    if (visible.length > 0) {
+      if (preferredVisibleRow >= 0) {
+        const rowPos = Math.min(preferredVisibleRow, visible.length - 1);
+        setFocus(visible[rowPos]);
+      } else {
+        const next = visible.find(i => i >= preferredIdx);
+        setFocus(next !== undefined ? next : visible[visible.length - 1]);
+      }
+    }
+  }
+
   updateSelCount();
 }
 
@@ -273,6 +289,14 @@ elFilterClr.addEventListener('click', () => {
   elPlDel.addEventListener('click', () => {
     const sel = S.localSelected;
     const files = activeFiles();
+    const selectedIdx = [...sel].sort((a, b) => a - b);
+    const visible = getVisibleIndices();
+    let preferredVisibleRow = -1;
+    if (selectedIdx.length > 0) {
+      const firstSelected = selectedIdx[0];
+      preferredVisibleRow = visible.indexOf(firstSelected);
+      if (preferredVisibleRow < 0) preferredVisibleRow = 0;
+    }
     const targets = [...sel]
       .map(i => files[i])
       .filter(t => Array.isArray(t?.userPlaylistIds) && t.userPlaylistIds.length > 0);
@@ -284,7 +308,7 @@ elFilterClr.addEventListener('click', () => {
           await pm.removeTrack(id, key);
         }
       }
-      await refreshUserPlaylistTracksAndRebuild();
+      await refreshUserPlaylistTracksAndRebuild({ preferredVisibleRow });
     });
   });
   pm.onChange(async () => {

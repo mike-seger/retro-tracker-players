@@ -289,6 +289,12 @@ function buildPlaylistRow(pl, hidden) {
   nameSpan.addEventListener('click', () => startRename(pl.id, nameSpan, pl.name));
   top.appendChild(nameSpan);
 
+  const countSpan = document.createElement('span');
+  countSpan.className = 'pm-playlist-count';
+  const n = (pl.tracks || []).length;
+  countSpan.textContent = `${n} track${n !== 1 ? 's' : ''}`;
+  top.appendChild(countSpan);
+
   const actions = document.createElement('span');
   actions.className = 'pm-playlist-actions';
 
