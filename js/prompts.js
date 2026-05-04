@@ -1,51 +1,72 @@
 // js/prompts.js — Modal confirm overlays
 import { esc } from './utils.js';
 
-function showConfirm({ messageHtml, yesLabel, noLabel = 'Cancel', onConfirm }) {
+function showConfirm({
+  messageHtml,
+  yesLabel,
+  noLabel = 'Cancel',
+  onConfirm,
+  onCancel,
+  extraHtml = '',
+  onReady,
+}) {
   const overlay = document.createElement('div');
   overlay.className = 'confirm-overlay';
+  const hasNo = !!noLabel;
   overlay.innerHTML =
     `<div class="confirm-box" role="dialog" aria-modal="true">` +
     `<div class="confirm-msg">${messageHtml}</div>` +
+    extraHtml +
     `<div class="confirm-btns">` +
     `<button class="confirm-yes">${yesLabel}</button>` +
-    `<button class="confirm-no">${noLabel}</button>` +
+    (hasNo ? `<button class="confirm-no">${noLabel}</button>` : '') +
     `</div></div>`;
   document.body.appendChild(overlay);
 
   const yesBtn = overlay.querySelector('.confirm-yes');
   const noBtn = overlay.querySelector('.confirm-no');
+  const focusables = () => [...overlay.querySelectorAll('input, button')]
+    .filter((el) => !el.disabled && el.offsetParent !== null);
 
-  const close = () => overlay.remove();
+  const remove = () => overlay.remove();
+  const close = () => {
+    remove();
+    onCancel?.();
+  };
   const confirm = () => {
-    close();
+    remove();
     onConfirm?.();
   };
 
   yesBtn.addEventListener('click', confirm);
-  noBtn.addEventListener('click', close);
+  noBtn?.addEventListener('click', close);
   overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+
+  onReady?.({ overlay, yesBtn, noBtn, close, confirm });
 
   overlay.addEventListener('keydown', (e) => {
     if (e.key === 'Tab') {
       e.preventDefault();
-      if (document.activeElement !== yesBtn && document.activeElement !== noBtn) {
-        yesBtn.focus();
-      } else if (e.shiftKey) {
-        if (document.activeElement === yesBtn) noBtn.focus();
-        else yesBtn.focus();
-      } else {
-        if (document.activeElement === yesBtn) noBtn.focus();
-        else yesBtn.focus();
+      const f = focusables();
+      if (!f.length) return;
+      const idx = f.indexOf(document.activeElement);
+      if (idx < 0) {
+        f[0].focus();
+        return;
       }
+      const next = e.shiftKey
+        ? (idx - 1 + f.length) % f.length
+        : (idx + 1) % f.length;
+      f[next].focus();
       return;
     }
     if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
       e.preventDefault();
       if (document.activeElement !== yesBtn && document.activeElement !== noBtn) {
         yesBtn.focus();
-      } else if (document.activeElement === yesBtn) {
-        noBtn.focus();
+      } else if (noBtn) {
+        if (document.activeElement === yesBtn) noBtn.focus();
+        else yesBtn.focus();
       } else {
         yesBtn.focus();
       }
@@ -58,12 +79,90 @@ function showConfirm({ messageHtml, yesLabel, noLabel = 'Cancel', onConfirm }) {
     }
     if (e.key === 'Enter') {
       e.preventDefault();
-      if (document.activeElement === noBtn) close();
+      if (noBtn && document.activeElement === noBtn) close();
       else confirm();
     }
   });
 
   yesBtn.focus();
+}
+
+export function askConfirm({ message, messageHtml, yesLabel = 'OK', noLabel = 'Cancel' }) {
+  return new Promise((resolve) => {
+    showConfirm({
+      messageHtml: messageHtml ?? esc(message ?? ''),
+      yesLabel,
+      noLabel,
+      onConfirm: () => resolve(true),
+      onCancel: () => resolve(false),
+    });
+  });
+}
+
+export function askText({
+  message,
+  messageHtml,
+  initialValue = '',
+  placeholder = '',
+  yesLabel = 'OK',
+  noLabel = 'Cancel',
+}) {
+  return new Promise((resolve) => {
+    let input = null;
+    let done = false;
+    showConfirm({
+      messageHtml: messageHtml ?? esc(message ?? ''),
+      yesLabel,
+      noLabel,
+      onConfirm: () => {
+        if (done) return;
+        done = true;
+        resolve((input?.value || '').trim());
+      },
+      onCancel: () => {
+        if (done) return;
+        done = true;
+        resolve(null);
+      },
+      extraHtml:
+        `<div class="confirm-input-wrap">` +
+        `<input class="confirm-input" type="text" value="${esc(initialValue)}" placeholder="${esc(placeholder)}">` +
+        `</div>`,
+      onReady: ({ overlay, yesBtn, close, confirm }) => {
+        input = overlay.querySelector('.confirm-input');
+        const sync = () => {
+          const ok = !!input.value.trim();
+          yesBtn.disabled = !ok;
+        };
+        const submit = () => {
+          if (yesBtn.disabled) return;
+          confirm();
+        };
+        input.addEventListener('input', sync);
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            submit();
+          }
+          if (e.key === 'Escape') {
+            e.preventDefault();
+            close();
+          }
+        });
+        sync();
+        input.focus();
+        input.select();
+      },
+    });
+  });
+}
+
+export function showInfo({ message, messageHtml, okLabel = 'OK' }) {
+  showConfirm({
+    messageHtml: messageHtml ?? esc(message ?? ''),
+    yesLabel: okLabel,
+    noLabel: null,
+  });
 }
 
 export function hasOpenConfirm() {
@@ -87,70 +186,36 @@ export function showAddConfirm(count, onConfirm) {
 }
 
 export function showDeepLinkPrompt(trackName, onConfirm) {
-  const overlay = document.createElement('div');
-  overlay.className = 'confirm-overlay';
-  overlay.innerHTML =
-    `<div class="confirm-box">` +
-    `<div class="confirm-msg">Start linked track?<br><span class="confirm-detail">${esc(trackName)}</span></div>` +
-    `<div class="confirm-btns">` +
-    `<button class="confirm-yes">Play</button>` +
-    `<button class="confirm-no">Cancel</button>` +
-    `</div></div>`;
-  document.body.appendChild(overlay);
-  overlay.querySelector('.confirm-yes').addEventListener('click', () => {
-    overlay.remove();
-    onConfirm();
+  showConfirm({
+    messageHtml: `Start linked track?<br><span class="confirm-detail">${esc(trackName)}</span>`,
+    yesLabel: 'Play',
+    onConfirm,
   });
-  overlay.querySelector('.confirm-no').addEventListener('click', () => overlay.remove());
-  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
 }
 
 export function showResumePrompt(trackName, onConfirm, showAutoOption = false) {
-  const overlay = document.createElement('div');
-  overlay.className = 'confirm-overlay';
-  overlay.innerHTML =
-    `<div class="confirm-box">` +
-    `<div class="confirm-msg">Resume playback?<br><span class="confirm-detail">${esc(trackName)}</span></div>` +
-    (showAutoOption
+  let autoResumeCb = null;
+  showConfirm({
+    messageHtml: 'Resume playback?',
+    yesLabel: '&#9654; Resume',
+    extraHtml: showAutoOption
       ? `<div class="confirm-auto-opt"><label><input type="checkbox" id="auto-resume-cb"> Always resume automatically</label></div>`
-      : '') +
-    `<div class="confirm-btns">` +
-    `<button class="confirm-yes">&#9654; Resume</button>` +
-    `<button class="confirm-no">Cancel</button>` +
-    `</div></div>`;
-  document.body.appendChild(overlay);
-  overlay.querySelector('.confirm-yes').addEventListener('click', () => {
-    if (showAutoOption && overlay.querySelector('#auto-resume-cb').checked) {
-      localStorage.setItem('auto-resume', '1');
-    }
-    overlay.remove();
-    onConfirm();
+      : '',
+    onReady: ({ overlay }) => {
+      autoResumeCb = overlay.querySelector('#auto-resume-cb');
+    },
+    onConfirm: () => {
+      if (showAutoOption && autoResumeCb?.checked) localStorage.setItem('auto-resume', '1');
+      onConfirm();
+    },
   });
-  overlay.querySelector('.confirm-no').addEventListener('click', () => overlay.remove());
-  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
 }
 
 export function showAudioResumeDialog(onConfirm) {
-  const overlay = document.createElement('div');
-  overlay.className = 'confirm-overlay';
-  overlay.innerHTML =
-    `<div class="confirm-box">` +
-    `<div class="confirm-msg">Audio is suspended.<br><span class="confirm-detail">Tap to resume playback.</span></div>` +
-    `<div class="confirm-btns">` +
-    `<button class="confirm-yes">Resume Audio</button>` +
-    `<button class="confirm-no">Cancel</button>` +
-    `</div></div>`;
-  document.body.appendChild(overlay);
-  const yesBtn = overlay.querySelector('.confirm-yes');
-  const noBtn = overlay.querySelector('.confirm-no');
-  
-  yesBtn.addEventListener('click', () => {
-    overlay.remove();
-    onConfirm?.();
+  showConfirm({
+    messageHtml: 'Audio is suspended.<br><span class="confirm-detail">Tap to resume playback.</span>',
+    yesLabel: 'Resume Audio',
+    onConfirm: () => onConfirm?.(),
   });
-  noBtn.addEventListener('click', () => overlay.remove());
-  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
-  
-  yesBtn.focus();
 }
 

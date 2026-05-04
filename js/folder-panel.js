@@ -1,19 +1,15 @@
 // js/folder-panel.js — List (folder/playlist) multi-select dropdown panel
 import { S, elRefineFolderBtn, elRefineFolderPanel } from './state.js';
-import { openDropdown, registerDropdown } from './dropdown-keys.js';
+import { openDropdown } from './dropdown-keys.js';
 import * as pm from './playlist-manager.js';
+import { selectionState, buildPanelHead, appendPanelOption, syncPanelCheckboxes, wireDropdown } from './refine-panel.js';
 
 let _savedFolders = null;
 let _savedPlaylists = null;
 let _openedFolders = null;
 let _openedPlaylists = null;
 let _openedFolderState = null;
-
-function selectionState(selectedSize, totalSize) {
-  if (totalSize > 0 && selectedSize === totalSize) return 'all';
-  if (selectedSize === 0) return 'none';
-  return 'some';
-}
+let _masterCb = null;
 
 function selectedListCount() {
   return S.selectedFolders.size + S.selectedPlaylists.size;
@@ -99,28 +95,7 @@ export async function buildFolderPanel(folders) {
 
   const panel = elRefineFolderPanel;
   panel.innerHTML = '';
-
-  const head = document.createElement('div');
-  head.className = 'panel-head';
-
-  const title = document.createElement('div');
-  title.className = 'panel-title';
-  title.textContent = 'List';
-  head.appendChild(title);
-
-  const master = document.createElement('label');
-  master.className = 'fmt-opt fmt-master';
-  master.tabIndex = -1;
-  const masterCb = document.createElement('input');
-  masterCb.type = 'checkbox';
-  masterCb.value = '__master__';
-  masterCb.checked = true;
-  masterCb.dataset.kind = 'master';
-  masterCb.addEventListener('change', cycleMasterFolders);
-  master.appendChild(masterCb);
-  master.appendChild(document.createTextNode('*'));
-  head.appendChild(master);
-  panel.appendChild(head);
+  _masterCb = buildPanelHead(panel, 'List', cycleMasterFolders);
 
   const folderOptions = visibleSorted
     .map(name => ({
@@ -137,34 +112,24 @@ export async function buildFolderPanel(folders) {
     .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
 
   for (const opt of options) {
-    const label = document.createElement('label');
-    label.className = 'fmt-opt' + (opt.type === 'playlist' ? ' pl-opt' : '');
-    label.tabIndex = -1;
-
-    const cb = document.createElement('input');
-    cb.type = 'checkbox';
-    cb.value = opt.id;
+    const cb = appendPanelOption(
+      panel, opt.id, opt.name,
+      opt.type === 'folder' ? S.selectedFolders.has(opt.id) : S.selectedPlaylists.has(opt.id),
+      (checked) => {
+        if (opt.type === 'folder') {
+          if (checked) S.selectedFolders.add(opt.id);
+          else S.selectedFolders.delete(opt.id);
+        } else {
+          if (checked) S.selectedPlaylists.add(opt.id);
+          else S.selectedPlaylists.delete(opt.id);
+        }
+        updateFolderBtn();
+        syncFolderCheckboxes();
+        _onFolderChange?.();
+      },
+      opt.type === 'playlist' ? 'pl-opt' : '',
+    );
     cb.dataset.kind = opt.type;
-    cb.checked = opt.type === 'folder'
-      ? S.selectedFolders.has(opt.id)
-      : S.selectedPlaylists.has(opt.id);
-
-    cb.addEventListener('change', () => {
-      if (opt.type === 'folder') {
-        if (cb.checked) S.selectedFolders.add(opt.id);
-        else S.selectedFolders.delete(opt.id);
-      } else {
-        if (cb.checked) S.selectedPlaylists.add(opt.id);
-        else S.selectedPlaylists.delete(opt.id);
-      }
-      updateFolderBtn();
-      syncFolderCheckboxes();
-      _onFolderChange?.();
-    });
-
-    label.appendChild(cb);
-    label.appendChild(document.createTextNode(opt.name));
-    panel.appendChild(label);
   }
 
   updateFolderBtn();
@@ -172,24 +137,12 @@ export async function buildFolderPanel(folders) {
 }
 
 export function syncFolderCheckboxes() {
-  const total = allListCount();
-  const selected = selectedListCount();
-  const allSelected = total > 0 && selected === total;
-  const partial = selected > 0 && selected < total;
-
-  for (const cb of elRefineFolderPanel.querySelectorAll('input[type="checkbox"]')) {
-    if (cb.dataset.kind === 'master') {
-      cb.checked = allSelected;
-      cb.indeterminate = partial;
-      cb.classList.toggle('indeterminate', partial);
-      continue;
-    }
-
-    cb.indeterminate = false;
-    cb.classList.remove('indeterminate');
-    if (cb.dataset.kind === 'playlist') cb.checked = S.selectedPlaylists.has(cb.value);
-    else cb.checked = S.selectedFolders.has(cb.value);
-  }
+  if (!_masterCb) return;
+  syncPanelCheckboxes(
+    _masterCb, elRefineFolderPanel,
+    (value, kind) => kind === 'playlist' ? S.selectedPlaylists.has(value) : S.selectedFolders.has(value),
+    selectedListCount(), allListCount(),
+  );
 }
 
 export function updateFolderBtn() {
@@ -215,17 +168,15 @@ elRefineFolderBtn.addEventListener('click', (e) => {
   openDropdown(elRefineFolderBtn, elRefineFolderPanel);
 });
 
-registerDropdown({
-  btn: elRefineFolderBtn,
-  panel: elRefineFolderPanel,
-  saveState: () => {
+wireDropdown(elRefineFolderBtn, elRefineFolderPanel,
+  () => {
     _savedFolders = new Set(S.selectedFolders);
     _savedPlaylists = new Set(S.selectedPlaylists);
     _openedFolders = new Set(S.selectedFolders);
     _openedPlaylists = new Set(S.selectedPlaylists);
     _openedFolderState = selectionState(selectedListCount(), allListCount());
   },
-  restoreState: () => {
+  () => {
     if (_savedFolders !== null) {
       S.selectedFolders = _savedFolders;
       S.selectedPlaylists = _savedPlaylists || new Set();
@@ -239,8 +190,4 @@ registerDropdown({
       _onFolderChange?.();
     }
   },
-});
-
-document.addEventListener('click', () => { elRefineFolderPanel.hidden = true; });
-
-elRefineFolderPanel.addEventListener('click', (e) => e.stopPropagation());
+);

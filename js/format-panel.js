@@ -1,16 +1,12 @@
 // js/format-panel.js — Format multi-select dropdown widget
 import { S, elRefineFormatBtn, elRefineFormatPanel } from './state.js';
-import { openDropdown, registerDropdown } from './dropdown-keys.js';
+import { openDropdown } from './dropdown-keys.js';
+import { selectionState, buildPanelHead, appendPanelOption, syncPanelCheckboxes, wireDropdown } from './refine-panel.js';
 
 let _savedFormats = null;
 let _openedFormats = null;
 let _openedFormatState = null;
-
-function selectionState(selectedSize, totalSize) {
-  if (totalSize > 0 && selectedSize === totalSize) return 'all';
-  if (selectedSize === 0) return 'none';
-  return 'some';
-}
+let _masterCb = null;
 
 function cycleMasterFormats() {
   const totalSize = S._allFormatOptions.size;
@@ -53,46 +49,16 @@ export function buildFormatPanel(formats) {
 
   const panel = elRefineFormatPanel;
   panel.innerHTML = '';
-
-  const head = document.createElement('div');
-  head.className = 'panel-head';
-
-  const title = document.createElement('div');
-  title.className = 'panel-title';
-  title.textContent = 'Format';
-  head.appendChild(title);
-
-  const master = document.createElement('label');
-  master.className = 'fmt-opt fmt-master';
-  master.tabIndex = -1;
-  const masterCb = document.createElement('input');
-  masterCb.type = 'checkbox';
-  masterCb.value = '__master__';
-  masterCb.checked = true;
-  masterCb.addEventListener('change', cycleMasterFormats);
-  master.appendChild(masterCb);
-  master.appendChild(document.createTextNode('*'));
-  head.appendChild(master);
-  panel.appendChild(head);
+  _masterCb = buildPanelHead(panel, 'Format', cycleMasterFormats);
 
   for (const fmt of sorted) {
-    const label = document.createElement('label');
-    label.className = 'fmt-opt';
-    label.tabIndex = -1;
-    const cb = document.createElement('input');
-    cb.type = 'checkbox';
-    cb.value = fmt;
-    cb.checked = S.selectedFormats.has(fmt);
-    cb.addEventListener('change', () => {
-      if (cb.checked) S.selectedFormats.add(fmt);
+    appendPanelOption(panel, fmt, fmt, S.selectedFormats.has(fmt), (checked) => {
+      if (checked) S.selectedFormats.add(fmt);
       else S.selectedFormats.delete(fmt);
       updateFormatBtn();
       syncFormatCheckboxes();
       _onFormatChange?.();
     });
-    label.appendChild(cb);
-    label.appendChild(document.createTextNode(fmt));
-    panel.appendChild(label);
   }
 
   updateFormatBtn();
@@ -100,21 +66,12 @@ export function buildFormatPanel(formats) {
 }
 
 export function syncFormatCheckboxes() {
-  const allSelected = S._allFormatOptions.size > 0 &&
-    S.selectedFormats.size === S._allFormatOptions.size;
-  const partial = S.selectedFormats.size > 0 &&
-    S.selectedFormats.size < S._allFormatOptions.size;
-  for (const cb of elRefineFormatPanel.querySelectorAll('input[type="checkbox"]')) {
-    if (cb.value === '__master__') {
-      cb.checked = allSelected;
-      cb.indeterminate = partial;
-      cb.classList.toggle('indeterminate', partial);
-      continue;
-    }
-    cb.indeterminate = false;
-    cb.classList.remove('indeterminate');
-    cb.checked = S.selectedFormats.has(cb.value);
-  }
+  if (!_masterCb) return;
+  syncPanelCheckboxes(
+    _masterCb, elRefineFormatPanel,
+    (value) => S.selectedFormats.has(value),
+    S.selectedFormats.size, S._allFormatOptions.size,
+  );
 }
 
 export function updateFormatBtn() {
@@ -136,15 +93,13 @@ elRefineFormatBtn.addEventListener('click', (e) => {
   openDropdown(elRefineFormatBtn, elRefineFormatPanel);
 });
 
-registerDropdown({
-  btn: elRefineFormatBtn,
-  panel: elRefineFormatPanel,
-  saveState: () => {
+wireDropdown(elRefineFormatBtn, elRefineFormatPanel,
+  () => {
     _savedFormats = new Set(S.selectedFormats);
     _openedFormats = new Set(S.selectedFormats);
     _openedFormatState = selectionState(S.selectedFormats.size, S._allFormatOptions.size);
   },
-  restoreState: () => {
+  () => {
     if (_savedFormats !== null) {
       S.selectedFormats = _savedFormats;
       _savedFormats = null;
@@ -155,12 +110,4 @@ registerDropdown({
       _onFormatChange?.();
     }
   },
-});
-
-document.addEventListener('click', () => {
-  elRefineFormatPanel.hidden = true;
-});
-
-elRefineFormatPanel.addEventListener('click', (e) => {
-  e.stopPropagation();
-});
+);

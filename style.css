@@ -503,7 +503,7 @@ body.mode-modland {
 .confirm-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,0.6);
   display: flex; align-items: center; justify-content: center;
-  z-index: 100;
+  z-index: 500;
 }
 .confirm-box {
   background: #222; border: 1px solid #555; border-radius: 6px;
@@ -519,12 +519,37 @@ body.mode-modland {
   max-width: min(70vw, 520px);
   overflow-wrap: anywhere;
 }
+.confirm-input-wrap {
+  margin: -4px 0 14px;
+  display: flex;
+  justify-content: center;
+}
+.confirm-input {
+  width: min(420px, 70vw);
+  background: #191919;
+  border: 1px solid #4a4a4a;
+  border-radius: 4px;
+  color: #ddd;
+  font: inherit;
+  font-size: 13px;
+  padding: 7px 9px;
+}
+.confirm-input:focus,
+.confirm-input:focus-visible {
+  outline: 2px solid #aab6ff;
+  outline-offset: 1px;
+  border-color: #6c76bb;
+}
 .confirm-btns { display: flex; gap: 12px; justify-content: center; }
 .confirm-yes {
   background: #622; color: #faa; border: 1px solid #844; border-radius: 3px;
   padding: 6px 16px; font: inherit; cursor: pointer; font-size: 13px;
 }
 .confirm-yes:hover { background: #833; color: #fee; }
+.confirm-yes:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
 .confirm-no {
   background: #333; color: #ccc; border: 1px solid #555; border-radius: 3px;
   padding: 6px 16px; font: inherit; cursor: pointer; font-size: 13px;
@@ -659,50 +684,108 @@ body.mode-modland {
   flex: 0 0 auto;
 }
 #pm-new-btn:hover { background: #333; border-color: #888; }
-.pm-vis-wrap { position: relative; flex-shrink: 0; }
-#pm-visible-btn {
-  background: #222; color: #ccc; border: 1px solid #444;
-  padding: 4px 12px; font: inherit; font-size: 12px; border-radius: 3px;
-  cursor: pointer; white-space: nowrap;
+
+/* ── Playlist Manager list header ─────────────────────── */
+#pm-playlist-list li.pm-list-header {
+  background: #1c1c1c;
+  cursor: default;
+  border-bottom: 2px solid #333;
 }
-#pm-visible-btn::after { content: '\25be'; font-size: 11px; margin-left: 5px; opacity: 0.8; vertical-align: 1px; }
-#pm-visible-btn:hover { border-color: #666; }
-#pm-visible-btn.active { border-color: #666; }
-#pm-visible-panel {
-  position: absolute; top: calc(100% + 3px); right: 0; z-index: 20;
-  min-width: min(260px, calc(100vw - 16px));
-  max-width: calc(100vw - 16px);
-  max-height: min(55vh, 420px); overflow: auto;
-  background: #222; border: 1px solid #555; border-radius: 4px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+#pm-playlist-list li.pm-list-header:hover { background: #1c1c1c; }
+.pm-lh-cb {
+  grid-column: 2;
+  display: flex; align-items: center; cursor: pointer;
 }
-#pm-visible-panel[hidden] { display: none; }
-@media (max-width: 560px) {
-  #pm-toolbar {
-    gap: 6px;
-  }
+.pm-lh-cb input { margin: 0; }
+.pm-lh-name {
+  font-size: 11px; color: #777; text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
-.pm-vis-opt {
-  display: flex; align-items: center; gap: 8px;
-  padding: 5px 6px; border-radius: 3px; cursor: pointer;
-  color: #bbb; font-size: 12px;
+.pm-lh-actions {
+  margin-left: auto;
+  font-size: 11px; color: #777; text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
-.pm-vis-opt:hover { background: #292929; }
-.pm-vis-opt input[type="checkbox"] { margin: 0; }
-.pm-vis-kind {
-  margin-left: auto; color: #666; font-size: 10px;
-  text-transform: uppercase; letter-spacing: 0.04em;
+.pm-lh-content {
+  display: flex; align-items: center; min-width: 0;
 }
-.pm-vis-empty { color: #666; font-size: 12px; padding: 6px; }
+
+/* ── Playlist Manager list ────────────────────────────── */
 .pm-empty { color: #666; font-size: 13px; padding: 8px 0; }
-.pm-playlist {
-  background: #1e1e1e; border: 1px solid #333; border-radius: 4px;
-  margin-bottom: 10px; overflow: hidden;
+#pm-playlist-list {
+  list-style: none;
+  border: 1px solid #333;
 }
-.pm-playlist-header {
-  display: flex; align-items: center; gap: 8px;
-  padding: 7px 10px; background: #222; border-bottom: 1px solid #333;
+#pm-playlist-list li {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  grid-template-rows: auto;
+  column-gap: 6px;
+  padding: 4px var(--playlist-row-pad-x);
+  cursor: pointer;
+  border-bottom: 1px solid #1a1a1a;
 }
+#pm-playlist-list li:last-child { border-bottom: none; }
+#pm-playlist-list li:hover { background: var(--hover-bg); }
+#pm-playlist-list li.current {
+  background: var(--current-bg);
+  color: var(--current-text);
+}
+#pm-playlist-list li:focus,
+#pm-playlist-list li:focus-within {
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+}
+#pm-playlist-list li .idx {
+  grid-column: 1;
+  grid-row: 1;
+  align-self: center;
+  color: #ddd;
+  min-width: 2ch;
+  text-align: right;
+}
+.pm-vis-cb {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: center;
+  display: flex; align-items: center;
+  cursor: pointer;
+}
+.pm-vis-cb input { margin: 0; }
+#pm-playlist-list li .row-top {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  min-width: 0;
+  grid-column: 3;
+}
+#pm-playlist-list li .pm-playlist-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+/* Section headers inside the list */
+#pm-playlist-list li.pm-section-head {
+  grid-template-columns: 1fr;
+  background: #1c1c1c;
+  color: #666;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 5px var(--playlist-row-pad-x) 4px;
+  cursor: default;
+  border-bottom: 1px solid #2a2a2a;
+}
+#pm-playlist-list li.pm-section-head:hover { background: #1c1c1c; }
+#pm-playlist-list li.pm-section-empty {
+  grid-template-columns: 1fr;
+  color: #555; font-size: 12px; font-style: italic;
+  cursor: default; padding: 5px var(--playlist-row-pad-x);
+}
+#pm-playlist-list li.pm-section-empty:hover { background: transparent; }
+#pm-playlist-list li.pm-default-row { cursor: default; }
+.pm-default-name { color: #999; }
 .pm-playlist-name {
   flex: 1; font-size: 13px; color: #ccc; font-weight: 500;
 }

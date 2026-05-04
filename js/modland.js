@@ -2,7 +2,7 @@
 import { S, elFilter, elFilterCnt,
          elSelBulk, elMlAddAll, elMlDelAll, elMlRandom, elList,
          btnCopy, btnZip } from './state.js';
-import { esc, trackUrl, addLongPress, isMobile, parseTrackDisplay } from './utils.js';
+import { trackUrl, addLongPress, isMobile, parseTrackDisplay } from './utils.js';
 import { SID_TRACK_PLAYER_ID } from './state.js';
 import { buildFormatPanel } from './format-panel.js';
 import { loadAndPlay } from './player.js';
@@ -13,6 +13,7 @@ import { getRangeSkip, buildRangePanel } from './range-panel.js';
 import { showAddConfirm, showDeleteConfirm } from './prompts.js';
 import * as remoteSearch from './remote-search.js';
 import * as pm from './playlist-manager.js';
+import { createTrackRow, isTrackRowControlTarget } from './track-row.js';
 
 // ── helpers ───────────────────────────────────────────
 function detectPlayerIdFromUrl(url) {
@@ -192,30 +193,25 @@ export function doModlandSearch() {
 
   for (let si = 0; si < displayed.length; si++) {
     const r = displayed[si];
-    const li = document.createElement('li');
-    li.dataset.idx = si;
-    const slash = r.name.lastIndexOf('/');
-    const baseName = slash >= 0 ? r.name.substring(slash + 1) : r.name;
-    const { artist, title, folder } = parseTrackDisplay(r);
     const isAdded = addedUrls.has(r.url);
-
-    li.classList.add('remote');
-    li.innerHTML =
-      `<span class="idx" aria-label="Track index"></span>` +
-      `<div class="row-top">` +
-        `<span class="artist" aria-label="Track artist">${esc(artist)}</span>` +
-        (folder ? `<span class="folder" aria-label="Track group">${esc(folder)}</span>` : '') +
-      `</div>` +
-      `<div class="row-bot">` +
-        `<span class="title" aria-label="Track title">${esc(title)}</span>` +
-        `<span class="ext" aria-label="Track format">${esc(r.ext)}</span>` +
-        (!isMobile ? `<button class="r-dl" title="Download track" aria-label="Download track">D</button>` : '') +
-        `<button class="r-add">${isAdded ? '✓' : '+'}</button>` +
-      `</div>`;
+    const { li, actionButtons, baseName, searchArtist } = createTrackRow({
+      entry: r,
+      actions: [
+        ...(!isMobile ? [{
+          key: 'download',
+          className: 'r-dl',
+          text: 'D',
+          title: 'Download track',
+          ariaLabel: 'Download track',
+        }] : []),
+        { key: 'add', className: 'r-add', text: isAdded ? '✓' : '+', title: 'Add track' },
+      ],
+    });
+    li.dataset.idx = si;
 
     if (isAdded) li.classList.add('added');
 
-    const dlBtn = li.querySelector('.r-dl');
+    const dlBtn = actionButtons.get('download');
     if (dlBtn) {
       dlBtn.addEventListener('click', (ev) => {
         ev.stopPropagation();
@@ -228,20 +224,19 @@ export function doModlandSearch() {
       });
     }
 
-    li.querySelector('.r-add').addEventListener('click', (ev) => {
+    actionButtons.get('add').addEventListener('click', (ev) => {
       ev.stopPropagation();
       openAddDropdown(ev.currentTarget, r);
     });
 
     li.addEventListener('click', (ev) => {
-      if (ev.target.classList.contains('r-add') || ev.target.classList.contains('r-dl')) return;
+      if (isTrackRowControlTarget(ev.target)) return;
       loadAndPlay(si);
     });
 
-    const searchArtist = artist || folder;
     if (searchArtist) {
       li.addEventListener('dblclick', (ev) => {
-        if (ev.target.classList.contains('r-add') || ev.target.classList.contains('r-dl')) return;
+        if (isTrackRowControlTarget(ev.target)) return;
         searchByArtist(searchArtist);
       });
       addLongPress(li, () => searchByArtist(searchArtist));
@@ -288,30 +283,25 @@ export function doRandomBrowse(skip) {
 
   for (let si = 0; si < displayed.length; si++) {
     const r = displayed[si];
-    const li = document.createElement('li');
-    li.dataset.idx = si;
-    const slash = r.name.lastIndexOf('/');
-    const baseName = slash >= 0 ? r.name.substring(slash + 1) : r.name;
-    const { artist, title, folder } = parseTrackDisplay(r);
     const isAdded = addedUrls.has(r.url);
-
-    li.classList.add('remote');
-    li.innerHTML =
-      `<span class="idx"></span>` +
-      `<div class="row-top">` +
-        `<span class="artist">${esc(artist)}</span>` +
-        (folder ? `<span class="folder">${esc(folder)}</span>` : '') +
-      `</div>` +
-      `<div class="row-bot">` +
-        `<span class="title">${esc(title)}</span>` +
-        `<span class="ext">${esc(r.ext)}</span>` +
-        (!isMobile ? `<button class="r-dl" title="Download">D</button>` : '') +
-        `<button class="r-add">${isAdded ? '✓' : '+'}</button>` +
-      `</div>`;
+    const { li, actionButtons, baseName, searchArtist } = createTrackRow({
+      entry: r,
+      actions: [
+        ...(!isMobile ? [{
+          key: 'download',
+          className: 'r-dl',
+          text: 'D',
+          title: 'Download',
+          ariaLabel: 'Download track',
+        }] : []),
+        { key: 'add', className: 'r-add', text: isAdded ? '✓' : '+', title: 'Add track' },
+      ],
+    });
+    li.dataset.idx = si;
 
     if (isAdded) li.classList.add('added');
 
-    const dlBtn = li.querySelector('.r-dl');
+    const dlBtn = actionButtons.get('download');
     if (dlBtn) {
       dlBtn.addEventListener('click', (ev) => {
         ev.stopPropagation();
@@ -324,20 +314,19 @@ export function doRandomBrowse(skip) {
       });
     }
 
-    li.querySelector('.r-add').addEventListener('click', (ev) => {
+    actionButtons.get('add').addEventListener('click', (ev) => {
       ev.stopPropagation();
       openAddDropdown(ev.currentTarget, r);
     });
 
     li.addEventListener('click', (ev) => {
-      if (ev.target.classList.contains('r-add') || ev.target.classList.contains('r-dl')) return;
+      if (isTrackRowControlTarget(ev.target)) return;
       loadAndPlay(si);
     });
 
-    const searchArtist = artist || folder;
     if (searchArtist) {
       li.addEventListener('dblclick', (ev) => {
-        if (ev.target.classList.contains('r-add') || ev.target.classList.contains('r-dl')) return;
+        if (isTrackRowControlTarget(ev.target)) return;
         searchByArtist(searchArtist);
       });
       addLongPress(li, () => searchByArtist(searchArtist));

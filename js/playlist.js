@@ -1,6 +1,7 @@
 // js/playlist.js — Playlist rendering, scroll helpers, file list management
 import { S, elList, elTrackPos, elSelBulk, elFilter, elInfo, elPlDel } from './state.js';
-import { esc, extOf, trackUrl, addLongPress, isMobile, parseTrackDisplay, toAbsoluteUrl, dbg } from './utils.js';
+import { extOf, trackUrl, addLongPress, isMobile, toAbsoluteUrl, dbg } from './utils.js';
+import { createTrackRow, isTrackRowControlTarget } from './track-row.js';
 // Note: circular imports below (filter.js ↔ playlist.js, etc.) are safe —
 // all cross-module calls happen inside function bodies, never at eval time.
 import { applyFilter } from './filter.js';
@@ -141,36 +142,39 @@ export function buildPlaylist() {
   const pad = Math.max(2, String(files.length).length);
 
   files.forEach((entry, i) => {
-    const li = document.createElement('li');
+    const actions = [];
+    if (!isMobile) {
+      actions.push({
+        key: 'download',
+        className: 'r-dl',
+        text: 'D↧',
+        title: 'Download track',
+        ariaLabel: 'Download track',
+      });
+    }
+    if (S.searchMode === 'modland' && entry.url) {
+      actions.push({ key: 'remove', className: 'r-del', text: '×', title: 'Remove' });
+    }
+    if (S.searchMode === 'local' && Array.isArray(entry.userPlaylistIds) && entry.userPlaylistIds.length > 0) {
+      actions.push({
+        key: 'playlist-remove',
+        className: 'r-pl-del',
+        text: 'X',
+        title: 'Remove from playlist',
+        ariaLabel: 'Remove from playlist',
+      });
+    }
+
+    const { li, checkbox, actionButtons, baseName, searchArtist } = createTrackRow({
+      entry,
+      indexLabel: String(i + 1).padStart(pad, '\u2007'),
+      selected: sel.has(i),
+      showCheckbox: true,
+      actions,
+    });
     li.dataset.idx = i;
 
-    const decodedName = decodeURIComponent(entry.name);
-    const slash = decodedName.lastIndexOf('/');
-    const baseName = slash >= 0 ? decodedName.substring(slash + 1) : decodedName;
-    const { artist, title, folder } = parseTrackDisplay(entry);
-    const idxStr = String(i + 1).padStart(pad, '\u2007');
-    const checked = sel.has(i) ? ' checked' : '';
-
-    if (entry.url) li.classList.add('remote');
-
-    li.innerHTML =
-      `<span class="idx" aria-label="Track index">${idxStr}</span>` +
-      `<input type="checkbox" class="sel-cb" tabindex="-1" aria-label="Track selector checkbox"${checked}>` +
-      `<div class="row-top">` +
-        `<span class="artist" aria-label="Track artist">${esc(artist)}</span>` +
-        (folder ? `<span class="folder" aria-label="Track group">${esc(folder)}</span>` : '') +
-      `</div>` +
-      `<div class="row-bot">` +
-        `<span class="title" aria-label="Track title">${esc(title)}</span>` +
-        `<span class="ext" aria-label="Track format">${esc(entry.ext)}</span>` +
-        (!isMobile ? `<button class="r-dl" title="Download track" aria-label="Download track">D↧</button>` : '') +
-        (S.searchMode === 'modland' && entry.url
-          ? `<button class="r-del" title="Remove">&times;</button>` : '') +
-        (S.searchMode === 'local' && Array.isArray(entry.userPlaylistIds) && entry.userPlaylistIds.length > 0
-          ? `<button class="r-pl-del" title="Remove from playlist" aria-label="Remove from playlist">X</button>` : '') +
-      `</div>`;
-
-    const dlBtn = li.querySelector('.r-dl');
+    const dlBtn = actionButtons.get('download');
     if (dlBtn) {
       dlBtn.addEventListener('click', (ev) => {
         ev.stopPropagation();
@@ -184,12 +188,12 @@ export function buildPlaylist() {
       });
     }
 
-    li.querySelector('.sel-cb').addEventListener('change', (ev) => {
+    checkbox.addEventListener('change', (ev) => {
       ev.stopPropagation();
       toggleSelect(i, ev.target.checked);
     });
 
-    const delBtn = li.querySelector('.r-del');
+    const delBtn = actionButtons.get('remove');
     if (delBtn) {
       delBtn.addEventListener('click', (ev) => {
         ev.stopPropagation();
@@ -197,7 +201,7 @@ export function buildPlaylist() {
       });
     }
 
-    const plDelBtn = li.querySelector('.r-pl-del');
+    const plDelBtn = actionButtons.get('playlist-remove');
     if (plDelBtn) {
       plDelBtn.addEventListener('click', (ev) => {
         ev.stopPropagation();
@@ -210,32 +214,23 @@ export function buildPlaylist() {
     }
 
     li.addEventListener('click', (ev) => {
-      if (ev.target.classList.contains('sel-cb') ||
-          ev.target.classList.contains('r-del') ||
-          ev.target.classList.contains('r-dl') ||
-          ev.target.classList.contains('r-pl-del')) return;
+      if (isTrackRowControlTarget(ev.target)) return;
       loadAndPlay(i);
     });
 
-    if (S.searchMode === 'modland' && (artist || folder)) {
-      const searchArtist = artist || folder;
+    if (S.searchMode === 'modland' && searchArtist) {
       li.addEventListener('dblclick', (ev) => {
-        if (ev.target.classList.contains('sel-cb') ||
-            ev.target.classList.contains('r-del') ||
-            ev.target.classList.contains('r-dl')) return;
+        if (isTrackRowControlTarget(ev.target)) return;
         searchByArtist(searchArtist);
       });
       addLongPress(li, () => searchByArtist(searchArtist));
     } else if (S.searchMode === 'local') {
       const goToArtist = () => {
-        const sa = artist || folder;
-        if (!sa) return;
-        searchByArtist(sa);
+        if (!searchArtist) return;
+        searchByArtist(searchArtist);
       };
       li.addEventListener('dblclick', (ev) => {
-        if (ev.target.classList.contains('sel-cb') ||
-            ev.target.classList.contains('r-dl') ||
-            ev.target.classList.contains('r-pl-del')) return;
+        if (isTrackRowControlTarget(ev.target)) return;
         goToArtist();
       });
       addLongPress(li, goToArtist);
