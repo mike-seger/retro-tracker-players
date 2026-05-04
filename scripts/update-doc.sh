@@ -25,7 +25,8 @@ fi
 
 version="$(git -C "${REPO_ROOT}" describe --tags --always --abbrev=7 2>/dev/null || git -C "${REPO_ROOT}" rev-parse --short HEAD)"
 version="$(printf '%s' "${version}" | sed -E 's/-g[0-9a-f]+$//')"
-stamp="$(date '+%Y-%m-%d %H:%M')"
+# Keep metadata deterministic across repeated runs for the same commit.
+stamp="$(git -C "${REPO_ROOT}" show -s --format=%cd --date=format:'%Y-%m-%d %H:%M' HEAD 2>/dev/null || date '+%Y-%m-%d %H:%M')"
 screenshot_rel="$(node -e 'const fs=require("node:fs"); const p=process.argv[1]; const j=JSON.parse(fs.readFileSync(p,"utf8")); let s=String(j.screenshotPath||"elements-view.png").trim(); s=s.replace(/^\.\//,"").replace(/^doc\//,""); if(!s) s="elements-view.png"; process.stdout.write(s);' "${ELEMENTS_PATH}")"
 
 meta_tmp="$(mktemp)"

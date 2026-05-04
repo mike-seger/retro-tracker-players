@@ -3,7 +3,7 @@
 <!-- AUTO:DOC_META:START -->
 | Version | Updated |
 |:--|:--|
-| 0.9.8-13 | 2026-05-04 19:55 |
+| 0.9.8-14 | 2026-05-04 22:35 |
 <!-- AUTO:DOC_META:END -->
 
 A browser-based player for classic tracker module formats (MOD, XM, S3M, IT, AHX, SID) with local file lists and Modland search.
@@ -72,10 +72,10 @@ Description of the UI elements from the screenshot.
 | <kbd>Shift+Enter</kbd> | Toggle selection on focused track |
 | <kbd>/</kbd> | Focus the search / filter box |
 | <kbd>s</kbd> | Share / copy link |
-| <kbd>c</kbd> | Copy selected filenames to clipboard |
+| <kbd>c</kbd> | Copy selected file URLs to clipboard |
 | <kbd>z</kbd> | Download selected tracks as ZIP |
 | <kbd>r</kbd> | Random Modland track (Modland mode) |
-| <kbd>f</kbd> | Toggle Folder filter dropdown |
+| <kbd>l</kbd> | Toggle List filter dropdown |
 | <kbd>a</kbd> | Toggle Artist filter dropdown |
 | <kbd>t</kbd> | Toggle Format / Type filter dropdown |
 | <kbd>x</kbd> | Clear search filter |
@@ -84,7 +84,7 @@ Description of the UI elements from the screenshot.
 
 > Shortcuts are suppressed while the cursor is inside a text input, select, or textarea.
 
-### Inside a Dropdown (F / A / T / Range)
+### Inside a Dropdown (L / A / T / Range)
 
 | Key | Action |
 |:-----|:-----|
@@ -105,7 +105,7 @@ Opening a dropdown automatically closes any other open dropdown.
 | <kbd>R</kbd> | Random (shuffle a slice of the index) |
 | <kbd>+</kbd> | Add all visible Modland results to saved list |
 | <kbd>-</kbd> | Delete all visible saved Modland tracks |
-| <kbd>F</kbd> | Open / close Folder filter |
+| <kbd>L</kbd> | Open / close List filter |
 | <kbd>A</kbd> | Open / close Artist filter |
 | <kbd>T</kbd> | Open / close Format filter |
 | <kbd>?</kbd> | Open / close Help |
@@ -142,11 +142,11 @@ Opening a dropdown automatically closes any other open dropdown.
 
 ### Local mode
 Shows tracks and playlists bundled with the app (MOD, AHX, SID files).  
-Use **Folder**, **Artist**, and **Format** dropdowns to narrow the list.
+Use **List**, **Artist**, and **Format** dropdowns to narrow the list.
 
 ### Modland mode
 Searches the [Modland](https://modland.com) remote index (loaded once per session).  
-Type at least 2 characters in the search box, or pick a folder from the dropdown.
+Type at least 2 characters in the search box, or pick a list from the dropdown.
 
 - **+** button on a result: save it to your personal Modland list.
 - **Add all**: save all current search results to your list.
@@ -175,8 +175,9 @@ Sharing or bookmarking this URL lets you jump straight back to the same track an
 |:-----|:-----|:-----|
 | `play` | URL of the track to load | `play=engines/mod/files/…` |
 | `source` | Pre-select source mode | `source=modland` |
-| `folder` | Pre-select the Folder dropdown | `folder=trance` |
-| `artist` | Pre-select the Artist dropdown | `artist=dct2` |
+| `folders` | Pre-select lists | `folders=trance` |
+| `artists` | Pre-select artists | `artists=dct2` |
+| `formats` | Pre-select formats | `formats=mod,xm` |
 | `search` | Pre-fill the search / filter input | `search=trance` |
 
 ---

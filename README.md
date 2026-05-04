@@ -3,7 +3,7 @@
 <!-- AUTO:DOC_META:START -->
 | Version | Updated |
 |:--|:--|
-| 0.9.8-13 | 2026-05-04 19:55 |
+| 0.9.8-14 | 2026-05-04 22:35 |
 <!-- AUTO:DOC_META:END -->
 
 A single-page browser-based chiptune player for the golden age of demoscene music, from C64 SID chips to Amiga tracker modules. It includes built-in local playlists and instant access to the Modland archive with 225K+ compatible tracker modules. Results can be narrowed with smart filters, and you can build your own custom lists from what you find.
@@ -42,7 +42,7 @@ The unified player loads three engines on demand:
 - **Modland search** — switch to Modland mode to search and stream from the full Modland catalog
 - **Instant playback** — click any track, or press Space
 - **Searchable playlist** — filter tracks by name, artist, or filename
-- **Refine dropdowns** — narrow results by folder, artist, and result range
+- **Refine dropdowns** — narrow results by list, artist, and result range
 - **Track selection** — checkbox-select individual tracks; bulk checkbox cycles all / none / restore
 - **Copy to clipboard** — export selected track URLs as a newline-separated list
 - **ZIP download** — download selected tracks as a `.zip` archive

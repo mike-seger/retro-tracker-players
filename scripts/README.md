@@ -95,12 +95,45 @@ Updated /path/to/retro-tracker-players/README.md
 ```
 
 ## Git Hook Automation
-This repo currently has a local `pre-push` hook at `.git/hooks/pre-push` with this behavior:
+Mutating docs in `pre-push` is not recommended, because it leaves your working
+tree dirty immediately after a successful push.
+
+Use an explicit docs refresh before commit instead:
+
+- Run `./scripts/update-doc.sh`
+- Stage the generated files you want to keep
+- Commit, then push
+
+If you still want automation, prefer a local `pre-commit` hook (not `pre-push`).
+Run doc generation once in `pre-commit` and stage the generated files.
+This is more reliable than strict rerun-and-compare checks when generated output
+includes time/environment-dependent content.
+
+Example local `pre-commit` hook:
+
+```bash
+cat > .git/hooks/pre-commit <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+./scripts/update-doc.sh
+git add README.md doc/README.md doc/elements.json doc/elements-view.png doc/app-screensot.png
+EOF
+chmod +x .git/hooks/pre-commit
+```
+
+Manual equivalent:
+
+```bash
+./scripts/update-doc.sh
+git add README.md doc/README.md doc/elements.json doc/elements-view.png doc/app-screensot.png
+```
+
+Previous `pre-push` example (kept here for reference) had this behavior:
 
 - Runs `./scripts/update-doc.sh`
 - Stages `doc/README.md`
 
-That means a push refreshes the generated documentation first and includes the updated `doc/README.md` in the push.
+That means a push refreshes generated docs during the push itself, which can create new local changes after push.
 
 Git hooks inside `.git/hooks/` are local to your clone. They are not shared through the repository history, so if you want this behavior in another clone you need to install the hook there as well.
 
