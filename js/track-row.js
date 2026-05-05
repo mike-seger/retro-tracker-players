@@ -1,4 +1,4 @@
-import { parseTrackDisplay } from './utils.js';
+import { parseTrackDisplay, safeDecodeURIComponent } from './utils.js';
 
 export function createTrackRow({
   entry,
@@ -10,7 +10,7 @@ export function createTrackRow({
   const li = document.createElement('li');
   const actionButtons = new Map();
 
-  const decodedName = decodeURIComponent(entry.name);
+  const decodedName = safeDecodeURIComponent(entry.name);
   const slash = decodedName.lastIndexOf('/');
   const baseName = slash >= 0 ? decodedName.substring(slash + 1) : decodedName;
   const { artist, title, folder } = parseTrackDisplay(entry);

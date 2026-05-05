@@ -665,8 +665,11 @@ body.mode-modland {
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
+  opacity: 1;
+  transition: opacity 160ms ease;
 }
 #settings-overlay[hidden] { display: none; }
+#settings-overlay.is-hiding { opacity: 0; }
 #settings-header {
   position: relative;
   top: 0;
@@ -680,12 +683,46 @@ body.mode-modland {
 #settings-title {
   font-size: 14px; font-weight: 600; color: #bbb; letter-spacing: 0.03em;
 }
+.settings-busy {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #9aa;
+  font-size: 12px;
+  letter-spacing: 0.01em;
+  background: #1b1b1b;
+  border: 1px solid #2f3434;
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+.settings-busy[hidden] {
+  display: none;
+}
+.settings-busy-spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid #4f5b5b;
+  border-top-color: #9cc;
+  border-radius: 50%;
+  animation: settings-spin 0.75s linear infinite;
+}
+@keyframes settings-spin {
+  to { transform: rotate(360deg); }
+}
 #settings-close {
   background: #222; border: 1px solid #555; border-radius: 3px;
   color: #888; cursor: pointer; font-size: 27px; line-height: 1;
   padding: 2px 8px;
 }
 #settings-close:hover { color: #faa; border-color: #faa; }
+#settings-overlay.is-closing #settings-content,
+#settings-overlay.is-closing #settings-close {
+  pointer-events: none;
+  opacity: 0.65;
+}
 #settings-content {
   max-width: 680px;
   width: min(680px, 100%);

@@ -3,17 +3,36 @@ import { getAppSettings, setAppSettings, resetAppSettings, DEFAULT_SETTINGS } fr
 
 let _overlay = null;
 let _content = null;
+let _header = null;
+let _busy = null;
+let _closeSeq = 0;
 
 function clampInputMax(v) {
   const n = Number(v);
   if (!Number.isFinite(n)) return DEFAULT_SETTINGS.maxListItems;
-  return Math.max(1, Math.min(5000, Math.round(n)));
+  return Math.max(5, Math.min(5000, Math.round(n)));
 }
 
 function ensureEls() {
   _overlay = _overlay || document.getElementById('settings-overlay');
   _content = _content || document.getElementById('settings-content');
+  _header = _header || document.getElementById('settings-header');
+  if (_header && !_busy) {
+    _busy = document.createElement('div');
+    _busy.className = 'settings-busy';
+    _busy.hidden = true;
+    _busy.innerHTML = '<span class="settings-busy-spinner" aria-hidden="true"></span><span>Applying…</span>';
+    _header.appendChild(_busy);
+  }
   return !!_overlay && !!_content;
+}
+
+function setClosingBusy(on) {
+  if (!ensureEls()) return;
+  _overlay.classList.toggle('is-closing', !!on);
+  if (_busy) _busy.hidden = !on;
+  if (on) _overlay.setAttribute('aria-busy', 'true');
+  else _overlay.removeAttribute('aria-busy');
 }
 
 function render() {
@@ -33,19 +52,27 @@ function render() {
   maxLabel.textContent = 'Maximum List Items';
   const maxHint = document.createElement('div');
   maxHint.className = 'settings-hint';
-  maxHint.textContent = 'Maximum items shown in playlist/result lists. Default: 200.';
+  maxHint.textContent = 'Maximum items shown in playlist/result lists. Range: 5-5000. Default: 200.';
   maxLabelWrap.append(maxLabel, maxHint);
   const maxInput = document.createElement('input');
   maxInput.className = 'settings-input';
   maxInput.type = 'number';
-  maxInput.min = '1';
+  maxInput.min = '5';
   maxInput.max = '5000';
   maxInput.step = '1';
   maxInput.value = String(s.maxListItems);
-  maxInput.addEventListener('change', () => {
+  const commitMaxItems = () => {
     const next = clampInputMax(maxInput.value);
     maxInput.value = String(next);
     setAppSettings({ maxListItems: next });
+  };
+  // Commit only when the field loses focus to avoid expensive redraws while typing.
+  maxInput.addEventListener('blur', commitMaxItems);
+  maxInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      maxInput.blur();
+    }
   });
   maxRow.append(maxLabelWrap, maxInput);
 
@@ -105,6 +132,9 @@ function onKey(e) {
 
 export function openSettingsOverlay() {
   if (!ensureEls()) return;
+  _closeSeq++;
+  _overlay.classList.remove('is-hiding');
+  setClosingBusy(false);
   render();
   _overlay.hidden = false;
   document.addEventListener('keydown', onKey);
@@ -113,6 +143,38 @@ export function openSettingsOverlay() {
 
 export function closeSettingsOverlay() {
   if (!ensureEls()) return;
-  _overlay.hidden = true;
+  if (_overlay.hidden) return;
+  const seq = ++_closeSeq;
+  setClosingBusy(true);
   document.removeEventListener('keydown', onKey);
+
+  const finish = () => {
+    if (seq !== _closeSeq || _overlay.hidden) return;
+    _overlay.classList.add('is-hiding');
+    setTimeout(() => {
+      if (seq !== _closeSeq) return;
+      _overlay.hidden = true;
+      _overlay.classList.remove('is-hiding');
+      setClosingBusy(false);
+    }, 170);
+  };
+
+  const onDone = (ev) => {
+    if (ev.detail?.seq !== seq) return;
+    window.removeEventListener('settings-overlay-close-done', onDone);
+    if (fallbackTimer) clearTimeout(fallbackTimer);
+    finish();
+  };
+
+  // Safety net in case a close-done event is missed.
+  const fallbackTimer = setTimeout(() => {
+    window.removeEventListener('settings-overlay-close-done', onDone);
+    finish();
+  }, 1500);
+
+  // Let busy UI paint first, then trigger deferred apply work.
+  requestAnimationFrame(() => {
+    window.addEventListener('settings-overlay-close-done', onDone);
+    window.dispatchEvent(new CustomEvent('settings-overlay-closing', { detail: { seq } }));
+  });
 }

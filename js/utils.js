@@ -33,6 +33,14 @@ export function toAbsoluteUrl(url) {
   }
 }
 
+export function safeDecodeURIComponent(value) {
+  try {
+    return decodeURIComponent(value);
+  } catch (_) {
+    return value;
+  }
+}
+
 // Build a file URL for a local entry (relative to page root, used in fetch())
 export function trackUrl(entry) {
   return entry.url
@@ -50,7 +58,7 @@ export const isMobile =
 //   folder — right slot of line 1 badge ("<root>" when entry has no path prefix)
 //   title  — main content of line 2 (filename without extension)
 export function parseTrackDisplay(entry) {
-  const decoded = decodeURIComponent(entry.name);
+  const decoded = safeDecodeURIComponent(entry.name);
   const slash = decoded.lastIndexOf('/');
   const rawFolder = slash >= 0 ? decoded.substring(0, slash) : '';
   const folder = rawFolder ? (trimDisplayPath(rawFolder) || rawFolder) : '';

@@ -12,7 +12,7 @@ let _cached = null;
 function clampMaxListItems(v) {
   const n = Number(v);
   if (!Number.isFinite(n)) return DEFAULT_SETTINGS.maxListItems;
-  return Math.max(1, Math.min(5000, Math.round(n)));
+  return Math.max(5, Math.min(5000, Math.round(n)));
 }
 
 function normalize(raw) {

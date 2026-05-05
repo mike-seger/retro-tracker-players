@@ -1,6 +1,6 @@
 // js/deeplink.js — Deep link encode/decode and initial load
 import { S, elFilter, elList } from './state.js';
-import { trackUrl, extOf } from './utils.js';
+import { trackUrl, extOf, safeDecodeURIComponent } from './utils.js';
 import { activeFiles, buildPlaylist, scrollIntoViewSmart, setFocus, highlightCurrent } from './playlist.js';
 import { loadAndPlay } from './player.js';
 import { showDeepLinkPrompt } from './prompts.js';
@@ -104,7 +104,7 @@ export async function loadDeepLinkedTrack() {
     setFocus(idx);
     const files = activeFiles();
     const entry = files[idx];
-    const label = decodeURIComponent(entry.name).split('/').pop() || entry.name;
+    const label = safeDecodeURIComponent(entry.name).split('/').pop() || entry.name;
     showDeepLinkPrompt(label, () => loadAndPlay(idx));
     return true;
   }
@@ -118,7 +118,7 @@ export async function loadDeepLinkedTrack() {
     highlightCurrent();
     setFocus(mlIdx);
     const entry = S.modlandFiles[mlIdx];
-    const label = decodeURIComponent(entry.name).split('/').pop() || entry.name;
+    const label = safeDecodeURIComponent(entry.name).split('/').pop() || entry.name;
     showDeepLinkPrompt(label, () => loadAndPlay(mlIdx));
     return true;
   }
@@ -152,7 +152,7 @@ export async function loadDeepLinkedTrack() {
       const curLi = elList.children[ci];
       if (curLi) { curLi.classList.add('current'); scrollIntoViewSmart(curLi, true); }
       const entry = S._lastSearchResults[ci];
-      const label = decodeURIComponent(entry.name).split('/').pop() || entry.name;
+      const label = safeDecodeURIComponent(entry.name).split('/').pop() || entry.name;
       showDeepLinkPrompt(label, () => loadAndPlay(ci));
       return true;
     }

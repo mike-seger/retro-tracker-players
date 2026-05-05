@@ -1,6 +1,6 @@
 // js/selection.js — Track selection, bulk state machine, copy/zip
 import { S, elBulkCb, elSelCount, elSelBulk, btnCopy, btnZip, elPlDel, elInfo, elList } from './state.js';
-import { trackUrl } from './utils.js';
+import { trackUrl, safeDecodeURIComponent } from './utils.js';
 import { activeFiles, activeSelected, setActiveSelected } from './playlist.js';
 
 // ── toggle / save / restore ───────────────────────────
@@ -204,7 +204,7 @@ btnZip.addEventListener('click', async () => {
       const resp = await fetch(url);
       if (!resp.ok) return;
       const blob = await resp.blob();
-      const decoded = decodeURIComponent(f.name);
+      const decoded = safeDecodeURIComponent(f.name);
       const slash = decoded.lastIndexOf('/');
       const artist = slash >= 0 ? decoded.substring(0, slash).split('/').pop() : '';
       const baseName = slash >= 0 ? decoded.substring(slash + 1) : decoded;

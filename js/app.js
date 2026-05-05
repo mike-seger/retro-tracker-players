@@ -1,7 +1,7 @@
 // js/app.js — Thin init entry point; imports all modules and runs startup
 import * as remoteSearch from './remote-search.js';
 import { S, elFilter, elFilterClr, elSearchMode, elSelBulk, elPlDel, debugLog, elTransport, SID_TRACK_PLAYER_ID } from './state.js';
-import { extOf, dbg, tlog } from './utils.js';
+import { extOf, dbg, tlog, safeDecodeURIComponent } from './utils.js';
 import { setFormatChangeHandler, clearFormatFilter } from './format-panel.js';
 import { setFolderChangeHandler, clearFolderFilter } from './folder-panel.js';
 import { setArtistChangeHandler, clearArtistFilter } from './artist-panel.js';
@@ -289,15 +289,36 @@ elFilterClr.addEventListener('click', () => {
   document.getElementById('pm-close')?.addEventListener('click', closePlaylistOverlay);
   document.getElementById('settings-close')?.addEventListener('click', closeSettingsOverlay);
 
-  // Rebuild current list/search pagination when settings change (e.g. max list items).
-  window.addEventListener('app-settings-changed', () => {
+  // Rebuild current list/search pagination only when maxListItems changes.
+  // If settings overlay is open, defer the expensive rebuild until it closes.
+  let _appliedMaxListItems = null;
+  let _pendingMaxListItems = null;
+  const applyPendingMaxListItems = () => {
     if (!S._appReady) return;
+    if (_pendingMaxListItems == null) return;
+    if (_pendingMaxListItems === _appliedMaxListItems) return;
+    _appliedMaxListItems = _pendingMaxListItems;
     if (S.searchMode === 'modland') {
       if (S._randomBrowsing) doRandomBrowse(getRangeSkip());
       else doModlandSearch();
     } else {
       buildPlaylist();
     }
+  };
+  window.addEventListener('app-settings-changed', (e) => {
+    const newMax = e.detail?.maxListItems;
+    if (!Number.isFinite(newMax)) return;
+    _pendingMaxListItems = newMax;
+    const settingsOverlay = document.getElementById('settings-overlay');
+    if (settingsOverlay && !settingsOverlay.hidden) return;
+    applyPendingMaxListItems();
+  });
+  window.addEventListener('settings-overlay-closing', (e) => {
+    const seq = e.detail?.seq;
+    requestAnimationFrame(() => {
+      applyPendingMaxListItems();
+      window.dispatchEvent(new CustomEvent('settings-overlay-close-done', { detail: { seq } }));
+    });
   });
 
   elPlDel.addEventListener('click', () => {
@@ -421,7 +442,7 @@ elFilterClr.addEventListener('click', () => {
             const files = activeFiles();
             const entry = files[S.currentIdx];
             const label = entry
-              ? (decodeURIComponent(entry.name).split('/').pop() || entry.name)
+              ? (safeDecodeURIComponent(entry.name).split('/').pop() || entry.name)
               : String(S.currentIdx + 1);
             const resumePos = (typeof saved.playPos === 'number' && saved.playPos > 0) ? saved.playPos : 0;
             const doResume = () =>
