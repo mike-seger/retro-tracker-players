@@ -1,5 +1,6 @@
 // js/prompts.js — Modal confirm overlays
 import { esc } from './utils.js';
+import { isAutoplayAudioEnabled, setAppSettings } from './settings.js';
 
 function showConfirm({
   messageHtml,
@@ -204,9 +205,15 @@ export function showResumePrompt(trackName, onConfirm, showAutoOption = false) {
       : '',
     onReady: ({ overlay }) => {
       autoResumeCb = overlay.querySelector('#auto-resume-cb');
+      if (autoResumeCb) autoResumeCb.checked = isAutoplayAudioEnabled();
     },
     onConfirm: () => {
-      if (showAutoOption && autoResumeCb?.checked) localStorage.setItem('auto-resume', '1');
+      if (showAutoOption) {
+        setAppSettings({ autoplayAudio: !!autoResumeCb?.checked });
+        // keep legacy key in sync for older app versions
+        if (autoResumeCb?.checked) localStorage.setItem('auto-resume', '1');
+        else localStorage.removeItem('auto-resume');
+      }
       onConfirm();
     },
   });

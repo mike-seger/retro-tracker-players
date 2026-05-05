@@ -1,6 +1,8 @@
 // js/utils.js — Pure utility helpers + debug log output
 import { debugLog } from './state.js';
 
+const _decodeWarned = new Set();
+
 export function fmtTime(s) {
   if (!isFinite(s) || s < 0) return '0:00';
   return Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
@@ -37,6 +39,10 @@ export function safeDecodeURIComponent(value) {
   try {
     return decodeURIComponent(value);
   } catch (_) {
+    if (!_decodeWarned.has(value)) {
+      _decodeWarned.add(value);
+      console.debug('[ReTrap] safeDecodeURIComponent fallback used for malformed URI component:', value);
+    }
     return value;
   }
 }

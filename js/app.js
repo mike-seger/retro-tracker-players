@@ -19,6 +19,7 @@ import { loadDeepLinkedTrack, applyDeepLinkFilters } from './deeplink.js';
 import { showResumePrompt, showDeleteConfirm } from './prompts.js';
 import { loadAndPlay } from './player.js';
 import { closeAllDropdowns } from './dropdown-keys.js';
+import { isAutoplayAudioEnabled } from './settings.js';
 
 // Side-effect-only imports (register their own listeners)
 import './keyboard.js';
@@ -459,7 +460,7 @@ elFilterClr.addEventListener('click', () => {
             // directly, or show the prompt with the checkbox so the user can set it.
             const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
               (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
-            if (!isMobile && localStorage.getItem('auto-resume') === '1') {
+            if (!isMobile && isAutoplayAudioEnabled()) {
               doResume();
             } else {
               showResumePrompt(label, doResume, /* showAutoOption */ !isMobile);
