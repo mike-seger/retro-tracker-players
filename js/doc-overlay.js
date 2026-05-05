@@ -1,6 +1,7 @@
 // js/doc-overlay.js — Help overlay with lazy-fetched + rendered README
 import { btnHelp } from './state.js';
 import { openPlaylistOverlay } from './playlist-overlay.js';
+import { openSettingsOverlay } from './settings-overlay.js';
 import { closeAllDropdowns } from './dropdown-keys.js';
 
 let _helpCache = null;
@@ -610,7 +611,8 @@ optionsPanel?.addEventListener('click', (e) => {
   if (!opt) return;
   closeOptionsPanel();
   const action = opt.dataset.action;
-  if (action === 'help') showHelp();
+  if (action === 'settings') openSettingsOverlay();
+  else if (action === 'help') showHelp();
   else if (action === 'live-help') openUIMapPopup();
   else if (action === 'playlists') openPlaylistOverlay();
 });

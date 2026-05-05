@@ -6,6 +6,7 @@ import { loadAndPlay } from './player.js';
 import { showDeepLinkPrompt } from './prompts.js';
 import { updateFormatBtn, syncFormatCheckboxes, clearFormatFilter } from './format-panel.js';
 import { applyFilter } from './filter.js';
+import { getMaxListItems } from './settings.js';
 
 // ── build ──────────────────────────────────────────────
 export function buildDeepLink(fullContext) {
@@ -132,8 +133,8 @@ export async function loadDeepLinkedTrack() {
     elFilter.value = f.search;
     if (!remoteSearch.isLoaded()) await remoteSearch.loadIndex();
 
-    // Find which page the target URL is on (results are paged at 200)
-    const pageSize = 200;
+    // Find which page the target URL is on (results are paged by settings max list items)
+    const pageSize = getMaxListItems();
     const total = remoteSearch.count(f.search);
     if (total > pageSize) {
       const allResults = remoteSearch.search(f.search, total, 0);

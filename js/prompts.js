@@ -199,7 +199,8 @@ export function showResumePrompt(trackName, onConfirm, showAutoOption = false) {
     messageHtml: 'Resume playback?',
     yesLabel: '&#9654; Resume',
     extraHtml: showAutoOption
-      ? `<div class="confirm-auto-opt"><label><input type="checkbox" id="auto-resume-cb"> Always resume automatically</label></div>`
+      ? `<div class="confirm-auto-opt"><label><input type="checkbox" id="auto-resume-cb"> Always resume automatically</label></div>` +
+        `<div class="confirm-help">If autoplay is blocked on this device, click Resume once or allow sound/autoplay for this site in your browser settings.</div>`
       : '',
     onReady: ({ overlay }) => {
       autoResumeCb = overlay.querySelector('#auto-resume-cb');

@@ -78,6 +78,7 @@
         <button id="help-btn" type="button" title="Options">&#x22EE;</button>
         <div id="options-panel" hidden>
           <div class="panel-title">Options</div>
+          <div class="opts-opt" tabindex="0" data-action="settings">Settings</div>
           <div class="opts-opt" tabindex="0" data-action="help">Help</div>
           <div class="opts-opt" tabindex="0" data-action="live-help">Live Help</div>
           <div class="opts-opt" tabindex="0" data-action="playlists">Manage Playlists</div>
@@ -123,6 +124,14 @@
       <button id="pm-close" type="button" aria-label="Close playlist manager">&times;</button>
     </div>
     <div id="pm-content"></div>
+  </div>
+
+  <div id="settings-overlay" hidden tabindex="-1">
+    <div id="settings-header">
+      <span id="settings-title">Settings</span>
+      <button id="settings-close" type="button" aria-label="Close settings">&times;</button>
+    </div>
+    <div id="settings-content"></div>
   </div>
 </div>
 

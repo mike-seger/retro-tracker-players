@@ -14,6 +14,7 @@ import { showAddConfirm, showDeleteConfirm } from './prompts.js';
 import * as remoteSearch from './remote-search.js';
 import * as pm from './playlist-manager.js';
 import { createTrackRow, isTrackRowControlTarget } from './track-row.js';
+import { getMaxListItems } from './settings.js';
 
 // ── helpers ───────────────────────────────────────────
 function detectPlayerIdFromUrl(url) {
@@ -143,6 +144,7 @@ export function doModlandSearch() {
   S._randomBrowsing = false;
   const raw = elFilter.value.trim();
   const skip = getRangeSkip();
+  const pageSize = getMaxListItems();
 
   if (!remoteSearch.isLoaded()) {
     elFilterCnt.textContent = 'loading…';
@@ -168,15 +170,15 @@ export function doModlandSearch() {
   const q = raw;
   const total = remoteSearch.countWithFormats(q, fmtActive ? S.selectedFormats : null);
   let clampedSkip = skip;
-  if (clampedSkip > 0 && clampedSkip + 200 > total) clampedSkip = Math.max(total - 200, 0);
+  if (clampedSkip > 0 && clampedSkip + pageSize > total) clampedSkip = Math.max(total - pageSize, 0);
 
-  const results = remoteSearch.searchWithFormats(q, fmtActive ? S.selectedFormats : null, 200, clampedSkip);
+  const results = remoteSearch.searchWithFormats(q, fmtActive ? S.selectedFormats : null, pageSize, clampedSkip);
   const filtered = results.filter(r => S.enabledPlayers[r.playerId] !== false);
   S._lastSearchSkip = clampedSkip;
   S._lastSearchTotal = total;
   S._inSearchResults = true;
 
-  buildRangePanel(total);
+  buildRangePanel(total, pageSize);
 
   const displayed = (S.selectedFormats.size > 0 && S.selectedFormats.size < S._allFormatOptions.size)
     ? filtered.filter(r => S.selectedFormats.has(r.ext.toUpperCase()))
@@ -254,15 +256,17 @@ export function doModlandSearch() {
 export function doRandomBrowse(skip) {
   if (!remoteSearch.isLoaded()) return;
 
+  const pageSize = getMaxListItems();
+
   const total = remoteSearch.totalPlayable();
-  const results = remoteSearch.browseAll(1000, skip);
+  const results = remoteSearch.browseAll(pageSize, skip);
 
   S._lastSearchSkip = skip;
   S._lastSearchTotal = total;
   S._inSearchResults = true;
 
-  // Populate range panel with pages of 1000
-  buildRangePanel(total, 1000);
+  // Populate range panel with pages of configured size
+  buildRangePanel(total, pageSize);
   S._currentRange = skip;
 
   const formats = new Set();
@@ -277,7 +281,7 @@ export function doRandomBrowse(skip) {
   elList.innerHTML = '';
   const addedUrls = new Set(S.modlandFiles.map(t => t.url));
 
-  elFilterCnt.textContent = `${skip + 1}–${Math.min(skip + 1000, total)} of ${total}`;
+  elFilterCnt.textContent = `${skip + 1}–${Math.min(skip + pageSize, total)} of ${total}`;
   elSelBulk.style.display = 'none';
   updateMlButtons();
 

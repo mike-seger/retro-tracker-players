@@ -11,6 +11,7 @@ import { deleteModlandTrack, searchByArtist } from './modland.js';
 import { updateSelCount } from './selection.js';
 import { localPlaceholder, modlandPlaceholder } from './refine.js';
 import * as pm from './playlist-manager.js';
+import { getMaxListItems } from './settings.js';
 
 // ── active list helpers ───────────────────────────────
 export function activeFiles() {
@@ -138,10 +139,13 @@ export function buildPlaylist() {
   elSelBulk.style.display = '';
   elList.innerHTML = '';
   const files = activeFiles();
+  const maxItems = getMaxListItems();
+  const displayCount = Math.min(files.length, maxItems);
   const sel = activeSelected();
-  const pad = Math.max(2, String(files.length).length);
+  const pad = Math.max(2, String(displayCount).length);
 
-  files.forEach((entry, i) => {
+  for (let i = 0; i < displayCount; i++) {
+    const entry = files[i];
     const actions = [];
     if (!isMobile) {
       actions.push({
@@ -243,7 +247,7 @@ export function buildPlaylist() {
     if (i === S.focusedIdx) li.classList.add('focused');
 
     elList.appendChild(li);
-  });
+  }
 
   applyFilter();
   updateTrackPos();

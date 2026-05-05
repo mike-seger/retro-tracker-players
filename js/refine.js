@@ -9,6 +9,7 @@ import { applyFilter } from './filter.js';
 import { doModlandSearch, doRandomBrowse } from './modland.js';
 import * as remoteSearch from './remote-search.js';
 import { isSystemFolder, isSystemFolderVisible } from './playlist-manager.js';
+import { getMaxListItems } from './settings.js';
 
 export async function populateFolderPanel() {
   if (S.searchMode === 'modland') { clearFolderFilter(); return; }
@@ -84,7 +85,7 @@ export function populateLocalFormatDropdown() {
 }
 
 export function populateRangePanel(total) {
-  buildRangePanel(total, 200);
+  buildRangePanel(total, getMaxListItems());
 }
 
 export function localPlaceholder() {

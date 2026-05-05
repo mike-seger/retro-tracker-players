@@ -26,6 +26,7 @@ import './pinch.js';
 import { closeOptionsPanel } from './doc-overlay.js';
 import * as pm from './playlist-manager.js';
 import { closePlaylistOverlay } from './playlist-overlay.js';
+import { closeSettingsOverlay } from './settings-overlay.js';
 
 // Global debug toggle for URL-based playing-track re-anchor logs.
 const DEBUG_TRACK_REANCHOR_LOG = false;
@@ -280,11 +281,24 @@ elFilterClr.addEventListener('click', () => {
   // Emergency escape hatch: ?clear-resume removes any stale auto-resume flag
   if (new URLSearchParams(location.search).has('clear-resume')) {
     localStorage.removeItem('auto-resume');
+    localStorage.removeItem('app-settings-v1');
   }
 
   await pm.init();
   await refreshUserPlaylistTracks();
   document.getElementById('pm-close')?.addEventListener('click', closePlaylistOverlay);
+  document.getElementById('settings-close')?.addEventListener('click', closeSettingsOverlay);
+
+  // Rebuild current list/search pagination when settings change (e.g. max list items).
+  window.addEventListener('app-settings-changed', () => {
+    if (!S._appReady) return;
+    if (S.searchMode === 'modland') {
+      if (S._randomBrowsing) doRandomBrowse(getRangeSkip());
+      else doModlandSearch();
+    } else {
+      buildPlaylist();
+    }
+  });
 
   elPlDel.addEventListener('click', () => {
     const sel = S.localSelected;
