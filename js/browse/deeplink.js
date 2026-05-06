@@ -160,7 +160,11 @@ export async function loadDeepLinkedTrack() {
 
   // Synthesize from URL (last resort — shows single result without context)
   const ext = extOf(targetUrl);
-  const playerMap = { ahx: 'ahx', sid: 'jssid', mod: 'mod', xm: 'mod', s3m: 'mod', it: 'mod' };
+  const playerMap = {
+    ahx: 'ahx', sid: 'jssid',
+    mod: 'mod', xm: 'mod', s3m: 'mod', it: 'mod',
+    spc: 'gme', vgm: 'gme', vgz: 'gme',
+  };
   const playerId = playerMap[ext.toLowerCase()] || 'mod';
   try {
     const u = new URL(targetUrl);

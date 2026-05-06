@@ -9,6 +9,7 @@ const EXT_TO_PLAYER = {
   ahx: 'ahx',
   sid: 'jssid',
   mod: 'mod', xm: 'mod', s3m: 'mod', it: 'mod',
+  spc: 'gme', vgm: 'gme', vgz: 'gme',
 };
 
 export async function loadIndex() {

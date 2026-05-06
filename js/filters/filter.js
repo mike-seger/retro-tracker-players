@@ -131,11 +131,13 @@ export function applyFilter() {
     const currentHidden = !cur || cur.classList.contains('hidden');
     if (currentHidden) {
       let nextIdx = -1;
-      for (let i = S.currentIdx; i < items.length; i++) {
+      const startFwd = Math.min(Math.max(S.currentIdx, 0), Math.max(items.length - 1, 0));
+      for (let i = startFwd; i < items.length; i++) {
         if (!items[i].classList.contains('hidden')) { nextIdx = i; break; }
       }
       if (nextIdx < 0) {
-        for (let i = S.currentIdx - 1; i >= 0; i--) {
+        const startBack = Math.min(Math.max(S.currentIdx - 1, 0), Math.max(items.length - 1, 0));
+        for (let i = startBack; i >= 0; i--) {
           if (!items[i].classList.contains('hidden')) { nextIdx = i; break; }
         }
       }
