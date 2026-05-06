@@ -1,6 +1,6 @@
 // js/range-panel.js — Range single-select panel (modland result pages)
-import { S, elRefineRangeBtn, elRefineRangePanel } from './state.js';
-import { openDropdown, registerDropdown } from './dropdown-keys.js';
+import { S, elRefineRangeBtn, elRefineRangePanel } from '../core/state.js';
+import { openDropdown, registerDropdown } from '../ui/dropdown-keys.js';
 
 let _savedRange = null;
 

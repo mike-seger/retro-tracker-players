@@ -8,9 +8,9 @@ import { S, FIXED_VOLUME, SID_TRACK_PLAYER_ID } from './state.js';
 // import() resolves from the module registry (microtask only, no I/O),
 // keeping the user activation alive through to AudioContext.resume().
 Promise.all([
-  import('../engines/mod/engine.js'),
-  import('../engines/ahx/engine.js'),
-  import('../engines/jssid/engine.js'),
+  import('../../engines/mod/engine.js'),
+  import('../../engines/ahx/engine.js'),
+  import('../../engines/jssid/engine.js'),
 ]).catch(() => {});
 
 // Set by player.js to break the circular dep at module evaluation time.
@@ -20,8 +20,8 @@ export function setAdvanceTrackCallback(fn) { _advanceTrack = fn; }
 export async function getEngine(playerId) {
   if (!S.engines[playerId]) {
     const resolvedId = playerId === SID_TRACK_PLAYER_ID ? SID_TRACK_PLAYER_ID : playerId;
-    // Path is relative to this module (js/), so ../engines/ → root engines/
-    const mod = await import(`../engines/${resolvedId}/engine.js`);
+    // Path is relative to this module (js/core/), so ../../engines/ → root engines/
+    const mod = await import(`../../engines/${resolvedId}/engine.js`);
     await mod.init();
     mod.setVolume(FIXED_VOLUME);
     mod.onEnd(() => _advanceTrack?.());

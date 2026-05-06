@@ -1,5 +1,5 @@
 // js/refine-panel.js — Shared DOM utilities for multi-select refine panels
-import { registerDropdown } from './dropdown-keys.js';
+import { registerDropdown } from '../ui/dropdown-keys.js';
 
 // Returns 'all' | 'some' | 'none' based on selection counts.
 export function selectionState(selectedSize, totalSize) {

@@ -1,12 +1,12 @@
 // js/player.js — loadAndPlay, transport, seek, advance, prefetch
 import { S, btnPlay, elSeek, elTime, elDur, elInfo, elTrackPos } from './state.js';
-import { fmtTime, esc, trackUrl, tlog } from './utils.js';
+import { fmtTime, esc, trackUrl, tlog } from '../lib/utils.js';
 import { ensureEngine } from './engines.js';
-import { cacheFetch, cacheHas } from './cache.js';
+import { cacheFetch, cacheHas } from '../lib/cache.js';
 import { activeFiles, highlightCurrent, setFocus, updateTrackPos,
-         getVisibleIndices, alignInfoValueColumn, scrollIntoViewSmart } from './playlist.js';
+         getVisibleIndices, alignInfoValueColumn, scrollIntoViewSmart } from '../playlists/playlist.js';
 import { setAdvanceTrackCallback } from './engines.js';
-import { showAudioResumeDialog } from './prompts.js';
+import { showAudioResumeDialog } from '../ui/prompts.js';
 
 function renderInfoFields(fields) {
   elInfo.innerHTML = fields.map((f) =>

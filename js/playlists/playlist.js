@@ -1,17 +1,16 @@
 // js/playlist.js — Playlist rendering, scroll helpers, file list management
-import { S, elList, elTrackPos, elSelBulk, elFilter, elInfo, elPlDel } from './state.js';
-import { extOf, trackUrl, addLongPress, isMobile, toAbsoluteUrl, dbg } from './utils.js';
+import { S, elList, elTrackPos, elSelBulk, elFilter, elInfo, elPlDel } from '../core/state.js';
+import { extOf, trackUrl, addLongPress, isMobile, toAbsoluteUrl, dbg } from '../lib/utils.js';
 import { createTrackRow, isTrackRowControlTarget } from './track-row.js';
 // Note: circular imports below (filter.js ↔ playlist.js, etc.) are safe —
 // all cross-module calls happen inside function bodies, never at eval time.
-import { applyFilter } from './filter.js';
-import { loadAndPlay } from './player.js';
-import { toggleSelect } from './selection.js';
-import { deleteModlandTrack, searchByArtist } from './modland.js';
-import { updateSelCount } from './selection.js';
-import { localPlaceholder, modlandPlaceholder } from './refine.js';
+import { applyFilter } from '../filters/filter.js';
+import { loadAndPlay } from '../core/player.js';
+import { toggleSelect, updateSelCount } from './selection.js';
+import { deleteModlandTrack, searchByArtist } from '../browse/modland.js';
+import { localPlaceholder, modlandPlaceholder } from '../filters/refine.js';
 import * as pm from './playlist-manager.js';
-import { getMaxListItems } from './settings.js';
+import { getMaxListItems } from '../settings/settings.js';
 
 // ── active list helpers ───────────────────────────────
 export function activeFiles() {
@@ -215,7 +214,7 @@ export function buildPlaylist() {
         const ids = (entry.userPlaylistIds || []).slice();
         const key = pm.trackKey(entry);
         Promise.all(ids.map(id => pm.removeTrack(id, key))).then(() => {
-          import('./app.js').then(m => m.refreshUserPlaylistTracksAndRebuild({ preferredVisibleRow }));
+          import('../core/app.js').then(m => m.refreshUserPlaylistTracksAndRebuild({ preferredVisibleRow }));
         });
       });
     }
@@ -317,7 +316,7 @@ export function setFocus(idx) {
     li.classList.add('focused');
     scrollIntoViewSmart(li);
   }
-  import('./modland.js').then(m => m.refreshOpenAddDropdown?.()).catch(() => {});
+  import('../browse/modland.js').then(m => m.refreshOpenAddDropdown?.()).catch(() => {});
 }
 
 // Re-anchor current/focus by the playing URL after list content changes.

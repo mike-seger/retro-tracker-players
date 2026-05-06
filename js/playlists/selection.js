@@ -1,6 +1,6 @@
 // js/selection.js — Track selection, bulk state machine, copy/zip
-import { S, elBulkCb, elSelCount, elSelBulk, btnCopy, btnZip, elPlDel, elInfo, elList } from './state.js';
-import { trackUrl, safeDecodeURIComponent } from './utils.js';
+import { S, elBulkCb, elSelCount, elSelBulk, btnCopy, btnZip, elPlDel, elInfo, elList } from '../core/state.js';
+import { trackUrl, safeDecodeURIComponent } from '../lib/utils.js';
 import { activeFiles, activeSelected, setActiveSelected } from './playlist.js';
 
 // ── toggle / save / restore ───────────────────────────

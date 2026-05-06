@@ -1,10 +1,10 @@
 // js/keyboard.js — Keyboard shortcuts + share button
 import { S, elFilter, elSearchMode, btnShare, btnCopy, btnZip, elMlRandom,
   elRefineFolderBtn, elRefineArtistBtn, elRefineFormatBtn, btnHelp, elFilterClr,
-  elMlAddAll, elMlDelAll, elSeek } from './state.js';
-import { scrub, playPrevNext } from './player.js';
-import { toggleSelect } from './selection.js';
-import { buildDeepLink } from './deeplink.js';
+  elMlAddAll, elMlDelAll, elSeek } from '../core/state.js';
+import { scrub, playPrevNext } from '../core/player.js';
+import { toggleSelect } from '../playlists/selection.js';
+import { buildDeepLink } from '../browse/deeplink.js';
 import { showSharePanel } from './share-panel.js';
 import { isDropdownOpen } from './dropdown-keys.js';
 import { hasOpenConfirm } from './prompts.js';
@@ -119,7 +119,7 @@ document.addEventListener('keydown', (e) => {
       if (idx >= 0) {
         if (e.shiftKey) toggleSelect(idx);
         else {
-          import('./player.js').then(m => m.loadAndPlay(idx));
+          import('../core/player.js').then(m => m.loadAndPlay(idx));
         }
       }
       break;

@@ -1,17 +1,17 @@
 // js/mode.js — switchMode + per-mode context save/restore
 import { S, elFilter, elSearchMode, elSelBulk } from './state.js';
-import { clearFormatFilter, updateFormatBtn, syncFormatCheckboxes } from './format-panel.js';
-import { clearFolderFilter, updateFolderBtn, syncFolderCheckboxes } from './folder-panel.js';
-import { clearArtistFilter, updateArtistBtn, syncArtistCheckboxes } from './artist-panel.js';
-import { clearRangeFilter } from './range-panel.js';
-import { buildPlaylist, syncPlayingTrackByUrl } from './playlist.js';
-import { applyFilter, updateRefineVisibility } from './filter.js';
+import { clearFormatFilter, updateFormatBtn, syncFormatCheckboxes } from '../filters/format-panel.js';
+import { clearFolderFilter, updateFolderBtn, syncFolderCheckboxes } from '../filters/folder-panel.js';
+import { clearArtistFilter, updateArtistBtn, syncArtistCheckboxes } from '../filters/artist-panel.js';
+import { clearRangeFilter } from '../filters/range-panel.js';
+import { buildPlaylist, syncPlayingTrackByUrl } from '../playlists/playlist.js';
+import { applyFilter, updateRefineVisibility } from '../filters/filter.js';
 import { populateFolderPanel, populateLocalArtistPanel,
-         populateLocalFormatDropdown, localPlaceholder, modlandPlaceholder } from './refine.js';
-import { doModlandSearch, updateMlButtons } from './modland.js';
+         populateLocalFormatDropdown, localPlaceholder, modlandPlaceholder } from '../filters/refine.js';
+import { doModlandSearch, updateMlButtons } from '../browse/modland.js';
 import { persistContext } from './persistence.js';
-import { restoreSelection, updateSelCount } from './selection.js';
-import * as remoteSearch from './remote-search.js';
+import { restoreSelection, updateSelCount } from '../playlists/selection.js';
+import * as remoteSearch from '../browse/remote-search.js';
 
 // ── context save/restore ──────────────────────────────
 export function saveLocalContext() {
@@ -132,8 +132,8 @@ export function switchMode(mode) {
     restoreLocalContext();
   } else {
     remoteSearch.loadIndex()
-      .then(() => import('./format-panel.js').then(m => m.buildFormatPanel(remoteSearch.availableFormats())))
-      .catch(() => import('./format-panel.js').then(m => m.buildFormatPanel([])));
+      .then(() => import('../filters/format-panel.js').then(m => m.buildFormatPanel(remoteSearch.availableFormats())))
+      .catch(() => import('../filters/format-panel.js').then(m => m.buildFormatPanel([])));
     restoreModlandContext();
   }
 

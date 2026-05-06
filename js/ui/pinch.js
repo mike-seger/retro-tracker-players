@@ -1,7 +1,7 @@
 // js/pinch.js — Pinch-to-zoom font size + swipe for prev/next
-import { S, elList, MIN_FONT, MAX_FONT } from './state.js';
-import { setPlaylistFontSize, getPlaylistFontSize } from './playlist.js';
-import { playPrevNext } from './player.js';
+import { S, elList, MIN_FONT, MAX_FONT } from '../core/state.js';
+import { setPlaylistFontSize, getPlaylistFontSize } from '../playlists/playlist.js';
+import { playPrevNext } from '../core/player.js';
 
 let pinchStartDist  = 0;
 let pinchStartSize  = 0;

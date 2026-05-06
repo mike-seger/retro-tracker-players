@@ -1,5 +1,5 @@
 // js/cache.js — Two-tier track file cache (in-memory blob URLs + Cache API)
-import { S, CACHE_NAME } from './state.js';
+import { S, CACHE_NAME } from '../core/state.js';
 import { tlog } from './utils.js';
 
 const _blobCache = new Map(); // url → blobUrl (session-lifetime)

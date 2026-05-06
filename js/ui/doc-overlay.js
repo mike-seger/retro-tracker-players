@@ -1,7 +1,7 @@
 // js/doc-overlay.js — Help overlay with lazy-fetched + rendered README
-import { btnHelp } from './state.js';
+import { btnHelp } from '../core/state.js';
 import { openPlaylistOverlay } from './playlist-overlay.js';
-import { openSettingsOverlay } from './settings-overlay.js';
+import { openSettingsOverlay } from '../settings/settings-overlay.js';
 import { closeAllDropdowns } from './dropdown-keys.js';
 
 let _helpCache = null;

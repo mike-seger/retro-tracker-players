@@ -1,7 +1,7 @@
 // js/folder-panel.js — List (folder/playlist) multi-select dropdown panel
-import { S, elRefineFolderBtn, elRefineFolderPanel } from './state.js';
-import { openDropdown } from './dropdown-keys.js';
-import * as pm from './playlist-manager.js';
+import { S, elRefineFolderBtn, elRefineFolderPanel } from '../core/state.js';
+import { openDropdown } from '../ui/dropdown-keys.js';
+import * as pm from '../playlists/playlist-manager.js';
 import { selectionState, buildPanelHead, appendPanelOption, syncPanelCheckboxes, wireDropdown } from './refine-panel.js';
 
 let _savedFolders = null;

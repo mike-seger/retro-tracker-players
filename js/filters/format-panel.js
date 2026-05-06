@@ -1,6 +1,6 @@
 // js/format-panel.js — Format multi-select dropdown widget
-import { S, elRefineFormatBtn, elRefineFormatPanel } from './state.js';
-import { openDropdown } from './dropdown-keys.js';
+import { S, elRefineFormatBtn, elRefineFormatPanel } from '../core/state.js';
+import { openDropdown } from '../ui/dropdown-keys.js';
 import { selectionState, buildPanelHead, appendPanelOption, syncPanelCheckboxes, wireDropdown } from './refine-panel.js';
 
 let _savedFormats = null;

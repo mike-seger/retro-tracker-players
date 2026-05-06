@@ -1,12 +1,12 @@
 // js/deeplink.js — Deep link encode/decode and initial load
-import { S, elFilter, elList } from './state.js';
-import { trackUrl, extOf, safeDecodeURIComponent } from './utils.js';
-import { activeFiles, buildPlaylist, scrollIntoViewSmart, setFocus, highlightCurrent } from './playlist.js';
-import { loadAndPlay } from './player.js';
-import { showDeepLinkPrompt } from './prompts.js';
-import { updateFormatBtn, syncFormatCheckboxes, clearFormatFilter } from './format-panel.js';
-import { applyFilter } from './filter.js';
-import { getMaxListItems } from './settings.js';
+import { S, elFilter, elList } from '../core/state.js';
+import { trackUrl, extOf, safeDecodeURIComponent } from '../lib/utils.js';
+import { activeFiles, buildPlaylist, scrollIntoViewSmart, setFocus, highlightCurrent } from '../playlists/playlist.js';
+import { loadAndPlay } from '../core/player.js';
+import { showDeepLinkPrompt } from '../ui/prompts.js';
+import { updateFormatBtn, syncFormatCheckboxes, clearFormatFilter } from '../filters/format-panel.js';
+import { applyFilter } from '../filters/filter.js';
+import { getMaxListItems } from '../settings/settings.js';
 
 // ── build ──────────────────────────────────────────────
 export function buildDeepLink(fullContext) {
@@ -62,12 +62,12 @@ export function applyDeepLinkFilters() {
   if (f.folders) {
     const fmts = new Set(f.folders.split(',').map(s => s.trim()));
     S.selectedFolders = new Set([...fmts].filter(fm => S._allFolderOptions.has(fm)));
-    import('./folder-panel.js').then(m => { m.updateFolderBtn(); m.syncFolderCheckboxes(); });
+    import('../filters/folder-panel.js').then(m => { m.updateFolderBtn(); m.syncFolderCheckboxes(); });
   }
   if (f.artists) {
     const arts = new Set(f.artists.split(',').map(s => s.trim()));
     S.selectedArtists = new Set([...arts].filter(a => S._allArtistOptions.has(a)));
-    import('./artist-panel.js').then(m => { m.updateArtistBtn(); m.syncArtistCheckboxes(); });
+    import('../filters/artist-panel.js').then(m => { m.updateArtistBtn(); m.syncArtistCheckboxes(); });
   }
   if (f.formats) {
     const fmts = new Set(f.formats.split(',').map(s => s.trim().toUpperCase()));
@@ -112,7 +112,7 @@ export async function loadDeepLinkedTrack() {
   // Try to find in modland files
   const mlIdx = S.modlandFiles.findIndex(t => t.url === targetUrl);
   if (mlIdx >= 0) {
-    const { switchMode } = await import('./mode.js');
+    const { switchMode } = await import('../core/mode.js');
     switchMode('modland');
     S.currentIdx = mlIdx;
     highlightCurrent();
@@ -126,7 +126,7 @@ export async function loadDeepLinkedTrack() {
   // If source=modland, run the full modland search so the track appears in context
   const f = deepLinkFilters();
   if (f.source === 'modland' && f.search) {
-    const { switchMode } = await import('./mode.js');
+    const { switchMode } = await import('../core/mode.js');
     const { doModlandSearch } = await import('./modland.js');
     const remoteSearch = await import('./remote-search.js').then(m => m.default || m);
     switchMode('modland');
@@ -177,7 +177,7 @@ export async function loadDeepLinkedTrack() {
       S._inSearchResults = false;
       buildPlaylist();
     } else {
-      const { switchMode } = await import('./mode.js');
+      const { switchMode } = await import('../core/mode.js');
       switchMode('modland');
     }
     S.currentIdx = S.modlandFiles.length - 1;

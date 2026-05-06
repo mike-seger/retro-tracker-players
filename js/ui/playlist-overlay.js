@@ -1,8 +1,8 @@
 // js/playlist-overlay.js — Playlist Manager overlay UI
-import * as pm from './playlist-manager.js';
-import { S } from './state.js';
+import * as pm from '../playlists/playlist-manager.js';
+import { S } from '../core/state.js';
 import { askConfirm, askText, showInfo } from './prompts.js';
-import { trackUrl } from './utils.js';
+import { trackUrl } from '../lib/utils.js';
 
 let _overlay = null;
 let _content = null;

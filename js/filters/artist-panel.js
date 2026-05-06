@@ -1,6 +1,6 @@
 // js/artist-panel.js — Artist multi-select dropdown panel
-import { S, elRefineArtistBtn, elRefineArtistPanel } from './state.js';
-import { openDropdown } from './dropdown-keys.js';
+import { S, elRefineArtistBtn, elRefineArtistPanel } from '../core/state.js';
+import { openDropdown } from '../ui/dropdown-keys.js';
 import { selectionState, buildPanelHead, appendPanelOption, syncPanelCheckboxes, wireDropdown } from './refine-panel.js';
 
 let _savedArtists = null;

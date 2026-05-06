@@ -1,5 +1,5 @@
 // js/utils.js — Pure utility helpers + debug log output
-import { debugLog } from './state.js';
+import { debugLog } from '../core/state.js';
 
 const _decodeWarned = new Set();
 

@@ -1,6 +1,6 @@
 // js/prompts.js — Modal confirm overlays
-import { esc } from './utils.js';
-import { isAutoplayAudioEnabled, setAppSettings } from './settings.js';
+import { esc } from '../lib/utils.js';
+import { isAutoplayAudioEnabled, setAppSettings } from '../settings/settings.js';
 
 function showConfirm({
   messageHtml,

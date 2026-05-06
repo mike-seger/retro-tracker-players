@@ -1,13 +1,13 @@
 // js/filter.js — applyFilter + refine visibility
 import { S, elFilter,
          elRefineFolderWrap, elRefineArtistWrap, elRefineRangeWrap,
-         elRefineFormatWrap, elList } from './state.js';
-import { extractArtist } from './utils.js';
+         elRefineFormatWrap, elList } from '../core/state.js';
+import { extractArtist } from '../lib/utils.js';
 import { buildFormatPanel } from './format-panel.js';
-import { activeFiles, updateTrackPos, highlightCurrent, setFocus, syncPlayingTrackByUrl } from './playlist.js';
-import { persistContext } from './persistence.js';
-import { scrollIntoViewSmart } from './playlist.js';
-import { isSystemFolder, isSystemFolderVisible } from './playlist-manager.js';
+import { activeFiles, updateTrackPos, highlightCurrent, setFocus, syncPlayingTrackByUrl } from '../playlists/playlist.js';
+import { persistContext } from '../core/persistence.js';
+import { scrollIntoViewSmart } from '../playlists/playlist.js';
+import { isSystemFolder, isSystemFolderVisible } from '../playlists/playlist-manager.js';
 
 export function applyFilter() {
   const raw = elFilter.value.trim();

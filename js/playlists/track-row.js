@@ -1,4 +1,4 @@
-import { parseTrackDisplay, safeDecodeURIComponent } from './utils.js';
+import { parseTrackDisplay, safeDecodeURIComponent } from '../lib/utils.js';
 
 export function createTrackRow({
   entry,

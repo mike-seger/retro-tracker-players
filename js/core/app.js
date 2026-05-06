@@ -1,33 +1,32 @@
 // js/app.js — Thin init entry point; imports all modules and runs startup
-import * as remoteSearch from './remote-search.js';
+import * as remoteSearch from '../browse/remote-search.js';
 import { S, elFilter, elFilterClr, elSearchMode, elSelBulk, elPlDel, debugLog, elTransport, SID_TRACK_PLAYER_ID } from './state.js';
-import { extOf, dbg, tlog, safeDecodeURIComponent } from './utils.js';
-import { setFormatChangeHandler, clearFormatFilter } from './format-panel.js';
-import { setFolderChangeHandler, clearFolderFilter } from './folder-panel.js';
-import { setArtistChangeHandler, clearArtistFilter } from './artist-panel.js';
-import { setRangeChangeHandler, getRangeSkip, clearRangeFilter } from './range-panel.js';
+import { extOf, dbg, tlog, safeDecodeURIComponent } from '../lib/utils.js';
+import { setFormatChangeHandler, clearFormatFilter } from '../filters/format-panel.js';
+import { setFolderChangeHandler, clearFolderFilter } from '../filters/folder-panel.js';
+import { setArtistChangeHandler, clearArtistFilter } from '../filters/artist-panel.js';
+import { setRangeChangeHandler, getRangeSkip, clearRangeFilter } from '../filters/range-panel.js';
 import { buildPlaylist, rebuildMergedFiles, renderToggles, loadEnabledPlayers,
-         activeFiles, highlightCurrent, setFocus, getVisibleIndices, setPlaylistFontSize } from './playlist.js';
-import { applyFilter, updateRefineVisibility } from './filter.js';
+         activeFiles, highlightCurrent, setFocus, getVisibleIndices, setPlaylistFontSize } from '../playlists/playlist.js';
+import { applyFilter, updateRefineVisibility } from '../filters/filter.js';
 import { populateFolderPanel, populateLocalArtistPanel, populateLocalFormatDropdown,
-         modlandPlaceholder, localPlaceholder } from './refine.js';
-import { restoreSelection, updateSelCount } from './selection.js';
-import { loadModlandTracks } from './modland.js';
-import { doModlandSearch, doRandomBrowse } from './modland.js';
+         modlandPlaceholder, localPlaceholder } from '../filters/refine.js';
+import { restoreSelection, updateSelCount } from '../playlists/selection.js';
+import { loadModlandTracks, doModlandSearch, doRandomBrowse } from '../browse/modland.js';
 import { switchMode, restorePersistedContext } from './mode.js';
-import { loadDeepLinkedTrack, applyDeepLinkFilters } from './deeplink.js';
-import { showResumePrompt, showDeleteConfirm } from './prompts.js';
+import { loadDeepLinkedTrack, applyDeepLinkFilters } from '../browse/deeplink.js';
+import { showResumePrompt, showDeleteConfirm } from '../ui/prompts.js';
 import { loadAndPlay } from './player.js';
-import { closeAllDropdowns } from './dropdown-keys.js';
-import { isAutoplayAudioEnabled } from './settings.js';
+import { closeAllDropdowns } from '../ui/dropdown-keys.js';
+import { isAutoplayAudioEnabled } from '../settings/settings.js';
 
 // Side-effect-only imports (register their own listeners)
-import './keyboard.js';
-import './pinch.js';
-import { closeOptionsPanel } from './doc-overlay.js';
-import * as pm from './playlist-manager.js';
-import { closePlaylistOverlay } from './playlist-overlay.js';
-import { closeSettingsOverlay } from './settings-overlay.js';
+import '../ui/keyboard.js';
+import '../ui/pinch.js';
+import { closeOptionsPanel } from '../ui/doc-overlay.js';
+import * as pm from '../playlists/playlist-manager.js';
+import { closePlaylistOverlay } from '../ui/playlist-overlay.js';
+import { closeSettingsOverlay } from '../settings/settings-overlay.js';
 
 // Global debug toggle for URL-based playing-track re-anchor logs.
 const DEBUG_TRACK_REANCHOR_LOG = false;

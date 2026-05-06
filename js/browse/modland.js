@@ -1,20 +1,18 @@
 // js/modland.js — Modland file management, search, random browse, mode helpers
 import { S, elFilter, elFilterCnt,
          elSelBulk, elMlAddAll, elMlDelAll, elMlRandom, elList,
-         btnCopy, btnZip } from './state.js';
-import { trackUrl, addLongPress, isMobile, parseTrackDisplay } from './utils.js';
-import { SID_TRACK_PLAYER_ID } from './state.js';
-import { buildFormatPanel } from './format-panel.js';
-import { loadAndPlay } from './player.js';
-import { activeFiles, updateTrackPos, buildPlaylist, syncPlayingTrackByUrl } from './playlist.js';
-import { restoreSelection } from './selection.js';
-import { updateSelCount } from './selection.js';
-import { getRangeSkip, buildRangePanel } from './range-panel.js';
-import { showAddConfirm, showDeleteConfirm } from './prompts.js';
+         btnCopy, btnZip, SID_TRACK_PLAYER_ID } from '../core/state.js';
+import { trackUrl, addLongPress, isMobile, parseTrackDisplay } from '../lib/utils.js';
+import { buildFormatPanel } from '../filters/format-panel.js';
+import { loadAndPlay } from '../core/player.js';
+import { activeFiles, updateTrackPos, buildPlaylist, syncPlayingTrackByUrl } from '../playlists/playlist.js';
+import { restoreSelection, updateSelCount } from '../playlists/selection.js';
+import { getRangeSkip, buildRangePanel } from '../filters/range-panel.js';
+import { showAddConfirm, showDeleteConfirm } from '../ui/prompts.js';
 import * as remoteSearch from './remote-search.js';
-import * as pm from './playlist-manager.js';
-import { createTrackRow, isTrackRowControlTarget } from './track-row.js';
-import { getMaxListItems } from './settings.js';
+import * as pm from '../playlists/playlist-manager.js';
+import { createTrackRow, isTrackRowControlTarget } from '../playlists/track-row.js';
+import { getMaxListItems } from '../settings/settings.js';
 
 // ── helpers ───────────────────────────────────────────
 function detectPlayerIdFromUrl(url) {
@@ -86,7 +84,7 @@ export function addModlandTracks(entries) {
     S.modlandFiles.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
     saveModlandUrls();
     if (S.searchMode === 'modland') {
-      import('./mode.js').then(m => m.switchMode('modland'));
+      import('../core/mode.js').then(m => m.switchMode('modland'));
     }
   }
   return added;
@@ -99,7 +97,7 @@ export function deleteModlandTrack(url) {
   if (S.searchMode === 'modland') {
     if (elFilter.value.trim().length >= 2) doModlandSearch();
     else {
-      import('./mode.js').then(m => m.switchMode('modland'));
+      import('../core/mode.js').then(m => m.switchMode('modland'));
     }
   }
 }
@@ -112,14 +110,14 @@ export function deleteModlandByUrls(urls) {
   if (S.searchMode === 'modland') {
     if (elFilter.value.trim().length >= 2) doModlandSearch();
     else {
-      import('./mode.js').then(m => m.switchMode('modland'));
+      import('../core/mode.js').then(m => m.switchMode('modland'));
     }
   }
 }
 
 // ── artist search (cross-mode) ────────────────────────
 export function searchByArtist(artist) {
-  import('./mode.js').then(m => {
+  import('../core/mode.js').then(m => {
     if (S.searchMode !== 'modland') m.switchMode('modland');
     const clean = artist.replace(/^-\s*/, '');
     // Search using artist as path prefix (e.g. 'pulse/' finds all tracks in Pulse/ folder)
@@ -605,7 +603,7 @@ elMlRandom.addEventListener('click', () => {
   remoteSearch.reshuffle();
   S._randomBrowsing = true;
   elFilter.value = '';
-  import('./range-panel.js').then(m => m.clearRangeFilter());
-  import('./format-panel.js').then(m => m.clearFormatFilter());
+  import('../filters/range-panel.js').then(m => m.clearRangeFilter());
+  import('../filters/format-panel.js').then(m => m.clearFormatFilter());
   doRandomBrowse(0);
 });

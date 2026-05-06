@@ -1,15 +1,15 @@
 // js/refine.js — Refine panel population + placeholder helpers
-import { S, elFilter } from './state.js';
-import { extractArtist } from './utils.js';
+import { S, elFilter } from '../core/state.js';
+import { extractArtist } from '../lib/utils.js';
 import { buildFormatPanel } from './format-panel.js';
 import { buildFolderPanel, clearFolderFilter } from './folder-panel.js';
 import { buildArtistPanel } from './artist-panel.js';
 import { buildRangePanel, getRangeSkip } from './range-panel.js';
 import { applyFilter } from './filter.js';
-import { doModlandSearch, doRandomBrowse } from './modland.js';
-import * as remoteSearch from './remote-search.js';
-import { isSystemFolder, isSystemFolderVisible } from './playlist-manager.js';
-import { getMaxListItems } from './settings.js';
+import { doModlandSearch, doRandomBrowse } from '../browse/modland.js';
+import * as remoteSearch from '../browse/remote-search.js';
+import { isSystemFolder, isSystemFolderVisible } from '../playlists/playlist-manager.js';
+import { getMaxListItems } from '../settings/settings.js';
 
 export async function populateFolderPanel() {
   if (S.searchMode === 'modland') { clearFolderFilter(); return; }
