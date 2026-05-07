@@ -3,7 +3,7 @@ import { clamp01, loadScript, resolveExt } from '../shared.js';
 
 const VGM_STDLIB_JS_URL = 'https://cdn.jsdelivr.net/gh/wothke/vgmplay-0.40.9@master/emscripten/htdocs/stdlib/scriptprocessor_player.min.js';
 const VGM_JS_URL = 'https://cdn.jsdelivr.net/gh/wothke/vgmplay-0.40.9@master/emscripten/htdocs/backend_vgm.js';
-const VGM_ENGINE_PATCH = 'vgm-2026-05-07-split-b';
+const VGM_ENGINE_PATCH = 'vgm-2026-05-07-split-c';
 
 let _onEnd = null;
 let _volume = 1;
@@ -225,7 +225,10 @@ function buildVgmNode() {
       console.log('[vgm] first onaudioprocess | status:', status, '| ptr:', ptr, '| len:', len);
     }
 
-    if (status < 0) {
+    // Any non-zero status = end of track (1) or error (<0); stop immediately.
+    // status=1 is normal end: the adapter keeps returning the same buffer on
+    // subsequent calls, which would cause an infinite loop if we read it.
+    if (status !== 0) {
       return { status, frames: 0, chunk: null };
     }
 
@@ -265,10 +268,10 @@ function buildVgmNode() {
       if (!_vgmChunk || _vgmChunkPos >= _vgmChunkFrames) {
         const fetched = fetchChunk();
         if (!fetched.chunk) {
-          if (fetched.status < 0) {
+          if (fetched.status !== 0) {
             _vgmPlaying = false;
             for (let i = filled; i < L.length; i++) { L[i] = 0; R[i] = 0; }
-            _onEnd?.();
+            if (fetched.status > 0) _onEnd?.(); // positive = normal track end
             return;
           }
           for (let i = filled; i < L.length; i++) { L[i] = 0; R[i] = 0; }
