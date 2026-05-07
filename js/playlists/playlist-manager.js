@@ -72,6 +72,43 @@ export function isSystemKeyVisible(canonicalKey) {
 let _db = null;
 const _listeners = new Set();
 
+function extFromTrack(t) {
+  const fromExt = String(t?.ext || '').toLowerCase();
+  if (fromExt) return fromExt;
+  const src = String(t?.name || t?.url || '').split('?')[0].split('#')[0];
+  const dot = src.lastIndexOf('.');
+  return dot >= 0 ? src.substring(dot + 1).toLowerCase() : '';
+}
+
+function normalizeLegacyPlayerId(playerId, t) {
+  if (playerId !== 'gme') return playerId;
+  const ext = extFromTrack(t);
+  if (ext === 'spc') return 'spc';
+  if (ext === 'vgm' || ext === 'vgz') return 'vgm';
+  return playerId;
+}
+
+function normalizeLegacyTrack(track) {
+  if (!track || typeof track !== 'object') return { track, changed: false };
+  const nextPlayerId = normalizeLegacyPlayerId(track.playerId, track);
+  if (nextPlayerId === track.playerId) return { track, changed: false };
+  return {
+    track: { ...track, playerId: nextPlayerId },
+    changed: true,
+  };
+}
+
+function normalizeLegacyTracks(tracks) {
+  const src = Array.isArray(tracks) ? tracks : [];
+  let changed = false;
+  const normalized = src.map((t) => {
+    const n = normalizeLegacyTrack(t);
+    if (n.changed) changed = true;
+    return n.track;
+  });
+  return { tracks: normalized, changed };
+}
+
 function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 }
@@ -130,6 +167,13 @@ export async function init() {
 export async function getAll() {
   await openDB();
   const list = await dbReq(_db.transaction(STORE, 'readonly').objectStore(STORE).getAll());
+  for (const pl of list) {
+    const n = normalizeLegacyTracks(pl?.tracks);
+    if (n.changed) {
+      pl.tracks = n.tracks;
+      await dbReq(_db.transaction(STORE, 'readwrite').objectStore(STORE).put(pl));
+    }
+  }
   list.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
   return list;
 }
@@ -183,9 +227,10 @@ export async function addTrack(id, track) {
   const s = t.objectStore(STORE);
   const pl = await dbReq(s.get(id));
   if (!pl) return false;
-  const key = trackKey(track);
+  const normalizedTrack = normalizeLegacyTrack(track).track;
+  const key = trackKey(normalizedTrack);
   if (pl.tracks.some(tr => trackKey(tr) === key)) return false;
-  pl.tracks.push(track);
+  pl.tracks.push(normalizedTrack);
   await dbReq(s.put(pl));
   notify();
   return true;
@@ -205,7 +250,13 @@ export async function removeTrack(id, key) {
 export async function getTracks(id) {
   await openDB();
   const pl = await dbReq(_db.transaction(STORE, 'readonly').objectStore(STORE).get(id));
-  return pl ? pl.tracks : [];
+  if (!pl) return [];
+  const n = normalizeLegacyTracks(pl.tracks);
+  if (n.changed) {
+    pl.tracks = n.tracks;
+    await dbReq(_db.transaction(STORE, 'readwrite').objectStore(STORE).put(pl));
+  }
+  return pl.tracks;
 }
 
 export function hiddenListKeyForFolder(folder) {
@@ -267,11 +318,15 @@ export function parseCsv(text) {
     const obj = {};
     header.forEach((h, i) => { obj[h] = cols[i] || ''; });
     if (obj.name && obj.playerid) {
-      tracks.push({
+      const baseTrack = {
         name: obj.name,
         ext: obj.ext || '',
         playerId: obj.playerid,
         ...(obj.url ? { url: obj.url } : {}),
+      };
+      const normalized = normalizeLegacyTrack(baseTrack).track;
+      tracks.push({
+        ...normalized,
       });
     }
   }

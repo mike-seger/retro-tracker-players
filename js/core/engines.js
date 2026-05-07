@@ -11,7 +11,8 @@ Promise.all([
   import('../../engines/mod/engine.js'),
   import('../../engines/ahx/engine.js'),
   import('../../engines/jssid/engine.js'),
-  import('../../engines/gme/engine.js'),
+  import('../../engines/spc/engine.js'),
+  import('../../engines/vgm/engine.js'),
 ]).catch(() => {});
 
 // Set by player.js to break the circular dep at module evaluation time.

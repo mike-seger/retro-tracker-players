@@ -37,7 +37,8 @@ function detectPlayerIdFromUrl(url) {
   if (ext === 'ahx') return 'ahx';
   if (ext === 'sid') return SID_TRACK_PLAYER_ID;
   if (['mod', 'xm', 's3m', 'it'].includes(ext)) return 'mod';
-  if (['spc', 'vgm', 'vgz'].includes(ext)) return 'gme';
+  if (ext === 'spc') return 'spc';
+  if (['vgm', 'vgz'].includes(ext)) return 'vgm';
   return null;
 }
 
@@ -426,14 +427,18 @@ elFilterClr.addEventListener('click', () => {
     try {
       const saved = JSON.parse(localStorage.getItem('current-track'));
       if (saved) {
+        const savedExt = extOf(saved.name || saved.url || '').toLowerCase();
+        const savedPlayerId = saved.playerId === 'gme'
+          ? (savedExt === 'spc' ? 'spc' : (savedExt === 'vgm' || savedExt === 'vgz' ? 'vgm' : 'gme'))
+          : saved.playerId;
         if (saved.mode === 'modland') {
           switchMode('modland');
           S.currentIdx = S.modlandFiles.findIndex(
-            f => f.playerId === saved.playerId && f.name === saved.name
+            f => f.playerId === savedPlayerId && f.name === saved.name
           );
         } else {
           S.currentIdx = S.mergedFiles.findIndex(
-            f => f.playerId === saved.playerId && f.name === saved.name
+            f => f.playerId === savedPlayerId && f.name === saved.name
           );
         }
         if (S.currentIdx >= 0) {

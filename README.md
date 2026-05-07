@@ -3,7 +3,7 @@
 <!-- AUTO:DOC_META:START -->
 | Version | Updated |
 |:--|:--|
-| 0.9.9-2 | 2026-05-06 21:18 |
+| 0.9.9-3 | 2026-05-07 00:35 |
 <!-- AUTO:DOC_META:END -->
 
 A single-page browser-based chiptune player for the golden age of demoscene music, from C64 SID chips to Amiga tracker modules. It includes built-in local playlists and instant access to the Modland archive with 225K+ compatible tracker modules. Results can be narrowed with smart filters, and you can build your own custom lists from what you find.
@@ -27,13 +27,15 @@ Then open [localhost:8080](http://localhost:8080/) in your browser. All engines 
 
 ## Engines
 
-The unified player loads three engines on demand:
+The unified player loads five engines on demand:
 
 | Engine | Format | Description |
 |:----------|:----------|:---------------|
 | **jsSID** | .sid | Pure-JS MOS 6510 CPU + SID chip emulator — three-voice synthesis, ring modulation, filters |
 | **AHX** | .ahx | Abyss' Highest eXperience — four-voice Amiga wavetable synthesizer |
 | **MOD** | .mod .xm .s3m .it | Classic tracker formats via libopenmpt |
+| **SPC** | .spc | SNES SPC700 playback via @smwcentral/spc-player |
+| **VGM** | .vgm .vgz | Video Game Music playback via vgmplay backend |
 
 ## Features
 

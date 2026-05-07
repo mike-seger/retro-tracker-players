@@ -20,7 +20,8 @@ function detectPlayerIdFromUrl(url) {
   if (ext === 'ahx') return 'ahx';
   if (ext === 'sid') return SID_TRACK_PLAYER_ID;
   if (['mod', 'xm', 's3m', 'it'].includes(ext)) return 'mod';
-  if (['spc', 'vgm', 'vgz'].includes(ext)) return 'gme';
+  if (ext === 'spc') return 'spc';
+  if (['vgm', 'vgz'].includes(ext)) return 'vgm';
   return null;
 }
 

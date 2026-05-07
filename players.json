@@ -2,5 +2,6 @@
   { "id": "ahx",   "label": "AHX" },
   { "id": "jssid", "label": "SID" },
   { "id": "mod",   "label": "MOD" },
-  { "id": "gme",   "label": "SPC/VGM" }
+  { "id": "spc",   "label": "SPC" },
+  { "id": "vgm",   "label": "VGM/VGZ" }
 ]

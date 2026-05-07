@@ -163,7 +163,7 @@ export async function loadDeepLinkedTrack() {
   const playerMap = {
     ahx: 'ahx', sid: 'jssid',
     mod: 'mod', xm: 'mod', s3m: 'mod', it: 'mod',
-    spc: 'gme', vgm: 'gme', vgz: 'gme',
+    spc: 'spc', vgm: 'vgm', vgz: 'vgm',
   };
   const playerId = playerMap[ext.toLowerCase()] || 'mod';
   try {
