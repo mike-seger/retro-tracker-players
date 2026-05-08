@@ -25,7 +25,8 @@ const BACKEND_GSF = {
   backendUrl: MINI_GSF_JS_URL,
   stateKeys: ['spp_backend_state_gsf', 'spp_backend_state_GSF'],
   adapterCtor: 'GSFBackendAdapter',
-  adapterArgs: [],
+  // Enable backend filename remapping used for Modland-style files.
+  adapterArgs: [true],
 };
 
 let _onEnd = null;
@@ -49,6 +50,13 @@ let _chunk = null;
 let _chunkFrames = 0;
 let _chunkPos = 0;
 let _registeredFiles = new Set();
+let _registeredFileData = new Map();
+let _currentLoadExt = '';
+let _requestDebugCount = 0;
+
+function backendUsesMilliseconds() {
+  return _activeBackend?.key === 'gsf';
+}
 
 const _warmup = (async () => {
   try {
@@ -71,17 +79,21 @@ function isMiniExt(ext) {
   return MINI_EXTS.has(String(ext || '').toLowerCase());
 }
 
-function fsHandle() {
+function fsHandle(mod) {
   return (
+    mod?.FS ??
     window.backend_PSX?.FS ??
     window.spp_backend_state_PSX?.FS ??
+    window.backend_gsf?.FS ??
+    window.spp_backend_state_gsf?.FS ??
+    window.spp_backend_state_GSF?.FS ??
     window.FS ??
     null
   );
 }
 
 function fsCreateDataFile(mod, dir, name, data, canRead, canWrite, canOwn) {
-  const fs = fsHandle();
+  const fs = fsHandle(mod);
   if (fs?.createDataFile) {
     return fs.createDataFile(dir, name, data, canRead, canWrite, canOwn);
   }
@@ -95,7 +107,7 @@ function fsCreateDataFile(mod, dir, name, data, canRead, canWrite, canOwn) {
 }
 
 function fsUnlink(mod, path) {
-  const fs = fsHandle();
+  const fs = fsHandle(mod);
   if (fs?.unlink) return fs.unlink(path);
   const fn = mod?.FS_unlink ??
     window.backend_PSX?.FS_unlink ??
@@ -118,7 +130,7 @@ function normalizeVfsPath(pathLike) {
 }
 
 function ensureVfsDir(mod, absDir) {
-  const fs = fsHandle();
+  const fs = fsHandle(mod);
   const norm = absDir.startsWith('/') ? absDir : ('/' + absDir);
   if (norm === '/') return;
 
@@ -158,6 +170,7 @@ function registerVfsFile(mod, virtualPath, data) {
   try { fsUnlink(mod, abs); } catch (_) {}
   fsCreateDataFile(mod, dir, name, data, true, true, true);
   _registeredFiles.add(abs);
+  _registeredFileData.set(abs, data instanceof Uint8Array ? data : new Uint8Array(data));
   return rel;
 }
 
@@ -166,6 +179,29 @@ function clearRegisteredVfsFiles(mod) {
     try { fsUnlink(mod, p); } catch (_) {}
   }
   _registeredFiles.clear();
+  _registeredFileData.clear();
+}
+
+function registeredPathFor(absPath) {
+  const want = String(absPath || '').toLowerCase();
+  for (const p of _registeredFiles) {
+    if (p.toLowerCase() === want) return p;
+  }
+  return '';
+}
+
+function ensureRegisteredFilePresent(mod, absPath) {
+  const hit = registeredPathFor(absPath);
+  if (!hit) return false;
+  const bytes = _registeredFileData.get(hit);
+  if (!(bytes instanceof Uint8Array) || bytes.length === 0) return false;
+  const slash = hit.lastIndexOf('/');
+  const dir = slash >= 0 ? hit.substring(0, slash) : '/';
+  const name = slash >= 0 ? hit.substring(slash + 1) : hit;
+  ensureVfsDir(mod, dir || '/');
+  try { fsUnlink(mod, hit); } catch (_) {}
+  fsCreateDataFile(mod, dir || '/', name, bytes, true, true, true);
+  return true;
 }
 
 function readCStringFromPtr(mod, ptr) {
@@ -179,7 +215,11 @@ function readCStringFromPtr(mod, ptr) {
 }
 
 function vfsExists(mod, absPath) {
-  const fs = fsHandle();
+  if (registeredPathFor(absPath)) {
+    // Best effort: if the path is tracked but missing in FS, restore it.
+    try { ensureRegisteredFilePresent(mod, absPath); } catch (_) {}
+  }
+  const fs = fsHandle(mod);
   try {
     if (typeof fs?.analyzePath === 'function') return !!fs.analyzePath(absPath).exists;
   } catch (_) {}
@@ -192,12 +232,14 @@ function vfsExists(mod, absPath) {
       return true;
     }
   } catch (_) {}
+  if (registeredPathFor(absPath)) return true;
   return false;
 }
 
 function ensureAliasForRequestedFile(mod, requestedAbsPath) {
   if (vfsExists(mod, requestedAbsPath)) return true;
-  const fs = fsHandle();
+  if (ensureRegisteredFilePresent(mod, requestedAbsPath)) return true;
+  const fs = fsHandle(mod);
   const reqLower = requestedAbsPath.toLowerCase();
   const reqBase = requestedAbsPath.substring(requestedAbsPath.lastIndexOf('/') + 1).toLowerCase();
 
@@ -230,7 +272,12 @@ function installFileRequestCallback(mod) {
       const rel = normalizeVfsPath(raw);
       if (!rel) return -1;
       const abs = rel.startsWith('/') ? rel : ('/' + rel);
-      if (vfsExists(mod, abs) || ensureAliasForRequestedFile(mod, abs)) return 0;
+      const ok = vfsExists(mod, abs) || ensureAliasForRequestedFile(mod, abs);
+      if (!ok && _currentLoadExt === 'minigsf' && _requestDebugCount < 30) {
+        _requestDebugCount += 1;
+        console.warn('[mini] gsf requested missing file:', raw, '| normalized:', abs);
+      }
+      if (ok) return 0;
       return -1;
     } catch (_) {
       return -1;
@@ -333,6 +380,58 @@ async function preloadMiniLibraries(mainUrl, mainData, mod, gen) {
 
   await walk(rootAbsUrl, mainData, rootAbsUrl);
   return { missing };
+}
+
+async function preloadGuessedGsfLibs(mainUrl, mainData, mainName, mod, gen) {
+  if (gen !== _loadGen) throw new Error('load superseded');
+
+  const candidates = new Set();
+  const add = (s) => {
+    const norm = normalizeVfsPath(s);
+    if (!norm) return;
+    candidates.add(norm);
+  };
+
+  // Most miniGSF sets expose _lib=*.gsflib in tags; parse and prioritize those.
+  for (const ref of parsePsfLibRefs(mainData)) {
+    if (/\.gsflib$/i.test(ref)) add(ref);
+  }
+
+  const base = String(mainName || '').trim();
+  const lower = base.toLowerCase();
+  if (lower.endsWith('.minigsf')) {
+    const noExt = base.slice(0, -'.minigsf'.length);
+    add(`${noExt}.gsflib`);
+    add(noExt.replace(/\.[^.]+$/, '') + '.gsflib');
+    add(base.replace(/\.minigsf$/i, '.gsflib'));
+  }
+
+  for (const libPath of candidates) {
+    const abs = '/' + normalizeVfsPath(libPath);
+    if (vfsExists(mod, abs)) continue;
+    const libUrl = resolveLibUrl(libPath, mainUrl);
+    if (_currentLoadExt === 'minigsf') {
+      console.log('[mini] gsf prefetch candidate:', libPath, '->', libUrl);
+    }
+    let res;
+    try {
+      res = await fetch(libUrl);
+      if (_currentLoadExt === 'minigsf') {
+        console.log('[mini] gsf prefetch status:', libPath, res.status, res.ok);
+      }
+    } catch (_) {
+      if (_currentLoadExt === 'minigsf') {
+        console.warn('[mini] gsf prefetch failed:', libPath, '(fetch threw)');
+      }
+      continue;
+    }
+    if (!res.ok) continue;
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    registerVfsFile(mod, libPath, bytes);
+    if (_currentLoadExt === 'minigsf') {
+      console.log('[mini] gsf prefetch registered:', libPath, '| bytes:', bytes.length);
+    }
+  }
 }
 
 function getBackendState(cfg) {
@@ -509,6 +608,8 @@ function buildNode() {
 async function loadMini(url, sourceUrl, ext, gen) {
   await ensureModule(ext);
   if (gen !== _loadGen) throw new Error('load superseded');
+  _currentLoadExt = ext;
+  _requestDebugCount = 0;
 
   const res = await fetch(url);
   if (!res.ok) throw new Error(`[mini] fetch failed: HTTP ${res.status}`);
@@ -520,17 +621,62 @@ async function loadMini(url, sourceUrl, ext, gen) {
   const preload = await preloadMiniLibraries(sourceUrl || url, data, _mod, gen);
   if (gen !== _loadGen) throw new Error('load superseded');
 
-  const fname = `track.${ext}`;
+  let fname = `track.${ext}`;
+  try {
+    const srcHref = new URL(sourceUrl || url, window.location.href).href;
+    const srcPath = normalizeVfsPath(new URL(srcHref).pathname);
+    const srcBase = srcPath.split('/').pop() || '';
+    if (srcBase) fname = srcBase;
+  } catch (_) {}
+
   registerVfsFile(_mod, fname, data);
+
+  if (ext === 'minigsf') {
+    await preloadGuessedGsfLibs(sourceUrl || url, data, fname, _mod, gen);
+    if (gen !== _loadGen) throw new Error('load superseded');
+  }
 
   const sr = Math.round(_ctx.sampleRate) || 44100;
   _sr = sr;
-  const loadRet = _adapter.loadMusicData(sr, '/', fname, data, {});
+  let loadRet = _adapter.loadMusicData(sr, '/', fname, data, {});
+  const gsfAttempts = [];
+
+  // Some GSF builds are sensitive to path and extension conventions.
+  if (loadRet !== 0 && ext === 'minigsf') {
+    const candidates = [];
+    const gsfName = fname.toLowerCase().endsWith('.minigsf')
+      ? fname.slice(0, -'.minigsf'.length) + '.gsf'
+      : fname;
+
+    if (gsfName !== fname) {
+      registerVfsFile(_mod, gsfName, data);
+      candidates.push(['/', gsfName]);
+      candidates.push(['', gsfName]);
+    }
+    candidates.push(['', fname]);
+
+    for (const [path, file] of candidates) {
+      const ret = _adapter.loadMusicData(sr, path, file, data, {});
+      gsfAttempts.push(`${path || '(empty)'}/${file}`);
+      console.log('[mini] loadMusicData fallback:', ret, '| path:', path || '(empty)', '| file:', file);
+      if (ret === 0) {
+        loadRet = 0;
+        fname = file;
+        break;
+      }
+      loadRet = ret;
+    }
+  }
+
   console.log('[mini] loadMusicData returned:', loadRet, '| data.length:', data.length, '| sr:', sr);
   if (loadRet !== 0) {
     const suffix = preload?.missing?.length
       ? `; missing libs: ${preload.missing.join(', ')}`
       : '';
+    if (ext === 'minigsf' && !preload?.missing?.length) {
+      const attempts = gsfAttempts.length ? `; tried: ${gsfAttempts.join(', ')}` : '';
+      throw new Error(`[mini] emu_init failed (${loadRet}) for ${fname}; backend_gsf rejected this minigsf sample (or variant not supported)${attempts}`);
+    }
     throw new Error(`[mini] emu_init failed (${loadRet}) for ${fname}${suffix}`);
   }
 
@@ -549,7 +695,9 @@ async function loadMini(url, sourceUrl, ext, gen) {
   _chunkPos = 0;
 
   const maxPos = Number(_adapter.getMaxPlaybackPosition?.()) || 0;
-  _duration = maxPos > 0 ? maxPos / _sr : 300;
+  _duration = maxPos > 0
+    ? (backendUsesMilliseconds() ? maxPos / 1000 : maxPos / _sr)
+    : 300;
 
   if (_ctx.state === 'suspended') {
     try { await _ctx.resume(); } catch (_) {}
@@ -603,14 +751,20 @@ export function seekTo(sec) {
   const t = Math.max(0, Number(sec) || 0);
   if (!_adapter) return;
   _framePos = Math.max(0, Math.round(t * _sr));
-  try { _adapter.seekPlaybackPosition(Math.round(t * _sr)); } catch (_) {}
+  const pos = backendUsesMilliseconds()
+    ? Math.round(t * 1000)
+    : Math.round(t * _sr);
+  try { _adapter.seekPlaybackPosition(pos); } catch (_) {}
 }
 
 export function getTime() {
   if (!_adapter) return 0;
   try {
     const backendPos = Number(_adapter.getPlaybackPosition()) || 0;
-    return Math.max(backendPos, _framePos) / _sr;
+    const backendSec = backendUsesMilliseconds()
+      ? backendPos / 1000
+      : backendPos / _sr;
+    return Math.max(backendSec, _framePos / _sr);
   } catch (_) {
     return _framePos / _sr;
   }
