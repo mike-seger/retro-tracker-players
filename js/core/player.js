@@ -29,7 +29,7 @@ function renderInfoStatus(engineValue) {
 
 // ── iOS audio context suspension detection ─────────
 async function checkAndHandleAudioSuspension(playerId, idx) {
-  if (playerId !== 'mod') return false; // Only MOD engine has the check function
+  if (playerId !== 'mod' && playerId !== 'mini') return false;
   try {
     const eng = S.engines[playerId];
     if (eng?.isContextSuspended?.()) {

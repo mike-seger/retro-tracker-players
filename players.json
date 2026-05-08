@@ -2,6 +2,7 @@
   { "id": "ahx",   "label": "AHX" },
   { "id": "jssid", "label": "SID" },
   { "id": "mod",   "label": "MOD" },
+  { "id": "mini",  "label": "MINI" },
   { "id": "spc",   "label": "SPC" },
   { "id": "vgm",   "label": "VGM/VGZ" }
 ]

@@ -4,6 +4,7 @@ import { clamp01, loadScript, resolveExt } from '../shared.js';
 const VGM_STDLIB_JS_URL = 'https://cdn.jsdelivr.net/gh/wothke/vgmplay-0.40.9@master/emscripten/htdocs/stdlib/scriptprocessor_player.min.js';
 const VGM_JS_URL = 'https://cdn.jsdelivr.net/gh/wothke/vgmplay-0.40.9@master/emscripten/htdocs/backend_vgm.js';
 const VGM_ENGINE_PATCH = 'vgm-2026-05-07-split-c';
+const MINI_EXTS = new Set(['mini2sf', 'minigsf', 'minipsf', 'miniusf', 'minipsf2', 'minissf']);
 
 let _onEnd = null;
 let _volume = 1;
@@ -20,6 +21,7 @@ let _vgmPlaying = false;
 let _vgmDuration = 0;
 let _vgmSR = 44100;
 let _vgmFileReg = null;
+let _vgmRegisteredFiles = new Set();
 let _vgmDbgLogged = false;
 let _vgmAmpLogged = false;
 let _vgmFramePos = 0;
@@ -65,6 +67,126 @@ function vgmFsUnlink(mod, path) {
     window.backend_vgmPlay?.FS_unlink ??
     window.spp_backend_state_VGM?.FS_unlink;
   if (typeof fn === 'function') return fn(path);
+}
+
+function normalizeVfsPath(pathLike) {
+  const raw = String(pathLike || '').split('?')[0].split('#')[0].replace(/\\/g, '/');
+  const parts = [];
+  for (const seg of raw.split('/')) {
+    if (!seg || seg === '.') continue;
+    if (seg === '..') {
+      parts.pop();
+      continue;
+    }
+    parts.push(seg);
+  }
+  return parts.join('/');
+}
+
+function ensureVfsDir(mod, absDir) {
+  const fs = _vgmFs();
+  const norm = absDir.startsWith('/') ? absDir : ('/' + absDir);
+  if (norm === '/') return;
+
+  try {
+    if (typeof fs?.mkdirTree === 'function') {
+      fs.mkdirTree(norm);
+      return;
+    }
+  } catch (_) {}
+
+  try {
+    if (typeof mod?.FS_createPath === 'function') {
+      mod.FS_createPath('/', norm.slice(1), true, true);
+      return;
+    }
+  } catch (_) {}
+
+  let cur = '';
+  for (const seg of norm.split('/').filter(Boolean)) {
+    cur += '/' + seg;
+    try {
+      if (typeof fs?.mkdir === 'function') fs.mkdir(cur);
+    } catch (_) {}
+  }
+}
+
+function registerVfsFile(mod, virtualPath, data) {
+  const rel = normalizeVfsPath(virtualPath);
+  if (!rel) throw new Error('[vgm] empty virtual path');
+
+  const slash = rel.lastIndexOf('/');
+  const dir = slash >= 0 ? ('/' + rel.substring(0, slash)) : '/';
+  const name = slash >= 0 ? rel.substring(slash + 1) : rel;
+  const abs = dir === '/' ? '/' + name : dir + '/' + name;
+
+  ensureVfsDir(mod, dir);
+  try { vgmFsUnlink(mod, abs); } catch (_) {}
+  vgmFsCreateDataFile(mod, dir, name, data, true, true, true);
+  _vgmRegisteredFiles.add(abs);
+  return rel;
+}
+
+function clearRegisteredVfsFiles(mod) {
+  for (const p of _vgmRegisteredFiles) {
+    try { vgmFsUnlink(mod, p); } catch (_) {}
+  }
+  _vgmRegisteredFiles.clear();
+}
+
+function parsePsfLibRefs(data) {
+  if (!(data instanceof Uint8Array) || data.length < 16) return [];
+  if (!(data[0] === 0x50 && data[1] === 0x53 && data[2] === 0x46)) return [];
+
+  const dv = new DataView(data.buffer, data.byteOffset, data.byteLength);
+  const reservedSize = dv.getUint32(4, true);
+  const compressedSize = dv.getUint32(8, true);
+  const tagOffset = 16 + reservedSize + compressedSize;
+  if (tagOffset >= data.length) return [];
+
+  const tags = new TextDecoder('utf-8').decode(data.subarray(tagOffset));
+  const tagPos = tags.indexOf('[TAG]');
+  if (tagPos < 0) return [];
+
+  const out = [];
+  const seen = new Set();
+  const lines = tags.substring(tagPos + 5).split(/\r?\n/);
+  for (const line of lines) {
+    const eq = line.indexOf('=');
+    if (eq <= 0) continue;
+    const key = line.substring(0, eq).trim().toLowerCase();
+    if (!/^_lib\d*$/.test(key)) continue;
+    const val = line.substring(eq + 1).trim();
+    const norm = normalizeVfsPath(val);
+    if (!norm || seen.has(norm)) continue;
+    seen.add(norm);
+    out.push(norm);
+  }
+  return out;
+}
+
+async function preloadMiniLibraries(mainUrl, mainData, mod, gen) {
+  const visited = new Set();
+
+  const walk = async (fileUrl, fileData) => {
+    if (gen !== _loadGen) throw new Error('load superseded');
+    const libs = parsePsfLibRefs(fileData);
+    for (const libPath of libs) {
+      const libUrl = new URL(libPath, fileUrl).href;
+      if (visited.has(libUrl)) continue;
+      visited.add(libUrl);
+
+      const res = await fetch(libUrl);
+      if (!res.ok) {
+        throw new Error(`[vgm] mini lib fetch failed: ${libPath} (HTTP ${res.status})`);
+      }
+      const bytes = new Uint8Array(await res.arrayBuffer());
+      registerVfsFile(mod, libPath, bytes);
+      await walk(libUrl, bytes);
+    }
+  };
+
+  await walk(mainUrl, mainData);
 }
 
 async function ensureVgmModule() {
@@ -324,18 +446,17 @@ async function loadVgm(url, ext, gen) {
   const meta = parseVgmMeta(data);
   _vgmDuration = meta.duration || 300;
 
-  const fname = 'track.vgm';
-  if (_vgmFileReg) {
-    try { vgmFsUnlink(_vgmMod, '/' + _vgmFileReg); } catch (_) {}
-    _vgmFileReg = null;
+  const fname = ext === 'vgz' ? 'track.vgm' : `track.${ext}`;
+  clearRegisteredVfsFiles(_vgmMod);
+  _vgmFileReg = null;
+
+  if (MINI_EXTS.has(ext)) {
+    await preloadMiniLibraries(url, data, _vgmMod, gen);
+    if (gen !== _loadGen) throw new Error('load superseded');
   }
 
   try {
-    if (typeof _vgmAdapter.registerEmscriptenFileData === 'function') {
-      _vgmAdapter.registerEmscriptenFileData(['/', fname], data);
-    } else {
-      vgmFsCreateDataFile(_vgmMod, '/', fname, data, true, true, true);
-    }
+    registerVfsFile(_vgmMod, fname, data);
   } catch (e) {
     throw new Error(`[vgm] failed to register track in virtual FS: ${e?.message || e}`);
   }
@@ -397,10 +518,8 @@ function teardownVgm() {
   if (_vgmAdapter) {
     try { _vgmAdapter.teardown(); } catch (_) {}
   }
-  if (_vgmFileReg && _vgmMod) {
-    try { vgmFsUnlink(_vgmMod, '/' + _vgmFileReg); } catch (_) {}
-    _vgmFileReg = null;
-  }
+  if (_vgmMod) clearRegisteredVfsFiles(_vgmMod);
+  _vgmFileReg = null;
   _vgmPlaying = false;
   _vgmFramePos = 0;
   _vgmChunk = null;
@@ -414,7 +533,7 @@ export async function init() {
 
 export async function load(url, entry) {
   const ext = resolveExt(url, entry);
-  if (ext !== 'vgm' && ext !== 'vgz') {
+  if (ext !== 'vgm' && ext !== 'vgz' && !MINI_EXTS.has(ext)) {
     throw new Error(`Unsupported extension for vgm engine: .${ext || 'unknown'}`);
   }
 

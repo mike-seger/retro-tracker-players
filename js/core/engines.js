@@ -9,6 +9,7 @@ import { S, FIXED_VOLUME, SID_TRACK_PLAYER_ID } from './state.js';
 // keeping the user activation alive through to AudioContext.resume().
 Promise.all([
   import('../../engines/mod/engine.js'),
+  import('../../engines/mini/engine.js'),
   import('../../engines/ahx/engine.js'),
   import('../../engines/jssid/engine.js'),
   import('../../engines/spc/engine.js'),

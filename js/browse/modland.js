@@ -2,7 +2,7 @@
 import { S, elFilter, elFilterCnt,
          elSelBulk, elMlAddAll, elMlDelAll, elMlRandom, elList,
          btnCopy, btnZip, SID_TRACK_PLAYER_ID } from '../core/state.js';
-import { trackUrl, addLongPress, isMobile, parseTrackDisplay } from '../lib/utils.js';
+import { trackUrl, addLongPress, isMobile, parseTrackDisplay, extOf } from '../lib/utils.js';
 import { buildFormatPanel } from '../filters/format-panel.js';
 import { loadAndPlay } from '../core/player.js';
 import { activeFiles, updateTrackPos, buildPlaylist, syncPlayingTrackByUrl } from '../playlists/playlist.js';
@@ -20,6 +20,7 @@ function detectPlayerIdFromUrl(url) {
   if (ext === 'ahx') return 'ahx';
   if (ext === 'sid') return SID_TRACK_PLAYER_ID;
   if (['mod', 'xm', 's3m', 'it'].includes(ext)) return 'mod';
+  if (['mini2sf', 'minigsf', 'minipsf', 'miniusf', 'minipsf2', 'minissf'].includes(ext)) return 'mini';
   if (ext === 'spc') return 'spc';
   if (['vgm', 'vgz'].includes(ext)) return 'vgm';
   return null;
@@ -28,14 +29,12 @@ function detectPlayerIdFromUrl(url) {
 function urlToTrack(url) {
   const playerId = detectPlayerIdFromUrl(url);
   if (!playerId) return null;
-  const { extOf } = { extOf: (u) => { const d = u.lastIndexOf('.'); return d >= 0 ? u.substring(d + 1).toUpperCase() : ''; } };
   const parsed = new URL(url);
   const segments = parsed.pathname.split('/').map(decodeURIComponent);
   const artist = (segments[segments.length - 2] || '').replace(/\//g, '+');
   const file = segments[segments.length - 1];
   const name = `${artist}/${file}`;
-  const dot = url.lastIndexOf('.');
-  const ext = dot >= 0 ? url.substring(dot + 1).toUpperCase() : '';
+  const ext = extOf(url);
   // Reconstruct the URL with proper single-encoding (fixes any double-encoded % in stored URLs)
   const normalizedPath = segments.map((s, i) => i === 0 ? s : encodeURIComponent(s)).join('/');
   const normalizedUrl = parsed.origin + normalizedPath;
@@ -153,6 +152,7 @@ export function doModlandSearch() {
   }
 
   const allFormats = remoteSearch.availableFormats();
+  allFormats.add('MINI');
   buildFormatPanel(allFormats);
   const fmtActive = S.selectedFormats.size > 0 && S.selectedFormats.size < S._allFormatOptions.size;
   const qActive = raw.length >= 2;
@@ -271,6 +271,7 @@ export function doRandomBrowse(skip) {
 
   const formats = new Set();
   for (const r of results) formats.add(r.ext.toUpperCase());
+  formats.add('MINI');
   buildFormatPanel(formats);
 
   const displayed = (S.selectedFormats.size > 0 && S.selectedFormats.size < S._allFormatOptions.size)

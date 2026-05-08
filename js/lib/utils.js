@@ -2,6 +2,7 @@
 import { debugLog } from '../core/state.js';
 
 const _decodeWarned = new Set();
+const MINI_FORMAT_EXTS = new Set(['mini2sf', 'minigsf', 'minipsf', 'miniusf', 'minipsf2', 'minissf']);
 
 export function fmtTime(s) {
   if (!isFinite(s) || s < 0) return '0:00';
@@ -24,7 +25,18 @@ export function trimDisplayPath(path) {
 
 export function extOf(name) {
   const dot = name.lastIndexOf('.');
-  return dot >= 0 ? name.substring(dot + 1).toUpperCase() : '';
+  return dot >= 0 ? normalizeFormatExt(name.substring(dot + 1)) : '';
+}
+
+export function isMiniFormatExt(ext) {
+  return MINI_FORMAT_EXTS.has(String(ext || '').toLowerCase());
+}
+
+export function normalizeFormatExt(ext) {
+  const raw = String(ext || '').toLowerCase();
+  if (!raw) return '';
+  if (isMiniFormatExt(raw)) return 'MINI';
+  return raw.toUpperCase();
 }
 
 export function toAbsoluteUrl(url) {

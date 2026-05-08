@@ -10,7 +10,7 @@ INPUT="tmp/remote-mods.txt.gz"
 OUTPUT="remote-index.json"
 
 wget -O tmp/allmods.zip https://modland.com/allmods.zip && \
-unzip -p tmp/allmods.zip | grep -iE "\.(ahx|mod|xm|it|s3m|sid|spc|vgm|vgz)$" | sort | gzip \
+unzip -p tmp/allmods.zip | grep -iE "\.(ahx|mod|xm|it|s3m|sid|spc|vgm|vgz|mini2sf|minigsf|minipsf|miniusf|minipsf2|minissf)$" | sort | gzip \
     >$INPUT && \
 rm tmp/allmods.zip
 

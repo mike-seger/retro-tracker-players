@@ -11,14 +11,16 @@ export function resolveExt(url, entry) {
   const isSimpleExt = (s) => /^[a-z0-9]+$/i.test(String(s || ''));
   if (isSimpleExt(fromUrl) && fromUrl !== 'blob') return fromUrl;
 
-  const fromEntryExt = String(entry?.ext || '').toLowerCase();
-  if (isSimpleExt(fromEntryExt)) return fromEntryExt;
-
   const fromEntryName = getExt(entry?.name || '');
   if (isSimpleExt(fromEntryName)) return fromEntryName;
 
   const fromEntryUrl = getExt(entry?.url || '');
   if (isSimpleExt(fromEntryUrl)) return fromEntryUrl;
+
+  // Keep entry.ext as the last fallback because UI grouping can store
+  // pseudo-extensions like "MINI" that are not real file extensions.
+  const fromEntryExt = String(entry?.ext || '').toLowerCase();
+  if (isSimpleExt(fromEntryExt)) return fromEntryExt;
 
   return fromUrl;
 }

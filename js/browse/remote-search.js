@@ -1,6 +1,8 @@
 // js/remote-search.js — Search remote-index.json by substring
 // The index format: { base, formats, entries: [[fmtIdx, "Artist/file.ext"], ...] }
 
+import { normalizeFormatExt } from '../lib/utils.js';
+
 let _index = null;
 let _loading = null;
 let _searchLower = [];  // pre-lowercased entries for fast search
@@ -9,6 +11,7 @@ const EXT_TO_PLAYER = {
   ahx: 'ahx',
   sid: 'jssid',
   mod: 'mod', xm: 'mod', s3m: 'mod', it: 'mod',
+  mini2sf: 'mini', minigsf: 'mini', minipsf: 'mini', miniusf: 'mini', minipsf2: 'mini', minissf: 'mini',
   spc: 'spc', vgm: 'vgm', vgz: 'vgm',
 };
 
@@ -72,13 +75,14 @@ function searchByFilters(terms, formatSet, limit, skip) {
     if (!matchesTerms(s, terms)) continue;
     const [fmtIdx, rest] = entries[i];
     const ext = rest.substring(rest.lastIndexOf('.') + 1).toLowerCase();
+    const normExt = normalizeFormatExt(ext);
     const playerId = EXT_TO_PLAYER[ext];
     if (!playerId) continue;
-    if (formatSet && !formatSet.has(ext.toUpperCase()) && !formatSet.has(ext)) continue;
+    if (formatSet && !formatSet.has(normExt) && !formatSet.has(normExt.toLowerCase())) continue;
     const fullPath = formats[fmtIdx] + '/' + rest;
     all.push({
       name: rest,
-      ext: ext.toUpperCase(),
+      ext: normExt,
       playerId,
       url: base + fullPath.split('/').map(encodeURIComponent).join('/'),
     });
@@ -119,8 +123,9 @@ function countByFilters(terms, formatSet) {
     const s = _searchLower[i];
     if (!matchesTerms(s, terms)) continue;
     const ext = _index.entries[i][1].substring(_index.entries[i][1].lastIndexOf('.') + 1).toLowerCase();
+    const normExt = normalizeFormatExt(ext);
     if (!EXT_TO_PLAYER[ext]) continue;
-    if (formatSet && !formatSet.has(ext.toUpperCase()) && !formatSet.has(ext)) continue;
+    if (formatSet && !formatSet.has(normExt) && !formatSet.has(normExt.toLowerCase())) continue;
     n++;
   }
   return n;
@@ -132,7 +137,7 @@ export function availableFormats() {
   for (let i = 0; i < _index.entries.length; i++) {
     const rest = _index.entries[i][1];
     const ext = rest.substring(rest.lastIndexOf('.') + 1).toLowerCase();
-    if (EXT_TO_PLAYER[ext]) out.add(ext.toUpperCase());
+    if (EXT_TO_PLAYER[ext]) out.add(normalizeFormatExt(ext));
   }
   return out;
 }
@@ -163,11 +168,12 @@ export function browseAll(limit = 1000, skip = 0) {
   for (let i = 0; i < entries.length; i++) {
     const [fmtIdx, rest] = entries[i];
     const ext = rest.substring(rest.lastIndexOf('.') + 1).toLowerCase();
+    const normExt = normalizeFormatExt(ext);
     const playerId = EXT_TO_PLAYER[ext];
     if (playerId) {
       all.push({
         name: rest,
-        ext: ext.toUpperCase(),
+        ext: normExt,
         playerId,
         url: base + (formats[fmtIdx] + '/' + rest).split('/').map(encodeURIComponent).join('/'),
       });

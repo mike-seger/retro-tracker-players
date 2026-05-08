@@ -1,5 +1,13 @@
 import { parseTrackDisplay, safeDecodeURIComponent } from '../lib/utils.js';
 
+function realExt(entry, decodedName) {
+  const fromName = String(decodedName || '').match(/\.([A-Za-z0-9]+)$/);
+  if (fromName?.[1]) return fromName[1].toUpperCase();
+  const fromUrl = String(entry?.url || '').match(/\.([A-Za-z0-9]+)(?:[?#].*)?$/);
+  if (fromUrl?.[1]) return fromUrl[1].toUpperCase();
+  return String(entry?.ext || '').toUpperCase();
+}
+
 export function createTrackRow({
   entry,
   indexLabel = '',
@@ -65,7 +73,7 @@ export function createTrackRow({
   const extEl = document.createElement('span');
   extEl.className = 'ext';
   extEl.setAttribute('aria-label', 'Track format');
-  extEl.textContent = entry.ext;
+  extEl.textContent = realExt(entry, baseName);
   rowBot.appendChild(extEl);
 
   for (const action of actions) {
