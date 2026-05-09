@@ -4,12 +4,18 @@ import { openDropdown, registerDropdown } from '../ui/dropdown-keys.js';
 
 let _savedRange = null;
 
+// Track the last-known total and pageSize so updateRangeBtn can compute real boundaries.
+let _lastTotal = 0;
+let _lastPageSize = 500;
+
 let _onRangeChange = null;
 export function setRangeChangeHandler(fn) { _onRangeChange = fn; }
 
 export function getRangeSkip() { return S._currentRange; }
 
 export function buildRangePanel(total, pageSize = 500) {
+  _lastTotal = total;
+  _lastPageSize = pageSize;
   const panel = elRefineRangePanel;
   panel.innerHTML = '';
 
@@ -59,8 +65,14 @@ export function updateRangeBtn() {
   if (sel) {
     elRefineRangeBtn.textContent = sel.textContent;
     elRefineRangeBtn.classList.add('active');
+  } else if (_lastTotal > 0) {
+    // No pages (result fits in one page) — show actual boundary.
+    const start = S._currentRange + 1;
+    const end = Math.min(S._currentRange + _lastPageSize, _lastTotal);
+    elRefineRangeBtn.textContent = `${start}–${end}`;
+    elRefineRangeBtn.classList.remove('active');
   } else {
-    elRefineRangeBtn.textContent = '1..N';
+    elRefineRangeBtn.textContent = '';
     elRefineRangeBtn.classList.remove('active');
   }
 }

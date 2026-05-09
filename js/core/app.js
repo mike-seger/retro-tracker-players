@@ -12,7 +12,7 @@ import { applyFilter, updateRefineVisibility } from '../filters/filter.js';
 import { populateFolderPanel, populateLocalArtistPanel, populateLocalFormatDropdown,
          modlandPlaceholder, localPlaceholder } from '../filters/refine.js';
 import { restoreSelection, updateSelCount } from '../playlists/selection.js';
-import { loadModlandTracks, doModlandSearch, doRandomBrowse } from '../browse/modland.js';
+import { loadModlandTracks, doModlandSearch, abortModlandSearch, doRandomBrowse, showScratchpad } from '../browse/modland.js';
 import { switchMode, restorePersistedContext } from './mode.js';
 import { loadDeepLinkedTrack, applyDeepLinkFilters } from '../browse/deeplink.js';
 import { showResumePrompt, showDeleteConfirm } from '../ui/prompts.js';
@@ -235,8 +235,11 @@ elSearchMode.addEventListener('click', () => {
   if (elSearchModePanel.hidden) {
     closeAllDropdowns();
     closeOptionsPanel();
-    elSearchModePanel.querySelectorAll('.src-opt').forEach(o =>
-      o.classList.toggle('selected', o.dataset.value === S.searchMode));
+    elSearchModePanel.querySelectorAll('.src-opt').forEach(o => {
+      const isScratchpad = S._viewingScratchpad && o.dataset.value === 'scratchpad';
+      const isMode = !S._viewingScratchpad && o.dataset.value === S.searchMode;
+      o.classList.toggle('selected', isScratchpad || isMode);
+    });
     elSearchModePanel.hidden = false;
     requestAnimationFrame(positionSearchModePanel);
     return;
@@ -246,7 +249,14 @@ elSearchMode.addEventListener('click', () => {
 document.querySelectorAll('.src-opt').forEach(opt => {
   opt.addEventListener('click', () => {
     elSearchModePanel.hidden = true;
-    switchMode(opt.dataset.value);
+    const val = opt.dataset.value;
+    if (val === 'scratchpad') {
+      // Switch to modland base mode if needed, then show scratchpad overlay.
+      if (S.searchMode !== 'modland') switchMode('modland');
+      showScratchpad();
+    } else {
+      switchMode(val);
+    }
   });
 });
 document.addEventListener('click', (e) => {
@@ -260,8 +270,20 @@ window.addEventListener('resize', positionSearchModePanel);
 let _searchTimer = 0;
 elFilter.addEventListener('input', () => {
   if (S.searchMode === 'modland') {
+    // Typing exits scratchpad view and returns to normal Modland search mode.
+    if (S._viewingScratchpad) {
+      S._viewingScratchpad = false;
+      elSearchMode.textContent = 'Ml';
+      elSearchMode.dataset.value = 'modland';
+    }
+    abortModlandSearch();
     clearTimeout(_searchTimer);
-    _searchTimer = setTimeout(doModlandSearch, 200);
+    if (elFilter.value.trim().length < 2) {
+      // Too short to search — show the scratchpad immediately, no debounce.
+      doModlandSearch();
+    } else {
+      _searchTimer = setTimeout(doModlandSearch, 150);
+    }
   } else {
     populateLocalArtistPanel();
     applyFilter();
@@ -318,6 +340,7 @@ elFilterClr.addEventListener('click', () => {
     _pendingFormatsChanged = false;
     if (remoteSearch.isLoaded()) {
       remoteSearch.applyDisabledFormats(getDisabledFormats());
+      remoteSearch.preWarmWorkerFormats(getDisabledFormats());
     }
     if (S.searchMode === 'modland') {
       if (S._randomBrowsing) doRandomBrowse(getRangeSkip());
@@ -509,5 +532,6 @@ elFilterClr.addEventListener('click', () => {
 
   remoteSearch.loadIndex().then(() => {
     if (S.searchMode === 'modland') elFilter.placeholder = modlandPlaceholder();
+    remoteSearch.preWarmWorkerFormats(getDisabledFormats());
   }).catch(e => console.warn('Remote index not available:', e));
 })();

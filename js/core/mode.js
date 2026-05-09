@@ -24,6 +24,7 @@ export function saveLocalContext() {
     formats:         new Set(S.selectedFormats),
     currentIdx:      S.currentIdx,
     focusedIdx:      S.focusedIdx,
+    range:           S._currentRange,
   };
 }
 
@@ -51,13 +52,16 @@ export function restoreLocalContext() {
   syncFormatCheckboxes();
   if (S._localCtx.currentIdx >= 0) S.currentIdx = S._localCtx.currentIdx;
   if (S._localCtx.focusedIdx >= 0) S.focusedIdx = S._localCtx.focusedIdx;
+  if (S._localCtx.range > 0) S._currentRange = S._localCtx.range;
 }
 
 export function saveModlandContext() {
+  if (S._viewingScratchpad) return; // don't save the transient empty-filter scratchpad state
   S._modlandCtx = {
     filter:     elFilter.value,
     currentIdx: S.currentIdx,
     focusedIdx: S.focusedIdx,
+    range:      S._currentRange,
   };
 }
 
@@ -66,6 +70,7 @@ export function restoreModlandContext() {
   elFilter.value = S._modlandCtx.filter;
   if (S._modlandCtx.currentIdx >= 0) S.currentIdx = S._modlandCtx.currentIdx;
   if (S._modlandCtx.focusedIdx >= 0) S.focusedIdx = S._modlandCtx.focusedIdx;
+  if (S._modlandCtx.range > 0) S._currentRange = S._modlandCtx.range;
 }
 
 // ── restorePersistedContext ───────────────────────────
@@ -97,20 +102,23 @@ export function restorePersistedContext() {
       updateFormatBtn();
       syncFormatCheckboxes();
     }
-    if (S.searchMode === 'modland' && elFilter.value.trim().length >= 2) {
+    // Apply filter (local mode) or trigger index search (modland mode).
+    applyFilter();
+    if (S.searchMode === 'modland') {
       doModlandSearch();
-    } else {
-      applyFilter();
     }
   } catch (_) {}
 }
 
 // ── switchMode ────────────────────────────────────────
-export function switchMode(mode) {
+// opts.skipSearch — pass true to suppress the automatic doModlandSearch() call.
+// Used by deep-link loading which manages its own search/display flow.
+export function switchMode(mode, { skipSearch = false } = {}) {
   if (S.searchMode === 'local') saveLocalContext();
   else if (S.searchMode === 'modland') saveModlandContext();
 
   S.searchMode = mode;
+  S._viewingScratchpad = false; // always clear on a real mode switch
   elSearchMode.textContent = mode === 'local' ? 'Lo' : 'Ml';
   elSearchMode.dataset.value = mode;
   document.body.classList.toggle('mode-modland', mode === 'modland');
@@ -141,11 +149,12 @@ export function switchMode(mode) {
     restoreModlandContext();
   }
 
-  if (mode === 'modland' && elFilter.value.trim().length >= 2) {
+  // Show scratchpad immediately as a loading placeholder, then trigger the
+  // index search (which replaces it with the first alphabetical page).
+  buildPlaylist();
+  restoreSelection();
+  if (mode === 'modland' && !skipSearch) {
     doModlandSearch();
-  } else {
-    buildPlaylist();
-    restoreSelection();
   }
 
   // Re-anchor to the currently playing track in the newly displayed list.

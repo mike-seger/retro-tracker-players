@@ -11,6 +11,7 @@ import { deleteModlandTrack, searchByArtist } from '../browse/modland.js';
 import { localPlaceholder, modlandPlaceholder } from '../filters/refine.js';
 import * as pm from './playlist-manager.js';
 import { getMaxListItems } from '../settings/settings.js';
+import * as remoteSearch from '../browse/remote-search.js';
 
 // ── active list helpers ───────────────────────────────
 export function activeFiles() {
@@ -266,7 +267,10 @@ export function updateTrackPos() {
   }
 
   const filtered = visibleTotal;
-  const total = files.length;  // unfiltered total
+  // In modland search results, show the full remote index total (not the page size).
+  const total = (S.searchMode === 'modland' && S._inSearchResults && remoteSearch.isLoaded())
+    ? remoteSearch.totalPlayable()
+    : files.length;
   const pos = (S.currentIdx >= 0 && S.currentIdx < files.length && visiblePos > 0) ? String(visiblePos) : '-';
 
   elTrackPos.textContent = isMobile

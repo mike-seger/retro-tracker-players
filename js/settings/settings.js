@@ -9,6 +9,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
   maxListItems: 500,
   autoplayAudio: false,
   disabledFormats: [],
+  minQueryCharsThreshold: 40000,
 });
 
 let _cached = null;
@@ -19,11 +20,18 @@ function clampMaxListItems(v) {
   return Math.max(5, Math.min(5000, Math.round(n)));
 }
 
+function clampThreshold(v) {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return DEFAULT_SETTINGS.minQueryCharsThreshold;
+  return Math.max(0, Math.min(1000000, Math.round(n)));
+}
+
 function normalize(raw) {
   const out = {
     maxListItems: DEFAULT_SETTINGS.maxListItems,
     autoplayAudio: DEFAULT_SETTINGS.autoplayAudio,
     disabledFormats: [],
+    minQueryCharsThreshold: DEFAULT_SETTINGS.minQueryCharsThreshold,
   };
 
   if (raw && typeof raw === 'object') {
@@ -32,6 +40,7 @@ function normalize(raw) {
     if (Array.isArray(raw.disabledFormats)) {
       out.disabledFormats = raw.disabledFormats.filter(f => ALL_FORMAT_GROUPS.includes(f));
     }
+    if ('minQueryCharsThreshold' in raw) out.minQueryCharsThreshold = clampThreshold(raw.minQueryCharsThreshold);
   }
 
   // Back-compat migration from legacy key used by older resume prompt code.
@@ -75,6 +84,10 @@ export function getMaxListItems() {
 
 export function isAutoplayAudioEnabled() {
   return !!readSettings().autoplayAudio;
+}
+
+export function getMinQueryCharsThreshold() {
+  return readSettings().minQueryCharsThreshold;
 }
 
 export function getDisabledFormats() {

@@ -414,6 +414,26 @@ body.mode-modland {
   z-index: 1;
   font-size: 14px; /* default; overridden by pinch-zoom via inline style */
 }
+#playlist.searching { opacity: 0.45; pointer-events: none; }
+#playlist[data-hint]::before {
+  content: attr(data-hint);
+  display: block;
+  padding: 10px var(--playlist-row-pad-x);
+  color: #666;
+  font-size: 12px;
+}
+.searching-label {
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #aaa;
+  font-size: 13px;
+  pointer-events: none;
+  z-index: 100;
+}
+.searching-label.visible { display: block; }
 #playlist li {
   display: grid;
   grid-template-columns: auto auto 1fr;

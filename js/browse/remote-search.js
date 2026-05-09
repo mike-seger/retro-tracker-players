@@ -6,6 +6,35 @@ import { normalizeFormatExt } from '../lib/utils.js';
 let _index = null;
 let _loading = null;
 
+// ── Web Worker for off-thread search ─────────────────
+let _worker = null;
+let _workerReady = null; // Promise that resolves when worker has loaded the index
+let _searchToken = 0;
+const _pendingSearches = new Map(); // token → resolve
+
+function _startWorker(indexUrl) {
+  const workerUrl = new URL('./search-worker.js', import.meta.url);
+  _worker = new Worker(workerUrl, { type: 'module' });
+  _worker.onmessage = ({ data }) => {
+    if (data.type === 'result') {
+      const resolve = _pendingSearches.get(data.token);
+      if (resolve) {
+        _pendingSearches.delete(data.token);
+        resolve(data.result);
+      }
+    }
+  };
+  _workerReady = new Promise(resolve => {
+    _worker.addEventListener('message', function handler({ data }) {
+      if (data.type === 'loaded') {
+        _worker.removeEventListener('message', handler);
+        resolve();
+      }
+    });
+    _worker.postMessage({ type: 'load', indexUrl });
+  });
+}
+
 const EXT_TO_PLAYER = {
   ahx: 'ahx',
   sid: 'jssid',
@@ -28,8 +57,12 @@ let _extInfo = [];          // filtered subset of _rawExtInfo
 export async function loadIndex() {
   if (_index) return _index;
   if (_loading) return _loading;
+  // Absolute URL for the worker (which has a different base URL than the page)
+  const indexUrl = new URL('remote-index.json.gz', location.href).href;
+  // Start worker loading in parallel with the main-thread fetch.
+  _startWorker(indexUrl);
   _loading = (async () => {
-    const resp = await fetch('remote-index.json.gz');
+    const resp = await fetch(indexUrl);
     const ds = new DecompressionStream('gzip');
     const decompressed = resp.body.pipeThrough(ds);
     _index = await new Response(decompressed).json();
@@ -210,13 +243,43 @@ export function searchWithFormatsAndCount(query, formatSet, limit, skip) {
   return { results: all.slice(skip, skip + limit), total: all.length };
 }
 
-// Async variant: yields to the browser once before scanning so the UI can paint
-// the latest input character, then checks signal before applying results.
-// Returns null if aborted (caller must check).
-export async function searchWithFormatsAndCountAsync(query, formatSet, limit, skip, signal) {
-  await new Promise(resolve => setTimeout(resolve, 0));
+// Async variant: sends the search to a Web Worker so the main thread stays unblocked.
+// Returns null if aborted (caller must check). Falls back to sync if worker unavailable.
+export async function searchWithFormatsAndCountAsync(query, formatSet, limit, skip, signal, disabledFormats) {
   if (signal && signal.aborted) return null;
-  return searchWithFormatsAndCount(query, formatSet, limit, skip);
+
+  // Worker fallback: if worker failed to start, run sync on main thread.
+  if (!_worker || !_workerReady) {
+    return searchWithFormatsAndCount(query, formatSet, limit, skip);
+  }
+
+  await _workerReady;
+  if (signal && signal.aborted) return null;
+
+  const token = ++_searchToken;
+  const disabled = disabledFormats ? [...disabledFormats] : [];
+  const fmtSetArr = formatSet ? [...formatSet] : null;
+
+  return new Promise(resolve => {
+    _pendingSearches.set(token, resolve);
+    if (signal) {
+      signal.addEventListener('abort', () => {
+        _pendingSearches.delete(token);
+        resolve(null);
+      }, { once: true });
+    }
+    _worker.postMessage({ type: 'search', token, query, formatSet: fmtSetArr, disabled, limit, skip });
+  });
+}
+
+// Pre-apply disabled formats in the worker (no search, no result) so the next
+// search doesn't have to wait for the worker to rebuild its working set first.
+export function preWarmWorkerFormats(disabledFormats) {
+  if (!_worker || !_workerReady) return;
+  const disabled = disabledFormats ? [...disabledFormats] : [];
+  _workerReady.then(() => {
+    _worker.postMessage({ type: 'warmup', disabled });
+  });
 }
 
 function countByFilters(terms, formatSet) {

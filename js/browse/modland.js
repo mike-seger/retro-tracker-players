@@ -1,5 +1,5 @@
 // js/modland.js — Modland file management, search, random browse, mode helpers
-import { S, elFilter, elFilterCnt,
+import { S, elFilter, elFilterCnt, elSearchMode,
          elSelBulk, elMlAddAll, elMlDelAll, elMlRandom, elList,
          btnCopy, btnZip, SID_TRACK_PLAYER_ID } from '../core/state.js';
 import { trackUrl, addLongPress, isMobile, parseTrackDisplay, extOf } from '../lib/utils.js';
@@ -8,11 +8,18 @@ import { loadAndPlay } from '../core/player.js';
 import { activeFiles, updateTrackPos, buildPlaylist, syncPlayingTrackByUrl } from '../playlists/playlist.js';
 import { restoreSelection, updateSelCount } from '../playlists/selection.js';
 import { getRangeSkip, buildRangePanel } from '../filters/range-panel.js';
+
+// ── searching overlay ─────────────────────────────────
+const _searchingLabel = document.querySelector('.searching-label');
+function _setSearching(on) {
+  elList.classList.toggle('searching', on);
+  _searchingLabel?.classList.toggle('visible', on);
+}
 import { showAddConfirm, showDeleteConfirm } from '../ui/prompts.js';
 import * as remoteSearch from './remote-search.js';
 import * as pm from '../playlists/playlist-manager.js';
 import { createTrackRow, isTrackRowControlTarget } from '../playlists/track-row.js';
-import { getMaxListItems, getDisabledFormats } from '../settings/settings.js';
+import { getMaxListItems, getDisabledFormats, getMinQueryCharsThreshold } from '../settings/settings.js';
 
 // ── helpers ───────────────────────────────────────────
 function detectPlayerIdFromUrl(url) {
@@ -85,7 +92,7 @@ export function addModlandTracks(entries) {
     S.modlandFiles.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
     saveModlandUrls();
     if (S.searchMode === 'modland') {
-      import('../core/mode.js').then(m => m.switchMode('modland'));
+      doModlandSearch();
     }
   }
   return added;
@@ -96,10 +103,7 @@ export function deleteModlandTrack(url) {
   S.modlandSelected.clear();
   saveModlandUrls();
   if (S.searchMode === 'modland') {
-    if (elFilter.value.trim().length >= 2) doModlandSearch();
-    else {
-      import('../core/mode.js').then(m => m.switchMode('modland'));
-    }
+    doModlandSearch();
   }
 }
 
@@ -109,10 +113,7 @@ export function deleteModlandByUrls(urls) {
   S.modlandSelected.clear();
   saveModlandUrls();
   if (S.searchMode === 'modland') {
-    if (elFilter.value.trim().length >= 2) doModlandSearch();
-    else {
-      import('../core/mode.js').then(m => m.switchMode('modland'));
-    }
+    doModlandSearch();
   }
 }
 
@@ -142,6 +143,32 @@ export function updateMlButtons() {
 // AbortController for async search — each call cancels any in-flight search.
 let _searchController = null;
 
+export function abortModlandSearch() {
+  if (_searchController) {
+    _searchController.abort();
+    _searchController = null;
+  }
+  _setSearching(false);
+}
+
+// Show the scratchpad (saved Modland tracks) directly, bypassing index search.
+// Called when the user selects "Scratchpad" from the source dropdown.
+export function showScratchpad() {
+  abortModlandSearch();
+  S._viewingScratchpad = true;
+  elSearchMode.textContent = 'Sp';
+  elSearchMode.dataset.value = 'scratchpad';
+  elFilter.value = '';
+  S._lastSearchResults = [];
+  S._inSearchResults = false;
+  updateMlButtons();
+  buildRangePanel(0);
+  delete elList.dataset.hint;
+  buildPlaylist();
+  restoreSelection();
+  elFilterCnt.textContent = '';
+}
+
 export async function doModlandSearch() {
   // Cancel any in-flight search; the latest call always wins.
   if (_searchController) _searchController.abort();
@@ -164,34 +191,58 @@ export async function doModlandSearch() {
   }
 
   // Always sync working set with current disabled-format settings (idempotent, cheap)
-  remoteSearch.applyDisabledFormats(getDisabledFormats());
+  const disabledFormats = getDisabledFormats();
+  remoteSearch.applyDisabledFormats(disabledFormats);
 
   const allFormats = remoteSearch.availableFormats();
   buildFormatPanel(allFormats);
   const fmtActive = S.selectedFormats.size > 0 && S.selectedFormats.size < S._allFormatOptions.size;
-  const qActive = raw.length >= 2;
 
-  if (!qActive && !fmtActive) {
+  // Scratchpad mode: show saved tracks directly, no index search.
+  if (S._viewingScratchpad) {
+    _setSearching(false);
     S._lastSearchResults = [];
     S._inSearchResults = false;
     updateMlButtons();
     buildRangePanel(0);
+    delete elList.dataset.hint;
     buildPlaylist();
     restoreSelection();
+    elFilterCnt.textContent = '';
     return;
   }
 
+  if (raw.length === 1) {
+    // A single character is enough when the active working set is at or below
+    // the configured threshold — otherwise prompt the user for one more char.
+    const threshold = getMinQueryCharsThreshold();
+    const workingSetSize = remoteSearch.totalPlayable();
+    if (threshold === 0 || workingSetSize > threshold) {
+      _setSearching(false);
+      elList.dataset.hint = 'Type 1 more character to search…';
+      return;
+    }
+    // Working set is small enough — fall through and search normally.
+    delete elList.dataset.hint;
+  }
+
+  // Empty query (and not in scratchpad mode): browse the full pre-sorted index.
+
+  _setSearching(true);
+  delete elList.dataset.hint;
   const q = raw;
   let clampedSkip = skip;
   const fmtArg = fmtActive ? S.selectedFormats : null;
-  const searchResult = await remoteSearch.searchWithFormatsAndCountAsync(q, fmtArg, pageSize, skip, ctrl.signal);
+  const searchResult = await remoteSearch.searchWithFormatsAndCountAsync(q, fmtArg, pageSize, skip, ctrl.signal, disabledFormats);
   if (!searchResult) return; // aborted — a newer search is running
+  _setSearching(false);
   let { results, total } = searchResult;
   if (clampedSkip > 0 && clampedSkip + pageSize > total) {
     clampedSkip = Math.max(total - pageSize, 0);
     if (clampedSkip !== skip) {
       if (ctrl.signal.aborted) return;
-      const repaged = remoteSearch.searchWithFormatsAndCount(q, fmtArg, pageSize, clampedSkip);
+      const repaged = await remoteSearch.searchWithFormatsAndCountAsync(q, fmtArg, pageSize, clampedSkip, ctrl.signal, disabledFormats);
+      if (!repaged) return;
       results = repaged.results;
     }
   }

@@ -113,7 +113,7 @@ export async function loadDeepLinkedTrack() {
   const mlIdx = S.modlandFiles.findIndex(t => t.url === targetUrl);
   if (mlIdx >= 0) {
     const { switchMode } = await import('../core/mode.js');
-    switchMode('modland');
+    switchMode('modland', { skipSearch: true });
     S.currentIdx = mlIdx;
     highlightCurrent();
     setFocus(mlIdx);
@@ -129,7 +129,7 @@ export async function loadDeepLinkedTrack() {
     const { switchMode } = await import('../core/mode.js');
     const { doModlandSearch } = await import('./modland.js');
     const remoteSearch = await import('./remote-search.js').then(m => m.default || m);
-    switchMode('modland');
+    switchMode('modland', { skipSearch: true });
     elFilter.value = f.search;
     if (!remoteSearch.isLoaded()) await remoteSearch.loadIndex();
 
@@ -183,7 +183,9 @@ export async function loadDeepLinkedTrack() {
       buildPlaylist();
     } else {
       const { switchMode } = await import('../core/mode.js');
-      switchMode('modland');
+      switchMode('modland', { skipSearch: true });
+      S._inSearchResults = false;
+      buildPlaylist();
     }
     S.currentIdx = S.modlandFiles.length - 1;
     highlightCurrent();

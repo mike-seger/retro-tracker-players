@@ -15,6 +15,12 @@ function clampInputMax(v) {
   return Math.max(5, Math.min(5000, Math.round(n)));
 }
 
+function clampInputThreshold(v) {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return DEFAULT_SETTINGS.minQueryCharsThreshold;
+  return Math.max(0, Math.min(1000000, Math.round(n)));
+}
+
 function ensureEls() {
   _overlay = _overlay || document.getElementById('settings-overlay');
   _content = _content || document.getElementById('settings-content');
@@ -78,6 +84,34 @@ function render() {
   });
   maxRow.append(maxLabelWrap, maxInput);
 
+  const threshRow = document.createElement('div');
+  threshRow.className = 'settings-row';
+  const threshLabelWrap = document.createElement('div');
+  const threshLabel = document.createElement('div');
+  threshLabel.className = 'settings-label';
+  threshLabel.textContent = 'Short-Query Search Threshold';
+  const threshHint = document.createElement('div');
+  threshHint.className = 'settings-hint';
+  threshHint.textContent = 'Allow searching with a single character when the active working set (after format filters) is at or below this number of tracks. Set to 0 to always require 2 characters. Default: 40000.';
+  threshLabelWrap.append(threshLabel, threshHint);
+  const threshInput = document.createElement('input');
+  threshInput.className = 'settings-input';
+  threshInput.type = 'number';
+  threshInput.min = '0';
+  threshInput.max = '1000000';
+  threshInput.step = '1000';
+  threshInput.value = String(s.minQueryCharsThreshold);
+  const commitThresh = () => {
+    const next = clampInputThreshold(threshInput.value);
+    threshInput.value = String(next);
+    setAppSettings({ minQueryCharsThreshold: next });
+  };
+  threshInput.addEventListener('blur', commitThresh);
+  threshInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); threshInput.blur(); }
+  });
+  threshRow.append(threshLabelWrap, threshInput);
+
   const autoRow = document.createElement('div');
   autoRow.className = 'settings-row';
   const autoLabelWrap = document.createElement('div');
@@ -101,7 +135,7 @@ function render() {
   autoCheckLabel.append(autoCheck, autoText);
   autoRow.append(autoLabelWrap, autoCheckLabel);
 
-  card.append(maxRow, autoRow);
+  card.append(maxRow, threshRow, autoRow);
   _content.appendChild(card);
 
   // ── Format Groups card ──────────────────────────────

@@ -47,6 +47,7 @@ export const S = {
   _lastFilteredTotal:   0,
   _inSearchResults:    false,
   _randomBrowsing:     false,
+  _viewingScratchpad:  false, // transient: true while scratchpad source is selected
 };
 
 // ── constants ─────────────────────────────────────────
