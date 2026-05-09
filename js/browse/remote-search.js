@@ -176,6 +176,49 @@ export function countWithFormats(query, formatSet) {
   return countByFilters(terms, normalizeFormatSet(formatSet));
 }
 
+// Combined single-pass search + count — avoids scanning 300k entries twice.
+export function searchWithFormatsAndCount(query, formatSet, limit, skip) {
+  if (!_index) return { results: [], total: 0 };
+  const terms = String(query || '').toLowerCase().split(/\s+/).filter(Boolean);
+  const fmtSet = normalizeFormatSet(formatSet);
+  const formats = _index.formats;
+  const base = _index.base;
+
+  const all = [];
+  for (let i = 0; i < _entries.length; i++) {
+    if (!matchesTerms(_searchLower[i], terms)) continue;
+    const { normExt, playerId } = _extInfo[i];
+    if (!playerId) continue;
+    if (fmtSet && !fmtSet.has(normExt)) continue;
+    const [fmtIdx, rest] = _entries[i];
+    const fullPath = formats[fmtIdx] + '/' + rest;
+    all.push({ name: rest, ext: normExt, playerId,
+      url: base + fullPath.split('/').map(encodeURIComponent).join('/') });
+  }
+
+  all.sort((a, b) => {
+    const sa = a.name.lastIndexOf('/'), sb = b.name.lastIndexOf('/');
+    const fa = sa >= 0 ? a.name.substring(0, sa) : '';
+    const fb = sb >= 0 ? b.name.substring(0, sb) : '';
+    const cmp = fa.localeCompare(fb, undefined, { sensitivity: 'base' });
+    if (cmp !== 0) return cmp;
+    const ta = sa >= 0 ? a.name.substring(sa + 1) : a.name;
+    const tb = sb >= 0 ? b.name.substring(sb + 1) : b.name;
+    return ta.localeCompare(tb, undefined, { sensitivity: 'base' });
+  });
+
+  return { results: all.slice(skip, skip + limit), total: all.length };
+}
+
+// Async variant: yields to the browser once before scanning so the UI can paint
+// the latest input character, then checks signal before applying results.
+// Returns null if aborted (caller must check).
+export async function searchWithFormatsAndCountAsync(query, formatSet, limit, skip, signal) {
+  await new Promise(resolve => setTimeout(resolve, 0));
+  if (signal && signal.aborted) return null;
+  return searchWithFormatsAndCount(query, formatSet, limit, skip);
+}
+
 function countByFilters(terms, formatSet) {
   let n = 0;
   for (let i = 0; i < _searchLower.length; i++) {

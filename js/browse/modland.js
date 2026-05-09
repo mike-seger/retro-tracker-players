@@ -139,8 +139,17 @@ export function updateMlButtons() {
 }
 
 // ── modland search ────────────────────────────────────
-export function doModlandSearch() {
+// AbortController for async search — each call cancels any in-flight search.
+let _searchController = null;
+
+export async function doModlandSearch() {
+  // Cancel any in-flight search; the latest call always wins.
+  if (_searchController) _searchController.abort();
+  const ctrl = new AbortController();
+  _searchController = ctrl;
+
   S._randomBrowsing = false;
+  // Always read the LATEST input value at the time this executes.
   const raw = elFilter.value.trim();
   const skip = getRangeSkip();
   const pageSize = getMaxListItems();
@@ -173,11 +182,20 @@ export function doModlandSearch() {
   }
 
   const q = raw;
-  const total = remoteSearch.countWithFormats(q, fmtActive ? S.selectedFormats : null);
   let clampedSkip = skip;
-  if (clampedSkip > 0 && clampedSkip + pageSize > total) clampedSkip = Math.max(total - pageSize, 0);
-
-  const results = remoteSearch.searchWithFormats(q, fmtActive ? S.selectedFormats : null, pageSize, clampedSkip);
+  const fmtArg = fmtActive ? S.selectedFormats : null;
+  const searchResult = await remoteSearch.searchWithFormatsAndCountAsync(q, fmtArg, pageSize, skip, ctrl.signal);
+  if (!searchResult) return; // aborted — a newer search is running
+  let { results, total } = searchResult;
+  if (clampedSkip > 0 && clampedSkip + pageSize > total) {
+    clampedSkip = Math.max(total - pageSize, 0);
+    if (clampedSkip !== skip) {
+      if (ctrl.signal.aborted) return;
+      const repaged = remoteSearch.searchWithFormatsAndCount(q, fmtArg, pageSize, clampedSkip);
+      results = repaged.results;
+    }
+  }
+  if (ctrl.signal.aborted) return;
   // Working set already excludes disabled formats; only filter by enabled engine here
   const filtered = results.filter(r => S.enabledPlayers[r.playerId] !== false);
   S._lastSearchSkip = clampedSkip;

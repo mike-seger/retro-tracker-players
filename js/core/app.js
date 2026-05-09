@@ -261,7 +261,7 @@ let _searchTimer = 0;
 elFilter.addEventListener('input', () => {
   if (S.searchMode === 'modland') {
     clearTimeout(_searchTimer);
-    _searchTimer = setTimeout(doModlandSearch, 150);
+    _searchTimer = setTimeout(doModlandSearch, 200);
   } else {
     populateLocalArtistPanel();
     applyFilter();
