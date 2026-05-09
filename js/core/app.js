@@ -18,7 +18,7 @@ import { loadDeepLinkedTrack, applyDeepLinkFilters } from '../browse/deeplink.js
 import { showResumePrompt, showDeleteConfirm } from '../ui/prompts.js';
 import { loadAndPlay } from './player.js';
 import { closeAllDropdowns } from '../ui/dropdown-keys.js';
-import { isAutoplayAudioEnabled } from '../settings/settings.js';
+import { isAutoplayAudioEnabled, getDisabledFormats } from '../settings/settings.js';
 
 // Side-effect-only imports (register their own listeners)
 import '../ui/keyboard.js';
@@ -88,14 +88,18 @@ export async function refreshUserPlaylistTracksAndRebuild(opts = {}) {
 }
 
 // ── format change callback — breaks format-panel ↔ filter circular dep ──
+let _fmtChangeTimer = null;
 setFormatChangeHandler(() => {
   if (S.searchMode === 'local') {
     populateLocalArtistPanel();
     applyFilter();
-  } else if (S._randomBrowsing) {
-    doRandomBrowse(getRangeSkip());
   } else {
-    doModlandSearch();
+    // Debounce modland searches so rapid checkbox toggling doesn't flood the index scanner
+    clearTimeout(_fmtChangeTimer);
+    _fmtChangeTimer = setTimeout(() => {
+      if (S._randomBrowsing) doRandomBrowse(getRangeSkip());
+      else doModlandSearch();
+    }, 120);
   }
 });
 
@@ -296,6 +300,7 @@ elFilterClr.addEventListener('click', () => {
   // If settings overlay is open, defer the expensive rebuild until it closes.
   let _appliedMaxListItems = null;
   let _pendingMaxListItems = null;
+  let _pendingFormatsChanged = false;
   const applyPendingMaxListItems = () => {
     if (!S._appReady) return;
     if (_pendingMaxListItems == null) return;
@@ -308,18 +313,39 @@ elFilterClr.addEventListener('click', () => {
       buildPlaylist();
     }
   };
+  const applyPendingFormatsChanged = () => {
+    if (!S._appReady || !_pendingFormatsChanged) return;
+    _pendingFormatsChanged = false;
+    if (remoteSearch.isLoaded()) {
+      remoteSearch.applyDisabledFormats(getDisabledFormats());
+    }
+    if (S.searchMode === 'modland') {
+      if (S._randomBrowsing) doRandomBrowse(getRangeSkip());
+      else if (S._inSearchResults) doModlandSearch();
+      else buildPlaylist();
+    } else {
+      applyFilter();
+    }
+  };
   window.addEventListener('app-settings-changed', (e) => {
     const newMax = e.detail?.maxListItems;
-    if (!Number.isFinite(newMax)) return;
-    _pendingMaxListItems = newMax;
+    if (Number.isFinite(newMax)) {
+      _pendingMaxListItems = newMax;
+    }
+    const disabledFormats = e.detail?.disabledFormats;
+    if (Array.isArray(disabledFormats)) {
+      _pendingFormatsChanged = true;
+    }
     const settingsOverlay = document.getElementById('settings-overlay');
     if (settingsOverlay && !settingsOverlay.hidden) return;
     applyPendingMaxListItems();
+    applyPendingFormatsChanged();
   });
   window.addEventListener('settings-overlay-closing', (e) => {
     const seq = e.detail?.seq;
     requestAnimationFrame(() => {
       applyPendingMaxListItems();
+      applyPendingFormatsChanged();
       window.dispatchEvent(new CustomEvent('settings-overlay-close-done', { detail: { seq } }));
     });
   });

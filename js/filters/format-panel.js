@@ -1,12 +1,38 @@
 // js/format-panel.js — Format multi-select dropdown widget
 import { S, elRefineFormatBtn, elRefineFormatPanel } from '../core/state.js';
 import { openDropdown } from '../ui/dropdown-keys.js';
-import { selectionState, buildPanelHead, appendPanelOption, syncPanelCheckboxes, wireDropdown } from './refine-panel.js';
+import { selectionState, appendPanelOption, syncPanelCheckboxes, wireDropdown } from './refine-panel.js';
 
 let _savedFormats = null;
 let _openedFormats = null;
 let _openedFormatState = null;
 let _masterCb = null;
+let _pendingChange = false;
+
+// ── floating "Applying…" pill (body-level, shown on close) ──
+let _applyingPill = null;
+let _pillTimer = null;
+
+function ensureApplyingPill() {
+  if (!_applyingPill) {
+    _applyingPill = document.createElement('div');
+    _applyingPill.className = 'fmt-applying-pill';
+    _applyingPill.hidden = true;
+    _applyingPill.innerHTML = '<span class="fmt-pending-spinner" aria-hidden="true"></span>Applying\u2026';
+    document.body.appendChild(_applyingPill);
+  }
+  return _applyingPill;
+}
+
+function showApplyingPill() {
+  const pill = ensureApplyingPill();
+  const rect = elRefineFormatBtn.getBoundingClientRect();
+  pill.style.top = (rect.bottom + 6) + 'px';
+  pill.style.left = rect.left + 'px';
+  pill.hidden = false;
+  clearTimeout(_pillTimer);
+  _pillTimer = setTimeout(() => { pill.hidden = true; }, 900);
+}
 
 function cycleMasterFormats() {
   const totalSize = S._allFormatOptions.size;
@@ -33,7 +59,7 @@ function cycleMasterFormats() {
 
   updateFormatBtn();
   syncFormatCheckboxes();
-  _onFormatChange?.();
+  _pendingChange = true; // silent: pill only appears on close
 }
 
 // Set by app.js after all modules are loaded, to avoid circular import at eval time.
@@ -49,7 +75,30 @@ export function buildFormatPanel(formats) {
 
   const panel = elRefineFormatPanel;
   panel.innerHTML = '';
-  _masterCb = buildPanelHead(panel, 'Format', cycleMasterFormats);
+
+  // Panel head: title only (master * is the first list item below)
+  const head = document.createElement('div');
+  head.className = 'panel-head';
+  const titleEl = document.createElement('div');
+  titleEl.className = 'panel-title';
+  titleEl.textContent = 'Format';
+  head.appendChild(titleEl);
+  panel.appendChild(head);
+
+  // Master (*) as first list item (below title, above format rows)
+  const masterLabel = document.createElement('label');
+  masterLabel.className = 'fmt-opt fmt-master';
+  masterLabel.tabIndex = -1;
+  const masterInput = document.createElement('input');
+  masterInput.type = 'checkbox';
+  masterInput.value = '__master__';
+  masterInput.checked = true;
+  masterInput.dataset.kind = 'master';
+  masterInput.addEventListener('change', cycleMasterFormats);
+  masterLabel.appendChild(masterInput);
+  masterLabel.appendChild(document.createTextNode('*'));
+  panel.appendChild(masterLabel);
+  _masterCb = masterInput;
 
   for (const fmt of sorted) {
     appendPanelOption(panel, fmt, fmt, S.selectedFormats.has(fmt), (checked) => {
@@ -57,7 +106,7 @@ export function buildFormatPanel(formats) {
       else S.selectedFormats.delete(fmt);
       updateFormatBtn();
       syncFormatCheckboxes();
-      _onFormatChange?.();
+      _pendingChange = true; // silent: pill only appears on close
     });
   }
 
@@ -93,21 +142,39 @@ elRefineFormatBtn.addEventListener('click', (e) => {
   openDropdown(elRefineFormatBtn, elRefineFormatPanel);
 });
 
+let _escRestoring = false;
+
 wireDropdown(elRefineFormatBtn, elRefineFormatPanel,
   () => {
     _savedFormats = new Set(S.selectedFormats);
     _openedFormats = new Set(S.selectedFormats);
     _openedFormatState = selectionState(S.selectedFormats.size, S._allFormatOptions.size);
+    _pendingChange = false;
   },
   () => {
+    // Esc: restore snapshot silently (no search trigger)
     if (_savedFormats !== null) {
+      _escRestoring = true;
       S.selectedFormats = _savedFormats;
       _savedFormats = null;
       _openedFormats = null;
       _openedFormatState = null;
+      _pendingChange = false;
       updateFormatBtn();
       syncFormatCheckboxes();
-      _onFormatChange?.();
+      _escRestoring = false;
     }
   },
 );
+
+// Fire the search when the panel closes via outside-click or Enter (not Esc)
+new MutationObserver(() => {
+  if (elRefineFormatPanel.hidden && !_escRestoring && _pendingChange) {
+    _pendingChange = false;
+    _savedFormats = null;
+    _openedFormats = null;
+    _openedFormatState = null;
+    showApplyingPill();
+    _onFormatChange?.();
+  }
+}).observe(elRefineFormatPanel, { attributeFilter: ['hidden'] });

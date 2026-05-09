@@ -1,6 +1,6 @@
 // js/refine.js — Refine panel population + placeholder helpers
 import { S, elFilter } from '../core/state.js';
-import { extractArtist } from '../lib/utils.js';
+import { extractArtist, normalizeFormatExt } from '../lib/utils.js';
 import { buildFormatPanel } from './format-panel.js';
 import { buildFolderPanel, clearFolderFilter } from './folder-panel.js';
 import { buildArtistPanel } from './artist-panel.js';
@@ -9,7 +9,7 @@ import { applyFilter } from './filter.js';
 import { doModlandSearch, doRandomBrowse } from '../browse/modland.js';
 import * as remoteSearch from '../browse/remote-search.js';
 import { isSystemFolder, isSystemFolderVisible } from '../playlists/playlist-manager.js';
-import { getMaxListItems } from '../settings/settings.js';
+import { getMaxListItems, getDisabledFormats } from '../settings/settings.js';
 
 export async function populateFolderPanel() {
   if (S.searchMode === 'modland') { clearFolderFilter(); return; }
@@ -76,10 +76,11 @@ export function populateLocalArtistPanel() {
 }
 
 export function populateLocalFormatDropdown() {
+  const disabled = getDisabledFormats();
   const exts = new Set();
   for (const f of S.mergedFiles) {
     if (!S.enabledPlayers[f.playerId]) continue;
-    if (f.ext) exts.add(f.ext);
+    if (f.ext && !disabled.has(normalizeFormatExt(f.ext))) exts.add(f.ext);
   }
   buildFormatPanel(exts);
 }
@@ -93,7 +94,7 @@ export function localPlaceholder() {
 }
 
 export function modlandPlaceholder() {
-  const cnt = remoteSearch.isLoaded() ? remoteSearch.entryCount() : 0;
+  const cnt = remoteSearch.isLoaded() ? remoteSearch.totalPlayable() : 0;
   return cnt > 0 ? `Search ${cnt.toLocaleString()} modland tracks…` : 'Search modland…';
 }
 

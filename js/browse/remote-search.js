@@ -5,7 +5,6 @@ import { normalizeFormatExt } from '../lib/utils.js';
 
 let _index = null;
 let _loading = null;
-let _searchLower = [];  // pre-lowercased entries for fast search
 
 const EXT_TO_PLAYER = {
   ahx: 'ahx',
@@ -15,6 +14,17 @@ const EXT_TO_PLAYER = {
   spc: 'spc', vgm: 'vgm', vgz: 'vgm',
 };
 
+// ── raw arrays: full dataset from disk ────────────────
+let _rawEntries = [];       // index.entries (reference)
+let _rawSearchLower = [];   // lowercased path strings
+let _rawExtInfo = [];       // { normExt, playerId } per raw entry
+
+// ── working set: raw minus disabled formats ───────────
+// All search/count/browse functions operate on these.
+let _entries = [];          // filtered subset of _rawEntries
+let _searchLower = [];      // filtered subset of _rawSearchLower
+let _extInfo = [];          // filtered subset of _rawExtInfo
+
 export async function loadIndex() {
   if (_index) return _index;
   if (_loading) return _loading;
@@ -23,8 +33,20 @@ export async function loadIndex() {
     const ds = new DecompressionStream('gzip');
     const decompressed = resp.body.pipeThrough(ds);
     _index = await new Response(decompressed).json();
-    // Pre-build lowercased path strings for fast substring matching
-    _searchLower = _index.entries.map(e => e[1].toLowerCase());
+    _rawEntries = _index.entries;
+    // Pre-build lowercased path strings and ext info for fast search
+    _rawSearchLower = new Array(_rawEntries.length);
+    _rawExtInfo = new Array(_rawEntries.length);
+    for (let i = 0; i < _rawEntries.length; i++) {
+      const rest = _rawEntries[i][1];
+      _rawSearchLower[i] = rest.toLowerCase();
+      const rawExt = rest.substring(rest.lastIndexOf('.') + 1).toLowerCase();
+      _rawExtInfo[i] = { normExt: normalizeFormatExt(rawExt), playerId: EXT_TO_PLAYER[rawExt] || null };
+    }
+    // Start with full set (no disabled formats yet)
+    _entries = _rawEntries;
+    _searchLower = _rawSearchLower;
+    _extInfo = _rawExtInfo;
     return _index;
   })();
   return _loading;
@@ -34,10 +56,51 @@ export function isLoaded() {
   return !!_index;
 }
 
+/**
+ * Rebuild the working set by excluding entries whose format group is in disabledSet.
+ * Pass an empty/null set to restore the full index.
+ * Idempotent: calling with the same set twice is a no-op (cheap key check).
+ * Safe to call at the top of every doModlandSearch / doRandomBrowse.
+ */
+let _lastDisabledKey = null;
+export function applyDisabledFormats(disabledSet) {
+  if (!_rawEntries.length) return; // index not loaded yet
+  const key = (disabledSet && disabledSet.size > 0)
+    ? [...disabledSet].sort().join(',')
+    : '';
+  if (key === _lastDisabledKey) return; // nothing changed
+  _lastDisabledKey = key;
+
+  if (!key) {
+    _entries = _rawEntries;
+    _searchLower = _rawSearchLower;
+    _extInfo = _rawExtInfo;
+    _shuffleOrder = null;
+    return;
+  }
+  const newEntries = [];
+  const newLower = [];
+  const newExtInfo = [];
+  for (let i = 0; i < _rawEntries.length; i++) {
+    const info = _rawExtInfo[i];
+    if (!info.playerId) continue;
+    if (disabledSet.has(info.normExt)) continue;
+    newEntries.push(_rawEntries[i]);
+    newLower.push(_rawSearchLower[i]);
+    newExtInfo.push(info);
+  }
+  _entries = newEntries;
+  _searchLower = newLower;
+  _extInfo = newExtInfo;
+  _shuffleOrder = null;
+}
+
 function normalizeFormatSet(formatSet) {
+  // S.selectedFormats stores uppercase values from normalizeFormatExt (e.g. 'MOD', 'XM').
+  // Return a Set of uppercase strings for direct comparison against _extInfo.normExt.
   if (!formatSet || formatSet.size === 0) return null;
   const out = new Set();
-  for (const f of formatSet) out.add(String(f).toLowerCase());
+  for (const f of formatSet) out.add(String(f).toUpperCase());
   return out.size > 0 ? out : null;
 }
 
@@ -66,19 +129,15 @@ export function searchWithFormats(query, formatSet, limit = 100, skip = 0) {
 
 function searchByFilters(terms, formatSet, limit, skip) {
   const all = [];
-  const entries = _index.entries;
   const formats = _index.formats;
   const base = _index.base;
 
-  for (let i = 0; i < entries.length; i++) {
-    const s = _searchLower[i];
-    if (!matchesTerms(s, terms)) continue;
-    const [fmtIdx, rest] = entries[i];
-    const ext = rest.substring(rest.lastIndexOf('.') + 1).toLowerCase();
-    const normExt = normalizeFormatExt(ext);
-    const playerId = EXT_TO_PLAYER[ext];
+  for (let i = 0; i < _entries.length; i++) {
+    if (!matchesTerms(_searchLower[i], terms)) continue;
+    const { normExt, playerId } = _extInfo[i];
     if (!playerId) continue;
-    if (formatSet && !formatSet.has(normExt) && !formatSet.has(normExt.toLowerCase())) continue;
+    if (formatSet && !formatSet.has(normExt)) continue;
+    const [fmtIdx, rest] = _entries[i];
     const fullPath = formats[fmtIdx] + '/' + rest;
     all.push({
       name: rest,
@@ -120,12 +179,10 @@ export function countWithFormats(query, formatSet) {
 function countByFilters(terms, formatSet) {
   let n = 0;
   for (let i = 0; i < _searchLower.length; i++) {
-    const s = _searchLower[i];
-    if (!matchesTerms(s, terms)) continue;
-    const ext = _index.entries[i][1].substring(_index.entries[i][1].lastIndexOf('.') + 1).toLowerCase();
-    const normExt = normalizeFormatExt(ext);
-    if (!EXT_TO_PLAYER[ext]) continue;
-    if (formatSet && !formatSet.has(normExt) && !formatSet.has(normExt.toLowerCase())) continue;
+    if (!matchesTerms(_searchLower[i], terms)) continue;
+    const { normExt, playerId } = _extInfo[i];
+    if (!playerId) continue;
+    if (formatSet && !formatSet.has(normExt)) continue;
     n++;
   }
   return n;
@@ -134,10 +191,8 @@ function countByFilters(terms, formatSet) {
 export function availableFormats() {
   if (!_index) return new Set();
   const out = new Set();
-  for (let i = 0; i < _index.entries.length; i++) {
-    const rest = _index.entries[i][1];
-    const ext = rest.substring(rest.lastIndexOf('.') + 1).toLowerCase();
-    if (EXT_TO_PLAYER[ext]) out.add(normalizeFormatExt(ext));
+  for (let i = 0; i < _extInfo.length; i++) {
+    if (_extInfo[i].playerId) out.add(_extInfo[i].normExt);
   }
   return out;
 }
@@ -146,53 +201,50 @@ export function entryCount() {
   return _index ? _index.entries.length : 0;
 }
 
-// Return total count of all playable entries (no query filter)
-export function totalPlayable() {
-  if (!_index) return 0;
-  let n = 0;
-  for (let i = 0; i < _index.entries.length; i++) {
-    const ext = _index.entries[i][1].substring(_index.entries[i][1].lastIndexOf('.') + 1).toLowerCase();
-    if (EXT_TO_PLAYER[ext]) n++;
+// Return a Map<normExt, count> from the full raw index (ignores disabled filter)
+export function rawFormatCounts() {
+  const map = new Map();
+  for (let i = 0; i < _rawExtInfo.length; i++) {
+    const { normExt, playerId } = _rawExtInfo[i];
+    if (!playerId) continue;
+    map.set(normExt, (map.get(normExt) || 0) + 1);
   }
-  return n;
+  return map;
+}
+
+// Return total count of all playable entries in the active working set (no query filter)
+export function totalPlayable() {
+  return _entries.length;
 }
 
 // Return a slice of all playable entries (no query filter), shuffled per session
 export function browseAll(limit = 1000, skip = 0) {
   if (!_index) return [];
-  const entries = _index.entries;
   const formats = _index.formats;
   const base = _index.base;
-  const all = [];
-
-  for (let i = 0; i < entries.length; i++) {
-    const [fmtIdx, rest] = entries[i];
-    const ext = rest.substring(rest.lastIndexOf('.') + 1).toLowerCase();
-    const normExt = normalizeFormatExt(ext);
-    const playerId = EXT_TO_PLAYER[ext];
-    if (playerId) {
-      all.push({
-        name: rest,
-        ext: normExt,
-        playerId,
-        url: base + (formats[fmtIdx] + '/' + rest).split('/').map(encodeURIComponent).join('/'),
-      });
-    }
-  }
+  const n = _entries.length;
 
   // Shuffle deterministically using Fisher-Yates with a seed so pages are stable per session
-  if (!_shuffleOrder) {
-    _shuffleOrder = Array.from({ length: all.length }, (_, i) => i);
-    for (let i = _shuffleOrder.length - 1; i > 0; i--) {
+  if (!_shuffleOrder || _shuffleOrder.length !== n) {
+    _shuffleOrder = Array.from({ length: n }, (_, i) => i);
+    for (let i = n - 1; i > 0; i--) {
       const j = (_shuffleSeed = (_shuffleSeed * 16807 + 0) % 2147483647) % (i + 1);
-      [_shuffleOrder[i], _shuffleOrder[j]] = [_shuffleOrder[j], _shuffleOrder[i]];
+      const tmp = _shuffleOrder[i]; _shuffleOrder[i] = _shuffleOrder[j]; _shuffleOrder[j] = tmp;
     }
   }
 
   const result = [];
-  const end = Math.min(skip + limit, _shuffleOrder.length);
+  const end = Math.min(skip + limit, n);
   for (let i = skip; i < end; i++) {
-    result.push(all[_shuffleOrder[i]]);
+    const ri = _shuffleOrder[i];
+    const [fmtIdx, rest] = _entries[ri];
+    const { normExt, playerId } = _extInfo[ri];
+    result.push({
+      name: rest,
+      ext: normExt,
+      playerId,
+      url: base + (formats[fmtIdx] + '/' + rest).split('/').map(encodeURIComponent).join('/'),
+    });
   }
   return result;
 }

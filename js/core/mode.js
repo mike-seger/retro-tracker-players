@@ -12,6 +12,7 @@ import { doModlandSearch, updateMlButtons } from '../browse/modland.js';
 import { persistContext } from './persistence.js';
 import { restoreSelection, updateSelCount } from '../playlists/selection.js';
 import * as remoteSearch from '../browse/remote-search.js';
+import { getDisabledFormats } from '../settings/settings.js';
 
 // ── context save/restore ──────────────────────────────
 export function saveLocalContext() {
@@ -132,7 +133,10 @@ export function switchMode(mode) {
     restoreLocalContext();
   } else {
     remoteSearch.loadIndex()
-      .then(() => import('../filters/format-panel.js').then(m => m.buildFormatPanel(remoteSearch.availableFormats())))
+      .then(() => {
+        remoteSearch.applyDisabledFormats(getDisabledFormats());
+        return import('../filters/format-panel.js').then(m => m.buildFormatPanel(remoteSearch.availableFormats()));
+      })
       .catch(() => import('../filters/format-panel.js').then(m => m.buildFormatPanel([])));
     restoreModlandContext();
   }

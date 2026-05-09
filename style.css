@@ -272,7 +272,36 @@ body.mode-modland {
   top: 0;
   z-index: 2;
   background: #222;
+  display: flex;
+  align-items: center;
 }
+.fmt-applying-pill {
+  position: fixed;
+  z-index: 1000;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #9aa;
+  font-size: 11px;
+  letter-spacing: 0.01em;
+  background: #1b1b1b;
+  border: 1px solid #2f3434;
+  border-radius: 999px;
+  padding: 3px 10px;
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+.fmt-applying-pill[hidden] { display: none; }
+.fmt-pending-spinner {
+  width: 10px;
+  height: 10px;
+  border: 2px solid #4f5b5b;
+  border-top-color: #9cc;
+  border-radius: 50%;
+  animation: settings-spin 0.75s linear infinite;
+  flex-shrink: 0;
+}
+
 .fmt-opt {
   display: flex; align-items: center; gap: 6px;
   padding: 5px 12px; cursor: pointer;
@@ -810,6 +839,18 @@ body.mode-modland {
 .settings-btn:hover {
   background: #333;
   border-color: #666;
+}
+.settings-row--col {
+  grid-template-columns: 1fr;
+}
+.settings-format-list {
+  border: 1px solid #333;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+.settings-fmt-master {
+  border-bottom: 1px solid #444;
 }
 
 /* ── playlist manager overlay ───────────────────────── */

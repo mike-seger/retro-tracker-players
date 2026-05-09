@@ -2,12 +2,13 @@
 import { S, elFilter,
          elRefineFolderWrap, elRefineArtistWrap, elRefineRangeWrap,
          elRefineFormatWrap, elList } from '../core/state.js';
-import { extractArtist } from '../lib/utils.js';
+import { extractArtist, normalizeFormatExt } from '../lib/utils.js';
 import { buildFormatPanel } from './format-panel.js';
 import { activeFiles, updateTrackPos, highlightCurrent, setFocus, syncPlayingTrackByUrl } from '../playlists/playlist.js';
 import { persistContext } from '../core/persistence.js';
 import { scrollIntoViewSmart } from '../playlists/playlist.js';
 import { isSystemFolder, isSystemFolderVisible } from '../playlists/playlist-manager.js';
+import { getDisabledFormats } from '../settings/settings.js';
 
 export function applyFilter() {
   const raw = elFilter.value.trim();
@@ -17,6 +18,7 @@ export function applyFilter() {
   // including the "no visible lists" case (which should yield zero visible rows).
   const listsActive = S.searchMode === 'local';
   const artistsActive = S.selectedArtists.size > 0 && S.selectedArtists.size < S._allArtistOptions.size;
+  const disabledFormats = getDisabledFormats();
 
   const inSelectedPlaylist = (entry) => {
     if (!entry) return false;
@@ -63,7 +65,10 @@ export function applyFilter() {
         nameMatch = S.selectedArtists.has(a);
       }
       const typeMatch = !entry || !entry.playerId || S.enabledPlayers[entry.playerId] !== false;
-      if (nameMatch && typeMatch && entry?.ext) availableFormats.add(entry.ext);
+      if (nameMatch && typeMatch && entry?.ext) {
+        const grp = normalizeFormatExt(entry.ext);
+        if (!disabledFormats.has(grp)) availableFormats.add(entry.ext);
+      }
     }
     buildFormatPanel(availableFormats);
   }
@@ -81,6 +86,7 @@ export function applyFilter() {
       nameMatch = entry && S.selectedFormats.has(entry.ext);
     }
     const typeMatch = !entry || !entry.playerId || S.enabledPlayers[entry.playerId] !== false;
+    const formatEnabled = !entry?.ext || !disabledFormats.has(normalizeFormatExt(entry.ext));
     const inScopeBeforeFormat = (() => {
       const e = entry;
       const n = e ? e.name.toLowerCase() : '';
@@ -95,7 +101,7 @@ export function applyFilter() {
     })();
     if (inScopeBeforeFormat) scopedTotal++;
 
-    const show = nameMatch && typeMatch;
+    const show = nameMatch && typeMatch && formatEnabled;
     items[i].classList.toggle('hidden', !show);
     if (show) visible++;
   }

@@ -2,9 +2,13 @@
 
 const SETTINGS_KEY = 'app-settings-v1';
 
+// Canonical format groups in display order.
+export const ALL_FORMAT_GROUPS = Object.freeze(['AHX', 'IT', 'MINI', 'MOD', 'S3M', 'SID', 'SPC', 'VGZ', 'XM']);
+
 export const DEFAULT_SETTINGS = Object.freeze({
   maxListItems: 200,
   autoplayAudio: false,
+  disabledFormats: [],
 });
 
 let _cached = null;
@@ -19,11 +23,15 @@ function normalize(raw) {
   const out = {
     maxListItems: DEFAULT_SETTINGS.maxListItems,
     autoplayAudio: DEFAULT_SETTINGS.autoplayAudio,
+    disabledFormats: [],
   };
 
   if (raw && typeof raw === 'object') {
     if ('maxListItems' in raw) out.maxListItems = clampMaxListItems(raw.maxListItems);
     if (typeof raw.autoplayAudio === 'boolean') out.autoplayAudio = raw.autoplayAudio;
+    if (Array.isArray(raw.disabledFormats)) {
+      out.disabledFormats = raw.disabledFormats.filter(f => ALL_FORMAT_GROUPS.includes(f));
+    }
   }
 
   // Back-compat migration from legacy key used by older resume prompt code.
@@ -69,10 +77,22 @@ export function isAutoplayAudioEnabled() {
   return !!readSettings().autoplayAudio;
 }
 
+export function getDisabledFormats() {
+  return new Set(readSettings().disabledFormats);
+}
+
+export function isFormatEnabled(formatGroup) {
+  return !readSettings().disabledFormats.includes(formatGroup);
+}
+
 export function setAppSettings(partial) {
   const prev = readSettings();
   const merged = normalize({ ...prev, ...(partial || {}) });
-  const changed = merged.maxListItems !== prev.maxListItems || merged.autoplayAudio !== prev.autoplayAudio;
+  const prevDisabled = JSON.stringify([...(prev.disabledFormats || [])].sort());
+  const nextDisabled = JSON.stringify([...(merged.disabledFormats || [])].sort());
+  const changed = merged.maxListItems !== prev.maxListItems
+    || merged.autoplayAudio !== prev.autoplayAudio
+    || prevDisabled !== nextDisabled;
   if (!changed) return getAppSettings();
   writeSettings(merged);
   emitChanged();

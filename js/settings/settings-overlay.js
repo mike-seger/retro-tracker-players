@@ -1,5 +1,6 @@
 // js/settings-overlay.js — Global settings overlay UI
-import { getAppSettings, setAppSettings, resetAppSettings, DEFAULT_SETTINGS } from './settings.js';
+import { getAppSettings, setAppSettings, resetAppSettings, DEFAULT_SETTINGS, ALL_FORMAT_GROUPS } from './settings.js';
+import * as remoteSearch from '../browse/remote-search.js';
 
 let _overlay = null;
 let _content = null;
@@ -101,6 +102,79 @@ function render() {
 
   card.append(maxRow, autoRow);
   _content.appendChild(card);
+
+  // ── Format Groups card ──────────────────────────────
+  const fmtCard = document.createElement('div');
+  fmtCard.className = 'settings-card';
+  const fmtRow = document.createElement('div');
+  fmtRow.className = 'settings-row settings-row--col';
+  const fmtLabelWrap = document.createElement('div');
+  const fmtLabel = document.createElement('div');
+  fmtLabel.className = 'settings-label';
+  fmtLabel.textContent = 'Enabled Format Groups';
+  const fmtHint = document.createElement('div');
+  fmtHint.className = 'settings-hint';
+  fmtHint.textContent = 'Unchecked formats are hidden everywhere in the app.';
+  fmtLabelWrap.append(fmtLabel, fmtHint);
+
+  const fmtGrid = document.createElement('div');
+  fmtGrid.className = 'settings-format-list';
+
+  const disabledSet = new Set(s.disabledFormats || []);
+  const checkboxes = new Map();
+  const fmtCounts = remoteSearch.isLoaded() ? remoteSearch.rawFormatCounts() : new Map();
+
+  // Master "all" toggle — same style as fmt-opt fmt-master
+  const allLabel = document.createElement('label');
+  allLabel.className = 'fmt-opt fmt-master settings-fmt-master';
+  const allCheck = document.createElement('input');
+  allCheck.type = 'checkbox';
+  allCheck.checked = disabledSet.size === 0;
+  allCheck.indeterminate = disabledSet.size > 0 && disabledSet.size < ALL_FORMAT_GROUPS.length;
+  const allText = document.createElement('span');
+  allText.textContent = '*';
+  allLabel.append(allCheck, allText);
+  fmtGrid.appendChild(allLabel);
+
+  const syncAllCheck = () => {
+    const disabled = [...checkboxes.entries()].filter(([, cb]) => !cb.checked).length;
+    allCheck.checked = disabled === 0;
+    allCheck.indeterminate = disabled > 0 && disabled < ALL_FORMAT_GROUPS.length;
+  };
+
+  const commitFormats = () => {
+    const disabled = ALL_FORMAT_GROUPS.filter(g => !checkboxes.get(g).checked);
+    setAppSettings({ disabledFormats: disabled });
+  };
+
+  for (const grp of ALL_FORMAT_GROUPS) {
+    const lbl = document.createElement('label');
+    lbl.className = 'fmt-opt';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = !disabledSet.has(grp);
+    cb.addEventListener('change', () => {
+      syncAllCheck();
+      commitFormats();
+    });
+    checkboxes.set(grp, cb);
+    const txt = document.createElement('span');
+    const cnt = fmtCounts.get(grp);
+    txt.textContent = cnt != null ? `${grp} (${cnt.toLocaleString()})` : grp;
+    lbl.append(cb, txt);
+    fmtGrid.appendChild(lbl);
+  }
+
+  allCheck.addEventListener('change', () => {
+    const enable = allCheck.checked;
+    for (const cb of checkboxes.values()) cb.checked = enable;
+    allCheck.indeterminate = false;
+    commitFormats();
+  });
+
+  fmtRow.append(fmtLabelWrap, fmtGrid);
+  fmtCard.appendChild(fmtRow);
+  _content.appendChild(fmtCard);
 
   const note = document.createElement('div');
   note.className = 'settings-note';

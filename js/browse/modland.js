@@ -12,7 +12,7 @@ import { showAddConfirm, showDeleteConfirm } from '../ui/prompts.js';
 import * as remoteSearch from './remote-search.js';
 import * as pm from '../playlists/playlist-manager.js';
 import { createTrackRow, isTrackRowControlTarget } from '../playlists/track-row.js';
-import { getMaxListItems } from '../settings/settings.js';
+import { getMaxListItems, getDisabledFormats } from '../settings/settings.js';
 
 // ── helpers ───────────────────────────────────────────
 function detectPlayerIdFromUrl(url) {
@@ -147,12 +147,17 @@ export function doModlandSearch() {
 
   if (!remoteSearch.isLoaded()) {
     elFilterCnt.textContent = 'loading…';
-    remoteSearch.loadIndex().then(() => doModlandSearch());
+    remoteSearch.loadIndex().then(() => {
+      remoteSearch.applyDisabledFormats(getDisabledFormats());
+      doModlandSearch();
+    });
     return;
   }
 
+  // Always sync working set with current disabled-format settings (idempotent, cheap)
+  remoteSearch.applyDisabledFormats(getDisabledFormats());
+
   const allFormats = remoteSearch.availableFormats();
-  allFormats.add('MINI');
   buildFormatPanel(allFormats);
   const fmtActive = S.selectedFormats.size > 0 && S.selectedFormats.size < S._allFormatOptions.size;
   const qActive = raw.length >= 2;
@@ -173,6 +178,7 @@ export function doModlandSearch() {
   if (clampedSkip > 0 && clampedSkip + pageSize > total) clampedSkip = Math.max(total - pageSize, 0);
 
   const results = remoteSearch.searchWithFormats(q, fmtActive ? S.selectedFormats : null, pageSize, clampedSkip);
+  // Working set already excludes disabled formats; only filter by enabled engine here
   const filtered = results.filter(r => S.enabledPlayers[r.playerId] !== false);
   S._lastSearchSkip = clampedSkip;
   S._lastSearchTotal = total;
@@ -180,6 +186,7 @@ export function doModlandSearch() {
 
   buildRangePanel(total, pageSize);
 
+  // Working set already excludes disabled formats; per-session format filter on top
   const displayed = (S.selectedFormats.size > 0 && S.selectedFormats.size < S._allFormatOptions.size)
     ? filtered.filter(r => S.selectedFormats.has(r.ext.toUpperCase()))
     : filtered;
@@ -256,6 +263,9 @@ export function doModlandSearch() {
 export function doRandomBrowse(skip) {
   if (!remoteSearch.isLoaded()) return;
 
+  // Always sync working set with current disabled-format settings (idempotent, cheap)
+  remoteSearch.applyDisabledFormats(getDisabledFormats());
+
   const pageSize = getMaxListItems();
 
   const total = remoteSearch.totalPlayable();
@@ -271,9 +281,9 @@ export function doRandomBrowse(skip) {
 
   const formats = new Set();
   for (const r of results) formats.add(r.ext.toUpperCase());
-  formats.add('MINI');
   buildFormatPanel(formats);
 
+  // Working set already excludes disabled formats; per-session format filter on top
   const displayed = (S.selectedFormats.size > 0 && S.selectedFormats.size < S._allFormatOptions.size)
     ? results.filter(r => S.selectedFormats.has(r.ext.toUpperCase()))
     : results;
