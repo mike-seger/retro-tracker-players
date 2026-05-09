@@ -41,7 +41,7 @@ export function getHistory() {
 // Record a completed search. Removes older duplicates of the same term (case-insensitive),
 // prepends the new entry, and trims to max.
 export function addEntry(term, count) {
-  const t = (term || '').trim();
+  const t = (term || '').trim().toLowerCase();
   if (!t) return;
   const max = getMaxHistory();
   let entries = readHistory();

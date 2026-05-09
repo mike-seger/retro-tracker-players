@@ -3,7 +3,7 @@
 <!-- AUTO:DOC_META:START -->
 | Version | Updated |
 |:--|:--|
-| 0.9.9-25 | 2026-05-09 23:15 |
+| 0.9.9-26 | 2026-05-09 23:21 |
 <!-- AUTO:DOC_META:END -->
 
 A single-page browser-based chiptune player for the golden age of demoscene music, from C64 SID chips to Amiga tracker modules. It includes built-in local playlists and instant access to the Modland archive with 225K+ compatible tracker modules. Results can be narrowed with smart filters, and you can build your own custom lists from what you find.
@@ -74,3 +74,4 @@ The unified player loads five engines on demand:
 - [PlayMOD online player for various chiptune collections](https://www.wothke.ch/playmod/index.php)
 - [Bassoon Fasttracker 2 Editor](https://www.stef.be/bassoontracker/)
 - [Chip Player JS](https://chiptune.app/)
+- [DeepSID](https://deepsid.chordian.net/?file=/MUSICIANS/A/Acrouzet/)
