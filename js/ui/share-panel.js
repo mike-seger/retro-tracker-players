@@ -1,4 +1,6 @@
 // js/share-panel.js — Share panel popup
+import { addDeepLinkEntry } from '../settings/search-history.js';
+
 let _removeOutsideClick = null;
 
 export function showSharePanel(anchor, getDeepLink) {
@@ -45,6 +47,7 @@ export function showSharePanel(anchor, getDeepLink) {
       e.preventDefault();
       const action = fresh.dataset.action;
       const url = getDeepLink();
+      addDeepLinkEntry(url);
       if (action === 'copy') {
         try { await navigator.clipboard.writeText(url); } catch (_) {}
         fresh.textContent = 'Copied!';

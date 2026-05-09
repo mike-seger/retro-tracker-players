@@ -881,6 +881,78 @@ body.mode-modland {
   border-bottom: 1px solid #444;
 }
 
+/* ── search history card ────────────────────────────── */
+.sh-hdr-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.sh-max-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #999;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.sh-max-input {
+  width: 64px !important;
+}
+.sh-rows {
+  margin-top: 4px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+.sh-empty {
+  color: #555;
+  font-size: 12px;
+  padding: 10px 0;
+}
+.sh-row {
+  display: grid;
+  grid-template-columns: 140px 1fr auto auto;
+  gap: 8px;
+  align-items: center;
+  padding: 5px 2px;
+  border-bottom: 1px solid #222;
+  cursor: pointer;
+  font-size: 12px;
+}
+.sh-row:last-child { border-bottom: none; }
+.sh-row:hover { background: #222; }
+.sh-row:focus { outline: 1px solid #555; }
+.sh-date {
+  color: #666;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.sh-term {
+  color: #ccc;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sh-count {
+  color: #777;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+.sh-del {
+  background: none;
+  border: none;
+  color: #555;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 2px;
+}
+.sh-del:hover { color: #c44; }
+.dl-hist-row {
+  grid-template-columns: 140px 1fr auto;
+}
+
 /* ── playlist manager overlay ───────────────────────── */
 #playlist-manager-overlay {
   position: fixed; inset: 0; background: #141414;

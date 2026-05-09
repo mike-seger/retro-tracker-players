@@ -76,8 +76,10 @@ export function restoreModlandContext() {
 // ── restorePersistedContext ───────────────────────────
 export function restorePersistedContext() {
   try {
-    const saved = JSON.parse(localStorage.getItem('app-context'));
-    if (!saved) return;
+    const raw = localStorage.getItem('app-context');
+    console.log('[restore] app-context raw:', raw);
+    const saved = JSON.parse(raw);
+    if (!saved) { console.log('[restore] no saved context'); return; }
 
     const isScratchpad = saved.mode === 'scratchpad';
     const targetMode   = isScratchpad ? 'modland' : (saved.mode || S.searchMode);
@@ -90,7 +92,9 @@ export function restorePersistedContext() {
     }
 
     if (targetMode !== S.searchMode) {
+      console.log('[restore] calling switchMode to', targetMode, '| current searchMode:', S.searchMode, '| elFilter.value:', elFilter.value);
       switchMode(targetMode, { skipSearch: true });
+      console.log('[restore] after switchMode | elFilter.value:', elFilter.value);
     } else if (savedRange > 0) {
       // Already in the target mode — apply range directly.
       S._currentRange = savedRange;
@@ -125,6 +129,10 @@ export function restorePersistedContext() {
       if (isScratchpad) {
         showScratchpad();
       } else {
+        // Defensively re-apply the saved filter immediately before the search,
+        // in case switchMode or any intermediate step cleared elFilter.value.
+        if (saved.filter) elFilter.value = saved.filter;
+        console.log('[restore] before doModlandSearch | elFilter.value:', elFilter.value);
         doModlandSearch();
       }
     }
@@ -135,6 +143,11 @@ export function restorePersistedContext() {
 // opts.skipSearch — pass true to suppress the automatic doModlandSearch() call.
 // Used by deep-link loading which manages its own search/display flow.
 export function switchMode(mode, { skipSearch = false } = {}) {
+  // Capture the current filter before saving/restoring contexts so it can be
+  // transferred to the target mode (shared search input across Lo/Ml).
+  // Don't transfer when coming from scratchpad — it intentionally clears the filter.
+  const transferFilter = S._viewingScratchpad ? null : elFilter.value;
+
   if (S.searchMode === 'local') saveLocalContext();
   else if (S.searchMode === 'modland') saveModlandContext();
 
@@ -160,6 +173,7 @@ export function switchMode(mode, { skipSearch = false } = {}) {
     populateLocalFormatDropdown();
     elSelBulk.style.display = '';
     restoreLocalContext();
+    if (transferFilter) elFilter.value = transferFilter;
   } else {
     remoteSearch.loadIndex()
       .then(() => {
@@ -168,6 +182,7 @@ export function switchMode(mode, { skipSearch = false } = {}) {
       })
       .catch(() => import('../filters/format-panel.js').then(m => m.buildFormatPanel([])));
     restoreModlandContext();
+    if (transferFilter) elFilter.value = transferFilter;
   }
 
   // Show scratchpad immediately as a loading placeholder, then trigger the

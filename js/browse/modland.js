@@ -21,6 +21,7 @@ import * as remoteSearch from './remote-search.js';
 import * as pm from '../playlists/playlist-manager.js';
 import { createTrackRow, isTrackRowControlTarget } from '../playlists/track-row.js';
 import { getMaxListItems, getDisabledFormats, getMinQueryCharsThreshold } from '../settings/settings.js';
+import { addEntry as addHistoryEntry } from '../settings/search-history.js';
 
 // ── helpers ───────────────────────────────────────────
 function detectPlayerIdFromUrl(url) {
@@ -197,7 +198,9 @@ export async function doModlandSearch() {
 
   if (!remoteSearch.isLoaded()) {
     elFilterCnt.textContent = 'loading…';
+    console.log('[doModlandSearch] index not loaded yet, raw=', raw, '| elFilter.value=', elFilter.value);
     remoteSearch.loadIndex().then(() => {
+      console.log('[doModlandSearch] index now loaded, elFilter.value=', elFilter.value);
       remoteSearch.applyDisabledFormats(getDisabledFormats());
       doModlandSearch();
     });
@@ -341,6 +344,8 @@ export async function doModlandSearch() {
   updateTrackPos();
   updateMlButtons();
   persistContext();
+  // Record non-empty, non-random searches in history.
+  if (q) addHistoryEntry(q, total);
 }
 
 // ── random browse ─────────────────────────────────────

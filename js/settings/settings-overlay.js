@@ -2,6 +2,12 @@
 import { getAppSettings, setAppSettings, resetAppSettings, DEFAULT_SETTINGS, ALL_FORMAT_GROUPS } from './settings.js';
 import * as remoteSearch from '../browse/remote-search.js';
 import { fmtCount } from '../lib/utils.js';
+import {
+  getHistory, deleteEntry as deleteHistoryEntry, clearHistory,
+  getMaxHistory, setMaxHistory,
+  getDeepLinkHistory, deleteDeepLinkEntry, clearDeepLinkHistory,
+  getMaxDeepLinkHistory, setMaxDeepLinkHistory,
+} from './search-history.js';
 
 let _overlay = null;
 let _content = null;
@@ -230,6 +236,249 @@ function render() {
   });
   actions.appendChild(resetBtn);
   _content.appendChild(actions);
+
+  // ── Search History card ─────────────────────────────
+  renderHistoryCard();
+
+  // ── Deep Link History card ──────────────────────────
+  renderDeepLinkHistoryCard();
+}
+
+function formatHistoryDate(ts) {
+  try {
+    const d = new Date(ts);
+    const pad = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ` +
+           `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  } catch (_) { return ''; }
+}
+
+function renderHistoryCard() {
+  const histCard = document.createElement('div');
+  histCard.id = 'sh-card';
+  histCard.className = 'settings-card';
+
+  // Header row: label + max-entries input + clear button
+  const hdrRow = document.createElement('div');
+  hdrRow.className = 'settings-row';
+  const hdrLabelWrap = document.createElement('div');
+  const hdrLabel = document.createElement('div');
+  hdrLabel.className = 'settings-label';
+  hdrLabel.textContent = 'Search History';
+  const hdrHint = document.createElement('div');
+  hdrHint.className = 'settings-hint';
+  hdrHint.textContent = 'Modland searches are recorded here. Press Enter on a row to re-run it.';
+  hdrLabelWrap.append(hdrLabel, hdrHint);
+
+  const hdrControls = document.createElement('div');
+  hdrControls.className = 'sh-hdr-controls';
+
+  const maxLabel = document.createElement('label');
+  maxLabel.className = 'sh-max-label';
+  maxLabel.textContent = 'Max:';
+  const maxInput = document.createElement('input');
+  maxInput.className = 'settings-input sh-max-input';
+  maxInput.type = 'number';
+  maxInput.min = '1';
+  maxInput.max = '10000';
+  maxInput.step = '1';
+  maxInput.value = String(getMaxHistory());
+  maxInput.title = 'Maximum number of history entries to keep';
+  const commitMax = () => {
+    const n = Math.max(1, Math.min(10000, parseInt(maxInput.value, 10) || 100));
+    maxInput.value = String(n);
+    setMaxHistory(n);
+    renderHistoryRows(rowsContainer);
+  };
+  maxInput.addEventListener('blur', commitMax);
+  maxInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); maxInput.blur(); } });
+  maxLabel.appendChild(maxInput);
+
+  const clearBtn = document.createElement('button');
+  clearBtn.type = 'button';
+  clearBtn.className = 'settings-btn';
+  clearBtn.textContent = 'Clear all';
+  clearBtn.addEventListener('click', () => {
+    clearHistory();
+    renderHistoryRows(rowsContainer);
+  });
+
+  hdrControls.append(maxLabel, clearBtn);
+  hdrRow.append(hdrLabelWrap, hdrControls);
+  histCard.appendChild(hdrRow);
+
+  const rowsContainer = document.createElement('div');
+  rowsContainer.className = 'sh-rows';
+  renderHistoryRows(rowsContainer);
+  histCard.appendChild(rowsContainer);
+
+  _content.appendChild(histCard);
+}
+
+function renderHistoryRows(container) {
+  container.innerHTML = '';
+  const history = getHistory();
+  if (history.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'sh-empty';
+    empty.textContent = 'No searches recorded yet.';
+    container.appendChild(empty);
+    return;
+  }
+  for (const entry of history) {
+    const row = document.createElement('div');
+    row.className = 'sh-row';
+    row.tabIndex = 0;
+    row.title = 'Press Enter to search in Modland';
+
+    const dateEl = document.createElement('span');
+    dateEl.className = 'sh-date';
+    dateEl.textContent = formatHistoryDate(entry.ts);
+
+    const termEl = document.createElement('span');
+    termEl.className = 'sh-term';
+    termEl.textContent = entry.term;
+
+    const countEl = document.createElement('span');
+    countEl.className = 'sh-count';
+    countEl.textContent = entry.count != null ? String(entry.count) : '';
+
+    const delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.className = 'sh-del';
+    delBtn.textContent = '×';
+    delBtn.title = 'Delete this entry';
+    delBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      deleteHistoryEntry(entry.ts);
+      renderHistoryRows(container);
+    });
+
+    const runSearch = () => {
+      closeSettingsOverlay();
+      Promise.all([
+        import('../browse/modland.js'),
+        import('../core/mode.js'),
+        import('../core/state.js'),
+      ]).then(([m, mode, { S, elFilter: ef }]) => {
+        if (S.searchMode !== 'modland') mode.switchMode('modland');
+        ef.value = entry.term;
+        m.doModlandSearch();
+      });
+    };
+
+    row.addEventListener('click', runSearch);
+    row.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); runSearch(); }
+    });
+
+    row.append(dateEl, termEl, countEl, delBtn);
+    container.appendChild(row);
+  }
+}
+
+function renderDeepLinkHistoryCard() {
+  const card = document.createElement('div');
+  card.id = 'dl-hist-card';
+  card.className = 'settings-card';
+
+  const hdrRow = document.createElement('div');
+  hdrRow.className = 'settings-row';
+  const hdrLabelWrap = document.createElement('div');
+  const hdrLabel = document.createElement('div');
+  hdrLabel.className = 'settings-label';
+  hdrLabel.textContent = 'Deep Link History';
+  const hdrHint = document.createElement('div');
+  hdrHint.className = 'settings-hint';
+  hdrHint.textContent = 'Links shared via the S button. Click a row to open it in a new tab.';
+  hdrLabelWrap.append(hdrLabel, hdrHint);
+
+  const hdrControls = document.createElement('div');
+  hdrControls.className = 'sh-hdr-controls';
+
+  const maxLabel = document.createElement('label');
+  maxLabel.className = 'sh-max-label';
+  maxLabel.textContent = 'Max:';
+  const maxInput = document.createElement('input');
+  maxInput.className = 'settings-input sh-max-input';
+  maxInput.type = 'number';
+  maxInput.min = '1';
+  maxInput.max = '10000';
+  maxInput.step = '1';
+  maxInput.value = String(getMaxDeepLinkHistory());
+  const commitMax = () => {
+    const n = Math.max(1, Math.min(10000, parseInt(maxInput.value, 10) || 50));
+    maxInput.value = String(n);
+    setMaxDeepLinkHistory(n);
+    renderDeepLinkRows(rowsContainer);
+  };
+  maxInput.addEventListener('blur', commitMax);
+  maxInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); maxInput.blur(); } });
+  maxLabel.appendChild(maxInput);
+
+  const clearBtn = document.createElement('button');
+  clearBtn.type = 'button';
+  clearBtn.className = 'settings-btn';
+  clearBtn.textContent = 'Clear all';
+  clearBtn.addEventListener('click', () => {
+    clearDeepLinkHistory();
+    renderDeepLinkRows(rowsContainer);
+  });
+
+  hdrControls.append(maxLabel, clearBtn);
+  hdrRow.append(hdrLabelWrap, hdrControls);
+  card.appendChild(hdrRow);
+
+  const rowsContainer = document.createElement('div');
+  rowsContainer.className = 'sh-rows';
+  renderDeepLinkRows(rowsContainer);
+  card.appendChild(rowsContainer);
+
+  _content.appendChild(card);
+}
+
+function renderDeepLinkRows(container) {
+  container.innerHTML = '';
+  const history = getDeepLinkHistory();
+  if (history.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'sh-empty';
+    empty.textContent = 'No links shared yet.';
+    container.appendChild(empty);
+    return;
+  }
+  for (const entry of history) {
+    const row = document.createElement('div');
+    row.className = 'sh-row dl-hist-row';
+    row.tabIndex = 0;
+    row.title = entry.url;
+
+    const dateEl = document.createElement('span');
+    dateEl.className = 'sh-date';
+    dateEl.textContent = formatHistoryDate(entry.ts);
+
+    const labelEl = document.createElement('span');
+    labelEl.className = 'sh-term';
+    labelEl.textContent = entry.label || entry.url;
+
+    const delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.className = 'sh-del';
+    delBtn.textContent = '×';
+    delBtn.title = 'Delete this entry';
+    delBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      deleteDeepLinkEntry(entry.ts);
+      renderDeepLinkRows(container);
+    });
+
+    const open = () => window.open(entry.url, '_blank');
+    row.addEventListener('click', open);
+    row.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); open(); } });
+
+    row.append(dateEl, labelEl, delBtn);
+    container.appendChild(row);
+  }
 }
 
 function onKey(e) {
