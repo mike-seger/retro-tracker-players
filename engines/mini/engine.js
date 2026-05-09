@@ -91,6 +91,7 @@ let _loadedTrackData = null;
 let _seekGraceUntil = 0;
 let _framesSinceSeek = 0;
 let _seekTargetUnits = -1;
+let _seekDrainTicks = 0;
 
 function backendUsesMilliseconds() {
   return _timeUnit === 'ms';
@@ -816,17 +817,31 @@ function buildNode() {
     // callbacks while it fast-forwards internally; rendering that buffer
     // would loop the same audio fragment.
     if (_seekTargetUnits >= 0) {
+      _seekDrainTicks++;
       let pos = 0;
       let exited = false;
+      // After the first couple of ticks relax the status===0 requirement.
+      // Some backends (SEGA/SSF) consistently return status=1 even during
+      // valid playback; requiring status===0 would stall the drain forever.
+      const relaxed = _seekDrainTicks > 2;
       for (let drains = 0; drains < 8; drains++) {
         const status = _adapter.computeAudioSamples();
         const len = Number(_adapter.getAudioBufferLength?.()) || 0;
         try { pos = Number(_mod?.ccall('emu_get_current_position', 'number')) || 0; } catch (_) {}
-        if (pos >= _seekTargetUnits && status === 0 && len > 0) {
+        if (pos >= _seekTargetUnits && len > 0 && (status === 0 || relaxed)) {
           _seekTargetUnits = -1;
+          _seekDrainTicks = 0;
           exited = true;
           break;
         }
+      }
+      // Hard timeout: if after many callbacks we still haven't reached the target
+      // (e.g. backend doesn't support seeking), clear the target to prevent a
+      // page freeze caused by continuously spinning computeAudioSamples calls.
+      if (!exited && _seekDrainTicks > 300) {
+        _seekTargetUnits = -1;
+        _seekDrainTicks = 0;
+        exited = true;
       }
       if (!exited) {
         L.fill(0); R.fill(0);
@@ -1062,6 +1077,7 @@ async function loadMini(url, sourceUrl, ext, gen, forcedCfg = null) {
   _chunkFrames = 0;
   _chunkPos = 0;
   _framesSinceSeek = 0;
+  _seekDrainTicks = 0;
 
   const maxPos = Number(_adapter.getMaxPlaybackPosition?.()) || 0;
   const tagDur = parseTagDurations(data);
@@ -1196,31 +1212,48 @@ export function seekTo(sec) {
   _chunkFrames = 0;
   _chunkPos = 0;
   _framesSinceSeek = 0;
+  _seekDrainTicks = 0;
   const primaryPos = Math.round(t * (_unitsPerSecond || _sr));
   // The Wothke adapters' seekPlaybackPosition() requires a ScriptNodePlayer
   // singleton (they call ScriptNodePlayer.getInstance().getVolume()). We use
   // our own ScriptProcessorNode and never instantiate ScriptNodePlayer, so
   // calling the adapter wrapper silently throws. Instead, invoke the wasm
   // exports directly via Module.ccall — same primitives the wrappers use.
+  //
+  // SSF/SEGA special case: emu_seek_position corrupts the Saturn emulator state
+  // (C-level decode_run ERROR, computeAudioSamples returns 1 permanently).
+  // For SSF we skip emu_seek_position entirely and let the drain loop
+  // fast-forward by repeatedly calling computeAudioSamples instead.
+  const isSSF = _currentLoadExt === 'minissf';
   try {
     let backendPos = 0;
     try { backendPos = Number(_mod.ccall('emu_get_current_position', 'number')) || 0; } catch (_) {}
     const isBackward = primaryPos < backendPos;
-    if (isBackward && _loadedTrackName) {
-      // PSX/GSF: backward seek requires emu_init reload before emu_seek_position.
-      try {
-        _mod.ccall('emu_init', 'number', ['string', 'string'], ['/', _loadedTrackName]);
-      } catch (_) {
-        // Fall back to adapter loadMusicData if direct ccall fails.
+    if (isBackward && _loadedTrackData) {
+      if (isSSF) {
+        // SEGA adapter's loadMusicData uppercases path/file internally (via
+        // getPathAndFilename), which is required for SSF. Use it for reload.
         try { _adapter.loadMusicData(_sr, '/', _loadedTrackName, _loadedTrackData, {}); } catch (_) {}
+      } else {
+        // PSX/GSF: backward seek requires emu_init reload before emu_seek_position.
+        try {
+          _mod.ccall('emu_init', 'number', ['string', 'string'], ['/', _loadedTrackName]);
+        } catch (_) {
+          try { _adapter.loadMusicData(_sr, '/', _loadedTrackName, _loadedTrackData, {}); } catch (_) {}
+        }
       }
     }
-    try {
-      _mod.ccall('emu_seek_position', 'number', ['number'], [primaryPos]);
+    if (isSSF) {
+      // SSF: skip emu_seek_position — let drain loop fast-forward naturally.
       _seekTargetUnits = primaryPos;
-    } catch (_) {
-      // Last-ditch fallback to adapter wrapper (will likely throw silently).
-      try { _adapter.seekPlaybackPosition?.(primaryPos); _seekTargetUnits = primaryPos; } catch (_) {}
+    } else {
+      try {
+        _mod.ccall('emu_seek_position', 'number', ['number'], [primaryPos]);
+        _seekTargetUnits = primaryPos;
+      } catch (_) {
+        // Last-ditch fallback to adapter wrapper (will likely throw silently).
+        try { _adapter.seekPlaybackPosition?.(primaryPos); _seekTargetUnits = primaryPos; } catch (_) {}
+      }
     }
   } catch (_) {}
   // Grace window: backends fast-forward by emitting silence in
