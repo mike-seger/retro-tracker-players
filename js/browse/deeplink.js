@@ -150,17 +150,21 @@ export async function loadDeepLinkedTrack() {
   // Parse filters once — used across all branches below.
   const f = deepLinkFilters();
 
-  // Try to find in local files first
-  let idx = findLocalEntryByUrl(targetUrl);
-  if (idx >= 0) {
-    S.currentIdx = idx;
-    highlightCurrent();
-    setFocus(idx);
-    const files = activeFiles();
-    const entry = files[idx];
-    const label = safeDecodeURIComponent(entry.name).split('/').pop() || entry.name;
-    showDeepLinkPrompt(label, () => loadAndPlay(idx));
-    return true;
+  // Try to find in local files first — but only when source is not explicitly 'modland'.
+  // A modland deep link must always restore the modland search context, even if the
+  // track also happens to exist in urllists.json / local file lists.
+  if (f.source !== 'modland') {
+    const idx = findLocalEntryByUrl(targetUrl);
+    if (idx >= 0) {
+      S.currentIdx = idx;
+      highlightCurrent();
+      setFocus(idx);
+      const files = activeFiles();
+      const entry = files[idx];
+      const label = safeDecodeURIComponent(entry.name).split('/').pop() || entry.name;
+      showDeepLinkPrompt(label, () => loadAndPlay(idx));
+      return true;
+    }
   }
 
   // Try to find in modland files (scratchpad / saved tracks)
@@ -199,19 +203,23 @@ export async function loadDeepLinkedTrack() {
       S.selectedFormats = new Set([...fmts].filter(fm => S._allFormatOptions.has(fm)));
     }
 
-    // Restore range: prefer the saved range param; fall back to computing from track position
-    // (legacy behaviour for old links that don't carry the range param).
+    // Restore range: prefer the saved range param; otherwise compute correct page for search+formats
     if (f.range > 0) {
       S._currentRange = f.range;
     } else if (f.search) {
       const pageSize = getMaxListItems();
-      const total = remoteSearch.count(f.search);
-      if (total > pageSize) {
-        const allResults = remoteSearch.search(f.search, total, 0);
-        const globalIdx = allResults.findIndex(r => r.url === targetUrl);
-        if (globalIdx >= 0) {
-          S._currentRange = Math.floor(globalIdx / pageSize) * pageSize;
-        }
+      // Use both search and formats to get the filtered result set
+      let allResults = [];
+      if (S.selectedFormats && S.selectedFormats.size > 0 && S.selectedFormats.size < S._allFormatOptions.size) {
+        // Use remoteSearch.searchWithFormats for filtered results
+        const fmtArr = Array.from(S.selectedFormats);
+        allResults = remoteSearch.searchWithFormats(f.search, fmtArr, remoteSearch.count(f.search), 0);
+      } else {
+        allResults = remoteSearch.search(f.search, remoteSearch.count(f.search), 0);
+      }
+      const globalIdx = allResults.findIndex(r => r.url === targetUrl);
+      if (globalIdx >= 0) {
+        S._currentRange = Math.floor(globalIdx / pageSize) * pageSize;
       }
     }
 
