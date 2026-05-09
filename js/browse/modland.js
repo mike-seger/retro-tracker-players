@@ -155,6 +155,18 @@ export function abortModlandSearch() {
 // Called when the user selects "Scratchpad" from the source dropdown.
 export function showScratchpad() {
   abortModlandSearch();
+  // Persist current modland context (filter, range, index) so returning to "Ml"
+  // restores it correctly.  Only snapshot on the first entry into scratchpad; a
+  // second click on "Sp" should keep the already-saved state.
+  if (!S._viewingScratchpad) {
+    S._modlandCtx = {
+      ...(S._modlandCtx || {}),
+      filter:     elFilter.value,
+      currentIdx: S.currentIdx,
+      focusedIdx: S.focusedIdx,
+      range:      S._currentRange,
+    };
+  }
   S._viewingScratchpad = true;
   elSearchMode.textContent = 'Sp';
   elSearchMode.dataset.value = 'scratchpad';
