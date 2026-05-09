@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-09T14:44:18.125Z",
+  "generatedAt": "2026-05-09T18:50:16.715Z",
   "sourceUrl": "http://127.0.0.1:8080/index.html",
   "screenshotPath": "doc/elements-view.png",
   "viewport": {
@@ -8,8 +8,8 @@
     "height": 480
   },
   "stats": {
-    "total": 34,
-    "controls": 22,
+    "total": 35,
+    "controls": 23,
     "information": 12
   },
   "elements": [
@@ -46,7 +46,7 @@
       "category": "information",
       "xpath": "//span[@aria-label='Tracker value']",
       "humanXPath": "html > body > div#player > div#info > div.info-field > span.val",
-      "notes": "",
+      "notes": "text-match",
       "tag": "span"
     },
     {
@@ -64,7 +64,7 @@
       "category": "information",
       "xpath": "//span[@aria-label='Title value']",
       "humanXPath": "html > body > div#player > div#info > div.info-field > span.val",
-      "notes": "",
+      "notes": "text-match",
       "tag": "span"
     },
     {
@@ -82,7 +82,7 @@
       "category": "information",
       "xpath": "//span[@aria-label='Type value']",
       "humanXPath": "html > body > div#player > div#info > div.info-field > span.val",
-      "notes": "",
+      "notes": "text-match",
       "tag": "span"
     },
     {
@@ -259,6 +259,15 @@
       "tag": "button"
     },
     {
+      "key": "control-add-to-playlist",
+      "name": "Add to playlist",
+      "category": "control",
+      "xpath": "/html[1]/body[1]/div[1]/ul[1]/li[1]/div[2]/button[2]",
+      "humanXPath": "body > div#player > ul#playlist > li.remote > div.row-bot > button.r-add",
+      "notes": "control-match",
+      "tag": "button"
+    },
+    {
       "key": "btn-play",
       "name": "Play / Pause",
       "category": "control",
@@ -284,7 +293,7 @@
       "category": "information",
       "xpath": "//*[@id='duration']",
       "humanXPath": "#duration",
-      "notes": "",
+      "notes": "text-match",
       "tag": "span",
       "id": "duration"
     },

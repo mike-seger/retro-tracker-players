@@ -77,9 +77,8 @@ export function restoreModlandContext() {
 export function restorePersistedContext() {
   try {
     const raw = localStorage.getItem('app-context');
-    console.log('[restore] app-context raw:', raw);
     const saved = JSON.parse(raw);
-    if (!saved) { console.log('[restore] no saved context'); return; }
+    if (!saved) return;
 
     const isScratchpad = saved.mode === 'scratchpad';
     const targetMode   = isScratchpad ? 'modland' : (saved.mode || S.searchMode);
@@ -92,9 +91,7 @@ export function restorePersistedContext() {
     }
 
     if (targetMode !== S.searchMode) {
-      console.log('[restore] calling switchMode to', targetMode, '| current searchMode:', S.searchMode, '| elFilter.value:', elFilter.value);
       switchMode(targetMode, { skipSearch: true });
-      console.log('[restore] after switchMode | elFilter.value:', elFilter.value);
     } else if (savedRange > 0) {
       // Already in the target mode — apply range directly.
       S._currentRange = savedRange;
@@ -132,7 +129,6 @@ export function restorePersistedContext() {
         // Defensively re-apply the saved filter immediately before the search,
         // in case switchMode or any intermediate step cleared elFilter.value.
         if (saved.filter) elFilter.value = saved.filter;
-        console.log('[restore] before doModlandSearch | elFilter.value:', elFilter.value);
         doModlandSearch();
       }
     }

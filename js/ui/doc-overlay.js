@@ -2,6 +2,7 @@
 import { btnHelp } from '../core/state.js';
 import { openPlaylistOverlay } from './playlist-overlay.js';
 import { openSettingsOverlay } from '../settings/settings-overlay.js';
+import { openHistoryOverlay } from './history-overlay.js';
 import { closeAllDropdowns } from './dropdown-keys.js';
 
 let _helpCache = null;
@@ -612,6 +613,7 @@ optionsPanel?.addEventListener('click', (e) => {
   closeOptionsPanel();
   const action = opt.dataset.action;
   if (action === 'settings') openSettingsOverlay();
+  else if (action === 'history') openHistoryOverlay();
   else if (action === 'help') showHelp();
   else if (action === 'live-help') openUIMapPopup();
   else if (action === 'playlists') openPlaylistOverlay();

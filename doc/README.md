@@ -3,7 +3,7 @@
 <!-- AUTO:DOC_META:START -->
 | Version | Updated |
 |:--|:--|
-| 0.9.9-20 | 2026-05-09 15:40 |
+| 0.9.9-21 | 2026-05-09 16:44 |
 <!-- AUTO:DOC_META:END -->
 
 A browser-based player for classic tracker module formats (MOD, XM, S3M, IT, AHX, SID) with local file lists and Modland search.
@@ -47,14 +47,15 @@ Description of the UI elements from the screenshot.
 | 24 | Track title | body > div#player > ul#playlist > li.remote > div.row-bot > span.title |
 | 25 | Track format | body > div#player > ul#playlist > li.remote > div.row-bot > span.ext |
 | 26 | Download track | body > div#player > ul#playlist > li.remote > div.row-bot > button.r-dl |
-| 27 | Play / Pause | #btn-play |
-| 28 | Track Time | #time |
-| 29 | Track Length | #duration |
-| 30 | Track seekbar | #seek |
-| 31 | Browse random tracks | #ml-random |
-| 32 | Result page | #refine-range-btn |
-| 33 | Add all search results | #ml-add-all |
-| 34 | Add track | button.r-add (first row) |
+| 27 | Add to playlist | body > div#player > ul#playlist > li.remote > div.row-bot > button.r-add |
+| 28 | Play / Pause | #btn-play |
+| 29 | Track Time | #time |
+| 30 | Track Length | #duration |
+| 31 | Track seekbar | #seek |
+| 32 | Browse random tracks | #ml-random |
+| 33 | Result page | #refine-range-btn |
+| 34 | Add all search results | #ml-add-all |
+| 35 | Add track | button.r-add (first row) |
 
 </div>
 <!-- AUTO:UI_ELEMENT_TABLE:END -->

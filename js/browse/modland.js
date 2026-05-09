@@ -198,9 +198,7 @@ export async function doModlandSearch() {
 
   if (!remoteSearch.isLoaded()) {
     elFilterCnt.textContent = 'loading…';
-    console.log('[doModlandSearch] index not loaded yet, raw=', raw, '| elFilter.value=', elFilter.value);
     remoteSearch.loadIndex().then(() => {
-      console.log('[doModlandSearch] index now loaded, elFilter.value=', elFilter.value);
       remoteSearch.applyDisabledFormats(getDisabledFormats());
       doModlandSearch();
     });
@@ -344,8 +342,8 @@ export async function doModlandSearch() {
   updateTrackPos();
   updateMlButtons();
   persistContext();
-  // Record non-empty, non-random searches in history.
-  if (q) addHistoryEntry(q, total);
+  // Record searches with ≥3 chars and <5000 results in history.
+  if (q && q.length >= 3 && total > 0 && total < 5000) addHistoryEntry(q, total);
 }
 
 // ── random browse ─────────────────────────────────────
@@ -569,10 +567,6 @@ function renderAddDropdown(panel, btn, track) {
 export function refreshOpenAddDropdown() {
   const panel = document.getElementById('r-add-dropdown');
   if (!_addDropdownSession || !panel) return;
-  if (S.searchMode !== 'modland' || !S._inSearchResults) {
-    closeAddDropdown();
-    return;
-  }
   const idx = S.focusedIdx >= 0 ? S.focusedIdx : S.currentIdx;
   const track = activeFiles()[idx];
   const row = idx >= 0 ? elList.children[idx] : null;
@@ -586,7 +580,7 @@ export function refreshOpenAddDropdown() {
   positionAddDropdown(panel, btn);
 }
 
-function openAddDropdown(btn, track) {
+export function openAddDropdown(btn, track) {
   closeAddDropdown();
   pm.getAll().then(playlists => {
     playlists = playlists.filter(pl => !pm.isListHidden(pm.hiddenListKeyForPlaylist(pl.id)));

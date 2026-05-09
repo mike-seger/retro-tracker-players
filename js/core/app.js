@@ -27,6 +27,7 @@ import { closeOptionsPanel } from '../ui/doc-overlay.js';
 import * as pm from '../playlists/playlist-manager.js';
 import { closePlaylistOverlay } from '../ui/playlist-overlay.js';
 import { closeSettingsOverlay } from '../settings/settings-overlay.js';
+import { closeHistoryOverlay } from '../ui/history-overlay.js';
 
 // Global debug toggle for URL-based playing-track re-anchor logs.
 const DEBUG_TRACK_REANCHOR_LOG = false;
@@ -317,6 +318,7 @@ elFilterClr.addEventListener('click', () => {
   await refreshUserPlaylistTracks();
   document.getElementById('pm-close')?.addEventListener('click', closePlaylistOverlay);
   document.getElementById('settings-close')?.addEventListener('click', closeSettingsOverlay);
+  document.getElementById('history-close')?.addEventListener('click', closeHistoryOverlay);
 
   // Rebuild current list/search pagination only when maxListItems changes.
   // If settings overlay is open, defer the expensive rebuild until it closes.

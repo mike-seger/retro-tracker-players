@@ -7,7 +7,7 @@ import { createTrackRow, isTrackRowControlTarget } from './track-row.js';
 import { applyFilter } from '../filters/filter.js';
 import { loadAndPlay } from '../core/player.js';
 import { toggleSelect, updateSelCount } from './selection.js';
-import { deleteModlandTrack, searchByArtist } from '../browse/modland.js';
+import { deleteModlandTrack, searchByArtist, openAddDropdown } from '../browse/modland.js';
 import { localPlaceholder, modlandPlaceholder } from '../filters/refine.js';
 import * as pm from './playlist-manager.js';
 import { getMaxListItems } from '../settings/settings.js';
@@ -168,6 +168,7 @@ export function buildPlaylist() {
         ariaLabel: 'Remove from playlist',
       });
     }
+    actions.push({ key: 'add', className: 'r-add', text: '+', title: 'Add to playlist' });
 
     const { li, checkbox, actionButtons, baseName, searchArtist } = createTrackRow({
       entry,
@@ -220,6 +221,14 @@ export function buildPlaylist() {
       });
     }
 
+    const addBtn = actionButtons.get('add');
+    if (addBtn) {
+      addBtn.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        openAddDropdown(ev.currentTarget, entry);
+      });
+    }
+
     li.addEventListener('click', (ev) => {
       if (isTrackRowControlTarget(ev.target)) return;
       loadAndPlay(i);
@@ -266,7 +275,9 @@ export function updateTrackPos() {
     if (i === S.currentIdx) visiblePos = visibleTotal;
   }
 
-  const filtered = visibleTotal;
+  const filtered = (S.searchMode === 'modland' && S._inSearchResults && S._lastSearchTotal > 0)
+    ? S._lastSearchTotal
+    : visibleTotal;
   // In modland search results, show the full remote index total (not the page size).
   const total = (S.searchMode === 'modland' && S._inSearchResults && remoteSearch.isLoaded())
     ? remoteSearch.totalPlayable()
