@@ -1,7 +1,7 @@
 // js/format-panel.js — Format multi-select dropdown widget
 import { S, elRefineFormatBtn, elRefineFormatPanel } from '../core/state.js';
 import { openDropdown } from '../ui/dropdown-keys.js';
-import { selectionState, appendPanelOption, syncPanelCheckboxes, wireDropdown } from './refine-panel.js';
+import { selectionState, buildPanelHead, appendPanelOption, syncPanelCheckboxes, wireDropdown } from './refine-panel.js';
 
 let _savedFormats = null;
 let _openedFormats = null;
@@ -75,30 +75,7 @@ export function buildFormatPanel(formats) {
 
   const panel = elRefineFormatPanel;
   panel.innerHTML = '';
-
-  // Panel head: title only (master * is the first list item below)
-  const head = document.createElement('div');
-  head.className = 'panel-head';
-  const titleEl = document.createElement('div');
-  titleEl.className = 'panel-title';
-  titleEl.textContent = 'Format';
-  head.appendChild(titleEl);
-  panel.appendChild(head);
-
-  // Master (*) as first list item (below title, above format rows)
-  const masterLabel = document.createElement('label');
-  masterLabel.className = 'fmt-opt fmt-master';
-  masterLabel.tabIndex = -1;
-  const masterInput = document.createElement('input');
-  masterInput.type = 'checkbox';
-  masterInput.value = '__master__';
-  masterInput.checked = true;
-  masterInput.dataset.kind = 'master';
-  masterInput.addEventListener('change', cycleMasterFormats);
-  masterLabel.appendChild(masterInput);
-  masterLabel.appendChild(document.createTextNode('*'));
-  panel.appendChild(masterLabel);
-  _masterCb = masterInput;
+  _masterCb = buildPanelHead(panel, 'Format', cycleMasterFormats);
 
   for (const fmt of sorted) {
     appendPanelOption(panel, fmt, fmt, S.selectedFormats.has(fmt), (checked) => {

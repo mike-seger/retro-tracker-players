@@ -8,20 +8,13 @@ export function selectionState(selectedSize, totalSize) {
   return 'some';
 }
 
-// Clears panel, builds the sticky header with a title and master checkbox.
+// Builds the sticky header with a title and master checkbox inside it.
+// The checkbox sits at the same left position as checkboxes in fmt-opt rows.
 // Returns the master <input> element.
 export function buildPanelHead(panel, titleText, onCycleMaster) {
-  const head = document.createElement('div');
+  const head = document.createElement('label');
   head.className = 'panel-head';
-
-  const titleEl = document.createElement('div');
-  titleEl.className = 'panel-title';
-  titleEl.textContent = titleText;
-  head.appendChild(titleEl);
-
-  const master = document.createElement('label');
-  master.className = 'fmt-opt fmt-master';
-  master.tabIndex = -1;
+  head.tabIndex = -1;
 
   const masterCb = document.createElement('input');
   masterCb.type = 'checkbox';
@@ -30,9 +23,11 @@ export function buildPanelHead(panel, titleText, onCycleMaster) {
   masterCb.dataset.kind = 'master';
   masterCb.addEventListener('change', onCycleMaster);
 
-  master.appendChild(masterCb);
-  master.appendChild(document.createTextNode('*'));
-  head.appendChild(master);
+  const titleEl = document.createElement('span');
+  titleEl.className = 'panel-title';
+  titleEl.textContent = titleText;
+
+  head.append(masterCb, titleEl);
   panel.appendChild(head);
 
   return masterCb;

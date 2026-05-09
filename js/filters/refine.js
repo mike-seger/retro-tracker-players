@@ -1,6 +1,6 @@
 // js/refine.js — Refine panel population + placeholder helpers
 import { S, elFilter } from '../core/state.js';
-import { extractArtist, normalizeFormatExt } from '../lib/utils.js';
+import { extractArtist, normalizeFormatExt, fmtCount } from '../lib/utils.js';
 import { buildFormatPanel } from './format-panel.js';
 import { buildFolderPanel, clearFolderFilter } from './folder-panel.js';
 import { buildArtistPanel } from './artist-panel.js';
@@ -90,12 +90,12 @@ export function populateRangePanel(total) {
 }
 
 export function localPlaceholder() {
-  return `Search ${S.mergedFiles.length.toLocaleString()} local tracks…`;
+  return `Search ${fmtCount(S.mergedFiles.length)} local tracks…`;
 }
 
 export function modlandPlaceholder() {
   const cnt = remoteSearch.isLoaded() ? remoteSearch.totalPlayable() : 0;
-  return cnt > 0 ? `Search ${cnt.toLocaleString()} modland tracks…` : 'Search modland…';
+  return cnt > 0 ? `Search ${fmtCount(cnt)} modland tracks…` : 'Search modland…';
 }
 
 // ── Change handlers wired up by app.js after all modules load ─────────────

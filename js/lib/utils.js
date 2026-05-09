@@ -4,6 +4,10 @@ import { debugLog } from '../core/state.js';
 const _decodeWarned = new Set();
 const MINI_FORMAT_EXTS = new Set(['mini2sf', 'minigsf', 'minipsf', 'miniusf', 'minipsf2', 'minissf']);
 
+export function fmtCount(n) {
+  return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, "'");
+}
+
 export function fmtTime(s) {
   if (!isFinite(s) || s < 0) return '0:00';
   return Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');

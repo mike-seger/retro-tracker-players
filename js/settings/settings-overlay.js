@@ -1,6 +1,7 @@
 // js/settings-overlay.js — Global settings overlay UI
 import { getAppSettings, setAppSettings, resetAppSettings, DEFAULT_SETTINGS, ALL_FORMAT_GROUPS } from './settings.js';
 import * as remoteSearch from '../browse/remote-search.js';
+import { fmtCount } from '../lib/utils.js';
 
 let _overlay = null;
 let _content = null;
@@ -160,7 +161,7 @@ function render() {
     checkboxes.set(grp, cb);
     const txt = document.createElement('span');
     const cnt = fmtCounts.get(grp);
-    txt.textContent = cnt != null ? `${grp} (${cnt.toLocaleString()})` : grp;
+    txt.textContent = cnt != null ? `${grp} (${fmtCount(cnt)})` : grp;
     lbl.append(cb, txt);
     fmtGrid.appendChild(lbl);
   }
