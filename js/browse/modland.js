@@ -145,6 +145,7 @@ export function updateMlButtons() {
 // AbortController for async search — each call cancels any in-flight search.
 let _searchController = null;
 let _searchTimer = 0;
+let _historyTimer = 0;
 
 /** Cancel the debounced-search timer, if any (e.g. when switching modes). */
 export function cancelScheduledSearch() {
@@ -356,7 +357,13 @@ export async function doModlandSearch() {
   updateMlButtons();
   persistContext();
   // Record searches with ≥3 chars and <5000 results in history.
-  if (q && q.length >= 3 && total > 0 && total < 5000) addHistoryEntry(q, total);
+  // Defer 20 s: if the query is superseded by another search before the timer fires,
+  // the pending write is cancelled and only the final query in the run gets saved.
+  clearTimeout(_historyTimer);
+  if (q && q.length >= 3 && total > 0 && total < 5000) {
+    const _q = q, _total = total;
+    _historyTimer = setTimeout(() => addHistoryEntry(_q, _total), 20000);
+  }
 }
 
 // ── random browse ─────────────────────────────────────
