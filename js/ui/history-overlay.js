@@ -100,7 +100,7 @@ function buildSearchColumn() {
   const hdrHint = document.createElement('div');
   hdrHint.className = 'settings-hint';
   hdrHint.textContent = 'Modland searches (≥3 chars, <5000 results). Press Enter on a row to re-run it.';
-  hdrLabelWrap.append(hdrLabel, hdrHint);
+  hdrLabelWrap.append(hdrLabel);
 
   const hdrControls = document.createElement('div');
   hdrControls.className = 'sh-hdr-controls';
@@ -136,7 +136,7 @@ function buildSearchColumn() {
   });
 
   hdrControls.append(maxLabel, clearBtn);
-  hdrRow.append(hdrLabelWrap, hdrControls);
+  hdrRow.append(hdrLabelWrap, hdrControls, hdrHint);
   col.appendChild(hdrRow);
 
   const rowsContainer = document.createElement('div');
@@ -216,7 +216,7 @@ function buildDeepLinkColumn() {
   const hdrHint = document.createElement('div');
   hdrHint.className = 'settings-hint';
   hdrHint.textContent = 'Links shared via the S button. Click a row to open it in a new tab.';
-  hdrLabelWrap.append(hdrLabel, hdrHint);
+  hdrLabelWrap.append(hdrLabel);
 
   const hdrControls = document.createElement('div');
   hdrControls.className = 'sh-hdr-controls';
@@ -261,7 +261,7 @@ function buildDeepLinkColumn() {
   });
 
   hdrControls.append(maxLabel, copyAllBtn, clearBtn);
-  hdrRow.append(hdrLabelWrap, hdrControls);
+  hdrRow.append(hdrLabelWrap, hdrControls, hdrHint);
   col.appendChild(hdrRow);
 
   const rowsContainer = document.createElement('div');
