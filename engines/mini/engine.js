@@ -398,9 +398,17 @@ function installFileRequestCallback(mod) {
       if (!rel) return -1;
       const abs = rel.startsWith('/') ? rel : ('/' + rel);
       const ok = vfsExists(mod, abs) || ensureAliasForRequestedFile(mod, abs);
+      if (_currentLoadExt === 'minissf' && _requestDebugCount < 30) {
+        _requestDebugCount += 1;
+        if (ok) {
+          console.log(`[mini] minissf file callback OK:`, raw, '| abs:', abs);
+        } else {
+          console.warn(`[mini] minissf file callback MISSING:`, raw, '| abs:', abs);
+        }
+      }
       if (!ok && _currentLoadExt === 'minigsf' && _requestDebugCount < 30) {
         _requestDebugCount += 1;
-        console.warn('[mini] gsf requested missing file:', raw, '| normalized:', abs);
+        console.warn('[mini] minigsf requested missing file:', raw, '| normalized:', abs);
       }
       if (ok) return 0;
       return -1;
@@ -553,6 +561,60 @@ function lowercaseBasenameUrl(u) {
     url.pathname = path.substring(0, i + 1) + baseLower;
     return url.href;
   } catch (_) { return null; }
+}
+
+async function preloadGuessedSsfLibs(mainUrl, mainData, mainName, mod, gen) {
+  if (gen !== _loadGen) throw new Error('load superseded');
+
+  const candidates = new Set();
+  const add = (s) => {
+    const norm = normalizeVfsPath(s);
+    if (!norm) return;
+    candidates.add(norm);
+  };
+
+  // Parse explicit _lib tags for .ssf / .ssflib references.
+  const libRefs = parsePsfLibRefs(mainData);
+  console.log('[mini] ssf lib refs from tags:', libRefs);
+  for (const ref of libRefs) {
+    if (/\.(ssf|ssflib)$/i.test(ref)) add(ref);
+  }
+
+  // Guess: bgm02.minissf → bgm02.ssf
+  const base = String(mainName || '').trim();
+  const lower = base.toLowerCase();
+  if (lower.endsWith('.minissf')) {
+    const noExt = base.slice(0, -'.minissf'.length);
+    add(`${noExt}.ssf`);
+    add(base.replace(/\.minissf$/i, '.ssf'));
+  }
+
+  for (const libPath of candidates) {
+    const abs = '/' + normalizeVfsPath(libPath);
+    if (vfsExists(mod, abs)) {
+      console.log('[mini] ssf lib already in vfs:', libPath);
+      continue;
+    }
+    const libUrl = resolveLibUrl(libPath, mainUrl);
+    console.log('[mini] ssf prefetch candidate:', libPath, '->', libUrl);
+    let res;
+    try {
+      res = await fetch(libUrl);
+      console.log('[mini] ssf prefetch status:', libPath, res.status, res.ok);
+    } catch (_) {
+      console.warn('[mini] ssf prefetch failed:', libPath, '(fetch threw)');
+      continue;
+    }
+    if (!res.ok) continue;
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    registerVfsFile(mod, libPath, bytes);
+    // SEGA backend may request the lib with uppercase name; register both cases.
+    const libPathUpper = libPath.toUpperCase();
+    if (libPathUpper !== libPath) {
+      try { registerVfsFile(mod, libPathUpper, bytes); } catch (_) {}
+    }
+    console.log('[mini] ssf prefetch registered:', libPath, '| bytes:', bytes.length);
+  }
 }
 
 async function preloadGuessedGsfLibs(mainUrl, mainData, mainName, mod, gen) {
@@ -855,8 +917,38 @@ async function loadMini(url, sourceUrl, ext, gen, forcedCfg = null) {
   _loadedTrackName = fname;
   _loadedTrackData = data;
 
+  // SEGA backend uppercases all filenames (getPathAndFilename/mapBackendFilename).
+  // Register the main track and its libs under uppercase names too so C-level
+  // fopen() calls (which go through emu_init's direct FS access) succeed.
+  if (ext === 'minissf') {
+    const fnameUpper = fname.toUpperCase();
+    if (fnameUpper !== fname) {
+      try { registerVfsFile(_mod, fnameUpper, data); } catch (_) {}
+    }
+    const ssfUpper = fnameUpper.endsWith('.MINISSF')
+      ? fnameUpper.slice(0, -'.MINISSF'.length) + '.SSF'
+      : fnameUpper;
+    if (ssfUpper !== fname && ssfUpper !== fnameUpper) {
+      try { registerVfsFile(_mod, ssfUpper, data); } catch (_) {}
+    }
+  }
+
   if (ext === 'minigsf') {
     await preloadGuessedGsfLibs(sourceUrl || url, data, fname, _mod, gen);
+    if (gen !== _loadGen) throw new Error('load superseded');
+  }
+
+  if (ext === 'minissf') {
+    // SEGA backend uppercases all file requests; ensure all pre-loaded libs
+    // are also registered under their uppercase names.
+    for (const p of [..._registeredFiles]) {
+      const pUp = p.toUpperCase();
+      if (pUp !== p && !_registeredFiles.has(pUp)) {
+        const bytes = _registeredFileData.get(p);
+        if (bytes) try { registerVfsFile(_mod, pUp.replace(/^\//, ''), bytes); } catch (_) {}
+      }
+    }
+    await preloadGuessedSsfLibs(sourceUrl || url, data, fname, _mod, gen);
     if (gen !== _loadGen) throw new Error('load superseded');
   }
 
@@ -894,6 +986,46 @@ async function loadMini(url, sourceUrl, ext, gen, forcedCfg = null) {
     }
   }
 
+  // SSF (Sega Saturn) files may need .ssf extension rather than .minissf.
+  // Also try uppercase variants since SEGA backend uses toUpperCase() internally.
+  const ssfAttempts = [];
+  if (loadRet !== 0 && ext === 'minissf') {
+    const ssfName = fname.toLowerCase().endsWith('.minissf')
+      ? fname.slice(0, -'.minissf'.length) + '.ssf'
+      : fname;
+    const fnameUp = fname.toUpperCase();
+    const ssfUp = ssfName.toUpperCase();
+    if (ssfName !== fname) {
+      try { registerVfsFile(_mod, ssfName, data); } catch (_) {}
+    }
+    if (fnameUp !== fname) {
+      try { registerVfsFile(_mod, fnameUp, data); } catch (_) {}
+    }
+    if (ssfUp !== ssfName && ssfUp !== fnameUp) {
+      try { registerVfsFile(_mod, ssfUp, data); } catch (_) {}
+    }
+    const candidates = [
+      ['/', ssfName],
+      ['', ssfName],
+      ['/', fnameUp],
+      ['', fnameUp],
+      ['/', ssfUp],
+      ['', ssfUp],
+      ['', fname],
+    ];
+    for (const [path, file] of candidates) {
+      const ret = _adapter.loadMusicData(sr, path, file, data, {});
+      ssfAttempts.push(`${path || '(empty)'}/${file}`);
+      console.log('[mini] loadMusicData ssf fallback:', ret, '| path:', path || '(empty)', '| file:', file);
+      if (ret === 0) {
+        loadRet = 0;
+        fname = file;
+        break;
+      }
+      loadRet = ret;
+    }
+  }
+
   console.log('[mini] loadMusicData returned:', loadRet, '| data.length:', data.length, '| sr:', sr);
   if (loadRet < 0) {
     const suffix = preload?.missing?.length
@@ -902,6 +1034,10 @@ async function loadMini(url, sourceUrl, ext, gen, forcedCfg = null) {
     if (ext === 'minigsf' && !preload?.missing?.length) {
       const attempts = gsfAttempts.length ? `; tried: ${gsfAttempts.join(', ')}` : '';
       throw new Error(`[mini] emu_init failed (${loadRet}) for ${fname}; backend_gsf rejected this minigsf sample (or variant not supported)${attempts}`);
+    }
+    if (ext === 'minissf') {
+      const attempts = ssfAttempts.length ? `; tried: ${ssfAttempts.join(', ')}` : '';
+      throw new Error(`[mini] emu_init failed (${loadRet}) for ${fname}; SEGA backend rejected this minissf file${attempts}${suffix}`);
     }
     throw new Error(`[mini] emu_init failed (${loadRet}) for ${fname}${suffix}`);
   }
@@ -1010,7 +1146,7 @@ export async function load(url, entry) {
     }
   } catch (e) {
     // For non-PSF mini families, attempt VGM fallback if native backend fails.
-    if (ext !== 'minipsf' && ext !== 'minipsf2' && ext !== 'minigsf') {
+    if (ext !== 'minipsf' && ext !== 'minipsf2' && ext !== 'minigsf' && ext !== 'minissf') {
       const fallback = await getVgmFallbackEngine();
       _fallbackActive = true;
       _playing = false;

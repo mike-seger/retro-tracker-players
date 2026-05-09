@@ -4,7 +4,7 @@ import { clamp01, loadScript, resolveExt } from '../shared.js';
 const VGM_STDLIB_JS_URL = 'https://cdn.jsdelivr.net/gh/wothke/vgmplay-0.40.9@master/emscripten/htdocs/stdlib/scriptprocessor_player.min.js';
 const VGM_JS_URL = 'https://cdn.jsdelivr.net/gh/wothke/vgmplay-0.40.9@master/emscripten/htdocs/backend_vgm.js';
 const VGM_ENGINE_PATCH = 'vgm-2026-05-07-split-c';
-const MINI_EXTS = new Set(['mini2sf', 'minigsf', 'minipsf', 'miniusf', 'minipsf2', 'minissf']);
+const MINI_EXTS = new Set(['mini2sf', 'minigsf', 'minipsf', 'miniusf', 'minipsf2']);
 
 let _onEnd = null;
 let _volume = 1;
