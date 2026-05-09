@@ -28,8 +28,13 @@ let _vgmFramePos = 0;
 let _vgmChunk = null;
 let _vgmChunkFrames = 0;
 let _vgmChunkPos = 0;
+let _vgmLastExt = '';
 
 const VGM_INI = '; minimal retrotrap config\n[General]\nSampleRate=44100\n';
+
+function vgmPosUsesMilliseconds() {
+  return MINI_EXTS.has(_vgmLastExt);
+}
 
 const _vgmWarmup = (async () => {
   try {
@@ -81,6 +86,36 @@ function normalizeVfsPath(pathLike) {
     parts.push(seg);
   }
   return parts.join('/');
+}
+
+function sanitizeUrlRef(ref) {
+  return String(ref || '').replace(/%(?![0-9A-Fa-f]{2})/g, '%25');
+}
+
+function resolveLibUrl(ref, base) {
+  const cleanRef = sanitizeUrlRef(ref);
+  try {
+    return new URL(cleanRef).href;
+  } catch (_) {}
+
+  const baseStr = String(base || '').trim() || window.location.href;
+
+  try {
+    return new URL(cleanRef, baseStr).href;
+  } catch (_) {}
+
+  let parsedBase;
+  try {
+    parsedBase = new URL(baseStr, window.location.href);
+  } catch (_) {
+    parsedBase = new URL(window.location.href);
+  }
+
+  const baseDir = parsedBase.pathname.replace(/[^/]*$/, '');
+  const merged = cleanRef.startsWith('/') ? cleanRef : (baseDir + cleanRef);
+  const normalized = normalizeVfsPath(merged);
+  const encodedPath = '/' + normalized.split('/').filter(Boolean).map(encodeURIComponent).join('/');
+  return parsedBase.origin + encodedPath;
 }
 
 function ensureVfsDir(mod, absDir) {
@@ -172,7 +207,7 @@ async function preloadMiniLibraries(mainUrl, mainData, mod, gen) {
     if (gen !== _loadGen) throw new Error('load superseded');
     const libs = parsePsfLibRefs(fileData);
     for (const libPath of libs) {
-      const libUrl = new URL(libPath, fileUrl).href;
+      const libUrl = resolveLibUrl(libPath, fileUrl || mainUrl);
       if (visited.has(libUrl)) continue;
       visited.add(libUrl);
 
@@ -430,7 +465,7 @@ function ensureVgmAudioCtx() {
   }
 }
 
-async function loadVgm(url, ext, gen) {
+async function loadVgm(url, ext, gen, sourceUrl) {
   await ensureVgmModule();
   if (gen !== _loadGen) throw new Error('load superseded');
   console.log('[vgm] engine patch:', VGM_ENGINE_PATCH);
@@ -442,6 +477,7 @@ async function loadVgm(url, ext, gen) {
 
   const data = ext === 'vgz' ? await decompressGzip(raw) : new Uint8Array(raw);
   if (gen !== _loadGen) throw new Error('load superseded');
+  _vgmLastExt = ext;
 
   const meta = parseVgmMeta(data);
   _vgmDuration = meta.duration || 300;
@@ -451,7 +487,7 @@ async function loadVgm(url, ext, gen) {
   _vgmFileReg = null;
 
   if (MINI_EXTS.has(ext)) {
-    await preloadMiniLibraries(url, data, _vgmMod, gen);
+    await preloadMiniLibraries(sourceUrl || url, data, _vgmMod, gen);
     if (gen !== _loadGen) throw new Error('load superseded');
   }
 
@@ -493,7 +529,9 @@ async function loadVgm(url, ext, gen) {
 
   const maxPos = _vgmAdapter.getMaxPlaybackPosition();
   console.log('[vgm] getMaxPlaybackPosition():', maxPos);
-  if (maxPos > 0) _vgmDuration = maxPos / _vgmSR;
+  if (maxPos > 0) {
+    _vgmDuration = vgmPosUsesMilliseconds() ? (maxPos / 1000) : (maxPos / _vgmSR);
+  }
 
   if (_vgmCtx.state === 'suspended') {
     try { await _vgmCtx.resume(); } catch (_) {}
@@ -539,7 +577,7 @@ export async function load(url, entry) {
 
   const gen = ++_loadGen;
   ensureVgmAudioCtx();
-  const result = await loadVgm(url, ext, gen);
+  const result = await loadVgm(url, ext, gen, entry?.url || url);
   if (gen !== _loadGen) throw new Error('load superseded');
   return result;
 }
@@ -557,14 +595,23 @@ export function seekTo(s) {
   const t = Math.max(0, Number(s) || 0);
   if (!_vgmAdapter) return;
   _vgmFramePos = Math.max(0, Math.round(t * _vgmSR));
-  try { _vgmAdapter.seekPlaybackPosition(Math.round(t * _vgmSR)); } catch (_) {}
+  _vgmChunk = null;
+  _vgmChunkFrames = 0;
+  _vgmChunkPos = 0;
+  const pos = vgmPosUsesMilliseconds()
+    ? Math.round(t * 1000)
+    : Math.round(t * _vgmSR);
+  try { _vgmAdapter.seekPlaybackPosition(pos); } catch (_) {}
 }
 
 export function getTime() {
   if (!_vgmAdapter) return 0;
   try {
     const backendPos = Number(_vgmAdapter.getPlaybackPosition()) || 0;
-    return Math.max(backendPos, _vgmFramePos) / _vgmSR;
+    const backendSec = vgmPosUsesMilliseconds()
+      ? backendPos / 1000
+      : backendPos / _vgmSR;
+    return Math.max(backendSec, _vgmFramePos / _vgmSR);
   } catch (_) {
     return _vgmFramePos / _vgmSR;
   }

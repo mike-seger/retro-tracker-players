@@ -7,8 +7,10 @@ const MINI_STDLIB_JS_URL = 'https://cdn.jsdelivr.net/gh/wothke/chiptune-collecti
 const MINI_PSX_JS_URL = 'https://cdn.jsdelivr.net/gh/wothke/chiptune-collection@master/blaster/backend_psx.js';
 const MINI_LIB_STDLIB_JS_URL = 'https://cdn.jsdelivr.net/gh/wothke/chiptune-collection@master/library/scriptprocessor_player.min.js';
 const MINI_GSF_JS_URL = 'https://cdn.jsdelivr.net/gh/wothke/chiptune-collection@master/library/JS/backend_gsf.js';
+const MINI_NEZ_JS_URL = 'https://cdn.jsdelivr.net/gh/wothke/chiptune-collection@master/library/JS/backend_nez.js';
+const MINI_N64_JS_URL = 'https://cdn.jsdelivr.net/gh/wothke/chiptune-collection@master/library/JS/backend_n64.js';
+const MINI_SEGA_JS_URL = 'https://cdn.jsdelivr.net/gh/wothke/chiptune-collection@master/library/JS/backend_sega.js';
 const MINI_EXTS = new Set(['mini2sf', 'minigsf', 'minipsf', 'miniusf', 'minipsf2', 'minissf']);
-const MINI_EXTS_SUPPORTED = new Set(['minipsf', 'minipsf2', 'minigsf']);
 
 const BACKEND_PSX = {
   key: 'psx',
@@ -26,6 +28,33 @@ const BACKEND_GSF = {
   stateKeys: ['spp_backend_state_gsf', 'spp_backend_state_GSF'],
   adapterCtor: 'GSFBackendAdapter',
   // Enable backend filename remapping used for Modland-style files.
+  adapterArgs: [true],
+};
+
+const BACKEND_NEZ = {
+  key: 'nez',
+  stdlibUrl: MINI_LIB_STDLIB_JS_URL,
+  backendUrl: MINI_NEZ_JS_URL,
+  stateKeys: ['spp_backend_state_NEZ'],
+  adapterCtor: 'NEZBackendAdapter',
+  adapterArgs: [true],
+};
+
+const BACKEND_N64 = {
+  key: 'n64',
+  stdlibUrl: MINI_LIB_STDLIB_JS_URL,
+  backendUrl: MINI_N64_JS_URL,
+  stateKeys: ['spp_backend_state_N64'],
+  adapterCtor: 'N64BackendAdapter',
+  adapterArgs: [true],
+};
+
+const BACKEND_SEGA = {
+  key: 'sega',
+  stdlibUrl: MINI_LIB_STDLIB_JS_URL,
+  backendUrl: MINI_SEGA_JS_URL,
+  stateKeys: ['spp_backend_state_SEGA'],
+  adapterCtor: 'SEGABackendAdapter',
   adapterArgs: [true],
 };
 
@@ -53,9 +82,28 @@ let _registeredFiles = new Set();
 let _registeredFileData = new Map();
 let _currentLoadExt = '';
 let _requestDebugCount = 0;
+let _fallbackEngine = null;
+let _fallbackActive = false;
+let _timeUnit = 'samples';
+let _unitsPerSecond = 44100;
+let _loadedTrackName = '';
+let _loadedTrackData = null;
+let _seekGraceUntil = 0;
+let _framesSinceSeek = 0;
+let _seekTargetUnits = -1;
 
 function backendUsesMilliseconds() {
-  return _activeBackend?.key === 'gsf';
+  return _timeUnit === 'ms';
+}
+
+async function getVgmFallbackEngine() {
+  if (_fallbackEngine) return _fallbackEngine;
+  const mod = await import('../vgm/engine.js');
+  await mod.init();
+  mod.setVolume(_volume);
+  if (typeof _onEnd === 'function') mod.onEnd(_onEnd);
+  _fallbackEngine = mod;
+  return _fallbackEngine;
 }
 
 const _warmup = (async () => {
@@ -65,6 +113,9 @@ const _warmup = (async () => {
       loadScript(MINI_PSX_JS_URL),
       loadScript(MINI_LIB_STDLIB_JS_URL),
       loadScript(MINI_GSF_JS_URL),
+      loadScript(MINI_NEZ_JS_URL),
+      loadScript(MINI_N64_JS_URL),
+      loadScript(MINI_SEGA_JS_URL),
     ]);
   } catch (_) {}
 })();
@@ -72,7 +123,81 @@ const _warmup = (async () => {
 function backendForExt(ext) {
   if (ext === 'minipsf' || ext === 'minipsf2') return BACKEND_PSX;
   if (ext === 'minigsf') return BACKEND_GSF;
+  if (ext === 'mini2sf') return BACKEND_NEZ;
+  if (ext === 'miniusf') return BACKEND_N64;
+  if (ext === 'minissf') return BACKEND_SEGA;
   return null;
+}
+
+function backendCandidatesForExt(ext) {
+  if (ext === 'minipsf' || ext === 'minipsf2') return [BACKEND_PSX];
+  if (ext === 'minigsf') return [BACKEND_GSF];
+  // mini2sf = Nintendo DS Sound Format. chiptune-collection has no 2sf/vio2sf
+  // backend; NEZ is NES (8-bit Famicom) and is not interchangeable. Return
+  // empty so load() reports a clear unsupported-format error.
+  if (ext === 'mini2sf') return [];
+  if (ext === 'miniusf') return [BACKEND_N64];
+  if (ext === 'minissf') return [BACKEND_SEGA];
+  return [];
+}
+
+function parseTagDurations(data) {
+  const out = { length: 0, fade: 0 };
+  if (!(data instanceof Uint8Array) || data.length < 16) return out;
+  if (!(data[0] === 0x50 && data[1] === 0x53 && data[2] === 0x46)) return out;
+  const dv = new DataView(data.buffer, data.byteOffset, data.byteLength);
+  const reservedSize = dv.getUint32(4, true);
+  const compressedSize = dv.getUint32(8, true);
+  const tagOffset = 16 + reservedSize + compressedSize;
+  if (tagOffset >= data.length) return out;
+
+  const tags = new TextDecoder('utf-8').decode(data.subarray(tagOffset));
+  const tagPos = tags.indexOf('[TAG]');
+  if (tagPos < 0) return out;
+
+  const parseDur = (raw) => {
+    const m = String(raw).trim().match(/^(?:(\d+):)?(\d+)(?:\.(\d+))?$/);
+    if (!m) {
+      // Fade may also be plain seconds like "10.000".
+      const n = Number(String(raw).trim());
+      return isFinite(n) && n >= 0 ? n : 0;
+    }
+    const min = Number(m[1] || 0);
+    const sec = Number(m[2] || 0);
+    const frac = Number(`0.${m[3] || '0'}`);
+    const total = min * 60 + sec + frac;
+    return isFinite(total) && total >= 0 ? total : 0;
+  };
+
+  const lines = tags.substring(tagPos + 5).split(/\r?\n/);
+  for (const line of lines) {
+    const eq = line.indexOf('=');
+    if (eq <= 0) continue;
+    const key = line.substring(0, eq).trim().toLowerCase();
+    if (key === 'length') out.length = parseDur(line.substring(eq + 1));
+    else if (key === 'fade') out.fade = parseDur(line.substring(eq + 1));
+  }
+  return out;
+}
+
+function parseTagLengthSeconds(data) {
+  return parseTagDurations(data).length;
+}
+
+function chooseTimeUnit(ext, maxPos, sampleRate, taggedLengthSec) {
+  if (ext !== 'minigsf') return 'samples';
+  if (!(maxPos > 0)) return 'ms';
+
+  const asMs = maxPos / 1000;
+  const asSamples = maxPos / sampleRate;
+  if (taggedLengthSec > 0) {
+    const errMs = Math.abs(asMs - taggedLengthSec);
+    const errSamples = Math.abs(asSamples - taggedLengthSec);
+    return errMs <= errSamples ? 'ms' : 'samples';
+  }
+
+  // Heuristic fallback: miniGSF lengths in ms are usually in human-scale range.
+  return maxPos < 500000 ? 'ms' : 'samples';
 }
 
 function isMiniExt(ext) {
@@ -352,34 +477,82 @@ async function preloadMiniLibraries(mainUrl, mainData, mod, gen) {
 
   const rootAbsUrl = resolveLibUrl(mainUrl, window.location.href);
 
+  // Try fetching with the original-cased basename first; on 404, retry with
+  // the basename lowercased. Modland's filesystem is case-sensitive but PSF
+  // tags routinely reference the uppercase form (e.g. SOUND.DPK_SEP0.psflib
+  // while the file on disk is sound.dpk_sep0.psflib).
+  const tryFetchWithCaseFallback = async (libPath, libUrl) => {
+    let res;
+    try { res = await fetch(libUrl); }
+    catch (e) {
+      // Network/CORS; try lowercase variant before giving up.
+      try {
+        const alt = lowercaseBasenameUrl(libUrl);
+        if (alt && alt !== libUrl) {
+          const r2 = await fetch(alt);
+          if (r2.ok) return { res: r2, libPath: lowercaseBasename(libPath), libUrl: alt };
+        }
+      } catch (_) {}
+      return { error: e && e.message ? e.message : 'fetch failed' };
+    }
+    if (!res.ok && res.status === 404) {
+      const alt = lowercaseBasenameUrl(libUrl);
+      if (alt && alt !== libUrl) {
+        try {
+          const r2 = await fetch(alt);
+          if (r2.ok) return { res: r2, libPath: lowercaseBasename(libPath), libUrl: alt };
+        } catch (_) {}
+      }
+    }
+    return { res, libPath, libUrl };
+  };
+
   const walk = async (fileUrl, fileData, fallbackBaseUrl = rootAbsUrl) => {
     if (gen !== _loadGen) throw new Error('load superseded');
     const libs = parsePsfLibRefs(fileData);
-    for (const libPath of libs) {
-      const libUrl = resolveLibUrl(libPath, fileUrl || fallbackBaseUrl);
-      if (visited.has(libUrl)) continue;
-      visited.add(libUrl);
+    for (const libPathOrig of libs) {
+      const libUrlOrig = resolveLibUrl(libPathOrig, fileUrl || fallbackBaseUrl);
+      if (visited.has(libUrlOrig)) continue;
+      visited.add(libUrlOrig);
 
-      let res;
-      try {
-        res = await fetch(libUrl);
-      } catch (e) {
-        const reason = e && e.message ? e.message : 'fetch failed';
-        missing.push(`${libPath} (${reason})`);
-        continue;
+      const r = await tryFetchWithCaseFallback(libPathOrig, libUrlOrig);
+      if (r.error) { missing.push(`${libPathOrig} (${r.error})`); continue; }
+      if (!r.res || !r.res.ok) { missing.push(`${libPathOrig} (HTTP ${r.res?.status ?? '?'})`); continue; }
+      const bytes = new Uint8Array(await r.res.arrayBuffer());
+      // Register under BOTH the originally referenced path and the resolved
+      // (possibly lowercased) path so the backend finds it regardless of
+      // which casing it requests via the file callback.
+      registerVfsFile(mod, libPathOrig, bytes);
+      if (r.libPath !== libPathOrig) {
+        try { registerVfsFile(mod, r.libPath, bytes); } catch (_) {}
       }
-      if (!res.ok) {
-        missing.push(`${libPath} (HTTP ${res.status})`);
-        continue;
-      }
-      const bytes = new Uint8Array(await res.arrayBuffer());
-      registerVfsFile(mod, libPath, bytes);
-      await walk(libUrl, bytes, fallbackBaseUrl);
+      await walk(r.libUrl, bytes, fallbackBaseUrl);
     }
   };
 
   await walk(rootAbsUrl, mainData, rootAbsUrl);
   return { missing };
+}
+
+function lowercaseBasename(p) {
+  const s = String(p || '');
+  const i = s.lastIndexOf('/');
+  if (i < 0) return s.toLowerCase();
+  return s.substring(0, i + 1) + s.substring(i + 1).toLowerCase();
+}
+
+function lowercaseBasenameUrl(u) {
+  try {
+    const url = new URL(u);
+    const path = url.pathname;
+    const i = path.lastIndexOf('/');
+    if (i < 0) return null;
+    const base = path.substring(i + 1);
+    const baseLower = base.toLowerCase();
+    if (base === baseLower) return null;
+    url.pathname = path.substring(0, i + 1) + baseLower;
+    return url.href;
+  } catch (_) { return null; }
 }
 
 async function preloadGuessedGsfLibs(mainUrl, mainData, mainName, mod, gen) {
@@ -452,8 +625,8 @@ function resetActiveBackend() {
   _activeBackend = null;
 }
 
-async function ensureModule(ext) {
-  const cfg = backendForExt(ext);
+async function ensureModule(ext, forcedCfg = null) {
+  const cfg = forcedCfg || backendForExt(ext);
   if (!cfg) {
     throw new Error(`[mini] .${ext} is not supported by current mini backend (supports: minipsf, minipsf2, minigsf)`);
   }
@@ -547,7 +720,9 @@ function buildNode() {
     const ptr = _adapter.getAudioBuffer();
     const len = _adapter.getAudioBufferLength();
 
-    if (status !== 0) return { status, frames: 0, chunk: null };
+    // Some adapters report positive status codes while still exposing valid
+    // output buffers. Only treat status as terminal when no frames are available.
+    if (status !== 0 && (!len || len <= 0)) return { status, frames: 0, chunk: null };
 
     const base = ptr;
     const frames = len;
@@ -569,15 +744,61 @@ function buildNode() {
     const R = e.outputBuffer.getChannelData(1);
     if (!_playing) { L.fill(0); R.fill(0); return; }
 
+    // Seek catch-up: while the backend is fast-forwarding to the requested
+    // position it still produces audio. Drain those frames but emit silence
+    // so the user does not hear a sped-up replay or a frozen last frame.
+    // Exit only when BOTH (a) backend position has reached the target AND
+    // (b) computeAudioSamples returns a clean status==0 frame. GSF in
+    // particular snaps emu_get_current_position to the target instantly but
+    // continues to recycle a stale audio buffer (status > 0) for a few more
+    // callbacks while it fast-forwards internally; rendering that buffer
+    // would loop the same audio fragment.
+    if (_seekTargetUnits >= 0) {
+      let pos = 0;
+      let exited = false;
+      for (let drains = 0; drains < 8; drains++) {
+        const status = _adapter.computeAudioSamples();
+        const len = Number(_adapter.getAudioBufferLength?.()) || 0;
+        try { pos = Number(_mod?.ccall('emu_get_current_position', 'number')) || 0; } catch (_) {}
+        if (pos >= _seekTargetUnits && status === 0 && len > 0) {
+          _seekTargetUnits = -1;
+          exited = true;
+          break;
+        }
+      }
+      if (!exited) {
+        L.fill(0); R.fill(0);
+        _chunk = null; _chunkFrames = 0; _chunkPos = 0;
+        return;
+      }
+      // Discard any stale chunk state so the main loop fetches fresh audio.
+      _chunk = null; _chunkFrames = 0; _chunkPos = 0;
+    }
+
     let filled = 0;
     while (filled < L.length) {
       if (!_chunk || _chunkPos >= _chunkFrames) {
         const fetched = fetchChunk();
         if (!fetched.chunk) {
-          if (fetched.status !== 0) {
+          // Treat non-zero status as track-end ONLY when we have actually
+          // produced frames since the last seek/load AND backend reports a
+          // position near the song duration. Otherwise it's a transient
+          // (post-seek silent fast-forward, buffer underrun) and we emit
+          // silence to keep the audio graph alive.
+          let realEnd = false;
+          if (fetched.status > 0 && _framesSinceSeek > _sr / 4) {
+            try {
+              const pos = Number(_adapter.getPlaybackPosition?.()) || 0;
+              const posSec = pos / (_unitsPerSecond || _sr);
+              if (_duration > 0 && posSec >= _duration - 1.0) realEnd = true;
+              else if (_duration <= 0) realEnd = true;
+            } catch (_) { realEnd = true; }
+          }
+          const inGrace = performance.now() < _seekGraceUntil;
+          if (fetched.status !== 0 && realEnd && !inGrace) {
             _playing = false;
             for (let i = filled; i < L.length; i++) { L[i] = 0; R[i] = 0; }
-            if (fetched.status > 0) _onEnd?.();
+            _onEnd?.();
             return;
           }
           for (let i = filled; i < L.length; i++) { L[i] = 0; R[i] = 0; }
@@ -597,6 +818,7 @@ function buildNode() {
       }
       _chunkPos += take;
       _framePos += take;
+      _framesSinceSeek += take;
       filled += take;
     }
   };
@@ -605,8 +827,8 @@ function buildNode() {
   _node = node;
 }
 
-async function loadMini(url, sourceUrl, ext, gen) {
-  await ensureModule(ext);
+async function loadMini(url, sourceUrl, ext, gen, forcedCfg = null) {
+  await ensureModule(ext, forcedCfg);
   if (gen !== _loadGen) throw new Error('load superseded');
   _currentLoadExt = ext;
   _requestDebugCount = 0;
@@ -630,6 +852,8 @@ async function loadMini(url, sourceUrl, ext, gen) {
   } catch (_) {}
 
   registerVfsFile(_mod, fname, data);
+  _loadedTrackName = fname;
+  _loadedTrackData = data;
 
   if (ext === 'minigsf') {
     await preloadGuessedGsfLibs(sourceUrl || url, data, fname, _mod, gen);
@@ -638,6 +862,8 @@ async function loadMini(url, sourceUrl, ext, gen) {
 
   const sr = Math.round(_ctx.sampleRate) || 44100;
   _sr = sr;
+  _timeUnit = 'samples';
+  _unitsPerSecond = _sr;
   let loadRet = _adapter.loadMusicData(sr, '/', fname, data, {});
   const gsfAttempts = [];
 
@@ -669,7 +895,7 @@ async function loadMini(url, sourceUrl, ext, gen) {
   }
 
   console.log('[mini] loadMusicData returned:', loadRet, '| data.length:', data.length, '| sr:', sr);
-  if (loadRet !== 0) {
+  if (loadRet < 0) {
     const suffix = preload?.missing?.length
       ? `; missing libs: ${preload.missing.join(', ')}`
       : '';
@@ -680,27 +906,57 @@ async function loadMini(url, sourceUrl, ext, gen) {
     throw new Error(`[mini] emu_init failed (${loadRet}) for ${fname}${suffix}`);
   }
 
+  if (loadRet > 0) {
+    console.warn('[mini] non-zero successful load code:', loadRet, '| ext:', ext);
+  }
+
   try {
     if (typeof _adapter.evalTrackOptions === 'function') {
       const optRet = _adapter.evalTrackOptions({});
-      if (optRet < 0) throw new Error(`[mini] evalTrackOptions failed (${optRet})`);
+      if (optRet < 0) {
+        console.warn(`[mini] evalTrackOptions returned ${optRet} (continuing)`);
+      }
     }
   } catch (e) {
-    throw new Error(e?.message || String(e));
+    console.warn('[mini] evalTrackOptions threw (continuing):', e?.message || String(e));
   }
 
   _framePos = 0;
   _chunk = null;
   _chunkFrames = 0;
   _chunkPos = 0;
+  _framesSinceSeek = 0;
 
   const maxPos = Number(_adapter.getMaxPlaybackPosition?.()) || 0;
-  _duration = maxPos > 0
-    ? (backendUsesMilliseconds() ? maxPos / 1000 : maxPos / _sr)
-    : 300;
+  const tagDur = parseTagDurations(data);
+  const taggedLength = tagDur.length;
+  const taggedFade = tagDur.fade;
+  if (taggedLength > 0 && maxPos > 0) {
+    // Most reliable: derive backend position scale from tag length.
+    _unitsPerSecond = maxPos / taggedLength;
+    _timeUnit = 'derived';
+    // PSF spec: track plays for `length` then fades over `fade`. Backend's
+    // maxPos typically reflects only `length`, so include fade in the user-
+    // facing duration. unitsPerSecond stays based on length alone so seek
+    // position math matches the backend's units.
+    _duration = taggedLength + taggedFade;
+  } else {
+    _timeUnit = chooseTimeUnit(ext, maxPos, _sr, taggedLength);
+    _unitsPerSecond = backendUsesMilliseconds() ? 1000 : _sr;
+    _duration = maxPos > 0
+      ? (maxPos / _unitsPerSecond + taggedFade)
+      : 300;
+  }
+  console.log('[mini] timing scale | ext:', ext, '| maxPos:', maxPos, '| taggedLength:', taggedLength, '| unitsPerSecond:', _unitsPerSecond, '| duration:', _duration);
 
   if (_ctx.state === 'suspended') {
     try { await _ctx.resume(); } catch (_) {}
+  }
+
+  const probeStatus = _adapter.computeAudioSamples();
+  const probeLen = Number(_adapter.getAudioBufferLength?.()) || 0;
+  if (probeStatus !== 0 && probeLen <= 0) {
+    throw new Error(`[mini] decoder produced no audio (status ${probeStatus}, len ${probeLen})`);
   }
 
   buildNode();
@@ -726,44 +982,125 @@ export async function load(url, entry) {
   if (!isMiniExt(ext)) {
     throw new Error(`Unsupported extension for mini engine: .${ext || 'unknown'}`);
   }
-  if (!MINI_EXTS_SUPPORTED.has(ext)) {
-    throw new Error(`[mini] .${ext} is not supported by current mini backend (supports: minipsf, minipsf2, minigsf)`);
-  }
 
   const gen = ++_loadGen;
+  _fallbackActive = false;
   ensureAudioCtx();
   const sourceUrl = entry?.url || url;
-  const result = await loadMini(url, sourceUrl, ext, gen);
+  let result;
+  const candidates = backendCandidatesForExt(ext);
+  const backendErrors = [];
+  if (candidates.length === 0) {
+    if (ext === 'mini2sf') {
+      throw new Error('[mini] .mini2sf (Nintendo DS Sound Format) is not supported: chiptune-collection has no 2sf/vio2sf backend.');
+    }
+    throw new Error(`[mini] no backend available for .${ext}`);
+  }
+  try {
+    for (const cfg of candidates) {
+      try {
+        result = await loadMini(url, sourceUrl, ext, gen, cfg);
+        break;
+      } catch (e) {
+        backendErrors.push(`[${cfg.key}] ${e?.message || e}`);
+      }
+    }
+    if (!result) {
+      throw new Error(`[mini] all native backends failed for .${ext}: ${backendErrors.join(' | ')}`);
+    }
+  } catch (e) {
+    // For non-PSF mini families, attempt VGM fallback if native backend fails.
+    if (ext !== 'minipsf' && ext !== 'minipsf2' && ext !== 'minigsf') {
+      const fallback = await getVgmFallbackEngine();
+      _fallbackActive = true;
+      _playing = false;
+      teardownNode();
+      if (_adapter) {
+        try { _adapter.teardown?.(); } catch (_) {}
+      }
+      const fb = await fallback.load(url, entry);
+      return {
+        ...fb,
+        fields: Array.isArray(fb?.fields)
+          ? fb.fields.map((f) => f.label === 'Engine' ? { ...f, value: `${f.value} (mini fallback)` } : f)
+          : fb?.fields,
+      };
+    }
+    throw e;
+  }
   if (gen !== _loadGen) throw new Error('load superseded');
   return result;
 }
 
 export function pause() {
+  if (_fallbackActive) {
+    try { _fallbackEngine?.pause?.(); } catch (_) {}
+    return;
+  }
   _playing = false;
 }
 
 export function resume() {
+  if (_fallbackActive) {
+    try { _fallbackEngine?.resume?.(); } catch (_) {}
+    return;
+  }
   if (_ctx?.state === 'suspended') _ctx.resume().catch(() => {});
   _playing = true;
 }
 
 export function seekTo(sec) {
+  if (_fallbackActive) {
+    try { return _fallbackEngine?.seekTo?.(sec); } catch (_) { return false; }
+  }
   const t = Math.max(0, Number(sec) || 0);
-  if (!_adapter) return;
+  if (!_adapter || !_mod) return;
   _framePos = Math.max(0, Math.round(t * _sr));
-  const pos = backendUsesMilliseconds()
-    ? Math.round(t * 1000)
-    : Math.round(t * _sr);
-  try { _adapter.seekPlaybackPosition(pos); } catch (_) {}
+  _chunk = null;
+  _chunkFrames = 0;
+  _chunkPos = 0;
+  _framesSinceSeek = 0;
+  const primaryPos = Math.round(t * (_unitsPerSecond || _sr));
+  // The Wothke adapters' seekPlaybackPosition() requires a ScriptNodePlayer
+  // singleton (they call ScriptNodePlayer.getInstance().getVolume()). We use
+  // our own ScriptProcessorNode and never instantiate ScriptNodePlayer, so
+  // calling the adapter wrapper silently throws. Instead, invoke the wasm
+  // exports directly via Module.ccall — same primitives the wrappers use.
+  try {
+    let backendPos = 0;
+    try { backendPos = Number(_mod.ccall('emu_get_current_position', 'number')) || 0; } catch (_) {}
+    const isBackward = primaryPos < backendPos;
+    if (isBackward && _loadedTrackName) {
+      // PSX/GSF: backward seek requires emu_init reload before emu_seek_position.
+      try {
+        _mod.ccall('emu_init', 'number', ['string', 'string'], ['/', _loadedTrackName]);
+      } catch (_) {
+        // Fall back to adapter loadMusicData if direct ccall fails.
+        try { _adapter.loadMusicData(_sr, '/', _loadedTrackName, _loadedTrackData, {}); } catch (_) {}
+      }
+    }
+    try {
+      _mod.ccall('emu_seek_position', 'number', ['number'], [primaryPos]);
+      _seekTargetUnits = primaryPos;
+    } catch (_) {
+      // Last-ditch fallback to adapter wrapper (will likely throw silently).
+      try { _adapter.seekPlaybackPosition?.(primaryPos); _seekTargetUnits = primaryPos; } catch (_) {}
+    }
+  } catch (_) {}
+  // Grace window: backends fast-forward by emitting silence in
+  // computeAudioSamples() until the target is reached. We must not interpret
+  // that silence as track-end.
+  _seekGraceUntil = performance.now() + 1500;
 }
 
 export function getTime() {
+  if (_fallbackActive) {
+    try { return Number(_fallbackEngine?.getTime?.()) || 0; } catch (_) { return 0; }
+  }
   if (!_adapter) return 0;
   try {
     const backendPos = Number(_adapter.getPlaybackPosition()) || 0;
-    const backendSec = backendUsesMilliseconds()
-      ? backendPos / 1000
-      : backendPos / _sr;
+    const backendSec = backendPos / (_unitsPerSecond || _sr);
     return Math.max(backendSec, _framePos / _sr);
   } catch (_) {
     return _framePos / _sr;
@@ -772,6 +1109,9 @@ export function getTime() {
 
 export function setVolume(v) {
   _volume = clamp01(v);
+  if (_fallbackEngine) {
+    try { _fallbackEngine.setVolume?.(_volume); } catch (_) {}
+  }
   if (_gain) _gain.gain.value = _volume;
 }
 
@@ -781,9 +1121,16 @@ export function isEnded() {
 
 export function onEnd(cb) {
   _onEnd = cb;
+  if (_fallbackEngine) {
+    try { _fallbackEngine.onEnd?.(cb); } catch (_) {}
+  }
 }
 
 export function destroy() {
+  if (_fallbackEngine) {
+    try { _fallbackEngine.destroy?.(); } catch (_) {}
+  }
+  _fallbackActive = false;
   teardownNode();
   if (_adapter) {
     try { _adapter.teardown?.(); } catch (_) {}
@@ -794,13 +1141,24 @@ export function destroy() {
   _chunk = null;
   _chunkFrames = 0;
   _chunkPos = 0;
+  _loadedTrackName = '';
+  _loadedTrackData = null;
 }
 
 export function isContextSuspended() {
+  if (_fallbackActive) {
+    try { return !!_fallbackEngine?.isContextSuspended?.(); } catch (_) { return false; }
+  }
   return _ctx?.state === 'suspended';
 }
 
 export async function attemptContextResume() {
+  if (_fallbackActive) {
+    try {
+      await _fallbackEngine?.attemptContextResume?.();
+      return;
+    } catch (_) {}
+  }
   if (_ctx?.state === 'suspended') {
     try { await _ctx.resume(); } catch (_) {}
   }
