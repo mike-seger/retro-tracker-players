@@ -1,8 +1,39 @@
 ---
 description: "Use when editing engine files, audio initialization, dynamic imports, resume/autoplay logic, or the player/engines/prompts modules. Covers the iOS Safari AudioContext user-activation constraint that broke chiptune playback and auto-resume after modularization."
-applyTo: ["engines/**", "js/engines.js", "js/player.js", "js/prompts.js", "js/app.js"]
+applyTo: ["engines/**", "js/core/engines.js", "js/core/player.js", "js/ui/prompts.js", "js/core/app.js"]
 ---
 # iOS Safari AudioContext – Hard Constraints
+
+## Which engine runs where (MOD/XM/S3M/IT)
+
+The MOD engine (`engines/mod/engine.js`) has two implementations:
+
+| Implementation | Mechanism | Used when |
+|---|---|---|
+| **chiptune3** | `AudioWorklet` + dynamic CDN `import()` | Desktop, HTTPS, non-mobile |
+| **chiptune2** | `ScriptProcessorNode` + local/CDN `<script>` tags | **iOS, Android, any HTTP (LAN)** |
+
+**chiptune2 is the correct solution for iOS.** chiptune3 is explicitly blocked on mobile via
+`isMobile()` because `context.audioWorklet.addModule(CDN_URL)` is a cross-origin fetch that
+breaks the iOS user-activation window and fails on some iOS versions entirely.
+
+Decision flow in `init()`:
+```
+supportsWorklet()?  ──No (mobile/HTTP)──▶  initV2()  [chiptune2, ScriptProcessorNode]
+        │
+       Yes (desktop HTTPS)
+        │
+    initV3()  [chiptune3, AudioWorklet]
+        │ (if fails)
+        └──────────────────────────────▶  initV2()  [chiptune2, ScriptProcessorNode]
+```
+
+chiptune2 loads libopenmpt in priority order from three sources:
+1. `engines/mod/vendor/chiptune2/` — local copy (bundled, no network needed)
+2. `cdn.jsdelivr.net/gh/deskjet/chiptune2.js@master/` — CDN mirror
+3. `raw.githubusercontent.com/deskjet/chiptune2.js/master/` — GitHub raw fallback
+
+---
 
 ## The Problem (commit ff4b7d9)
 
@@ -16,16 +47,19 @@ window and silently failed, so audio never played.
 ## Rules
 
 ### 1. Pre-warm ALL engine modules at startup (do NOT remove)
-`js/engines.js` runs a fire-and-forget `Promise.all` of all engine imports at module
+`js/core/engines.js` runs a fire-and-forget `Promise.all` of all engine imports at module
 evaluation time, long before any user gesture. This ensures the browser's module registry
 has them cached so the first play's `import()` is a sync microtask, not a network fetch.
 
 ```js
-// js/engines.js — top of file, MUST stay
+// js/core/engines.js — top of file, MUST stay
 Promise.all([
-  import('../engines/mod/engine.js'),
-  import('../engines/ahx/engine.js'),
-  import('../engines/jssid/engine.js'),
+  import('../../engines/mod/engine.js'),
+  import('../../engines/mini/engine.js'),
+  import('../../engines/ahx/engine.js'),
+  import('../../engines/jssid/engine.js'),
+  import('../../engines/spc/engine.js'),
+  import('../../engines/vgm/engine.js'),
 ]).catch(() => {});
 ```
 
@@ -84,6 +118,36 @@ which tap will trigger it, and capturing all `pointerdown` events causes acciden
 side-effects (e.g. a tap on an unrelated button also starting audio).
 
 ### 5. If adding a new engine
-- Add its `import()` to the pre-warm block in `js/engines.js`.
+- Add its `import()` to the pre-warm block in `js/core/engines.js`.
 - If it uses an AudioWorklet loaded from a CDN, add an `isMobile()` guard to skip that
   path and fall back to a ScriptProcessorNode implementation.
+
+### 6. chiptune2 (libopenmpt) — always set `window.libopenmpt`, NOT `window.Module`
+`engines/mod/vendor/chiptune2/libopenmpt.js` starts with:
+```js
+var Module = typeof libopenmpt !== 'undefined' ? libopenmpt : {};
+```
+It reads its configuration from `window.libopenmpt`, **not** `window.Module`. Setting
+`window.Module` before loading the script is silently ignored — the script's own
+`var Module = ...` declaration overwrites it at eval time, discarding all callbacks.
+
+`resetV2Globals()` (called before each fallback attempt) deletes both `window.libopenmpt`
+and `window.Module` to ensure a clean slate. After that call, always re-set
+`window.libopenmpt` (not `window.Module`) before loading the script:
+
+```js
+// engines/mod/engine.js — initV2, MUST use window.libopenmpt
+resetV2Globals();          // clears both globals
+window.libopenmpt = {      // ← libopenmpt.js reads THIS, not window.Module
+  locateFile: (path) => base + path,
+  onRuntimeInitialized: () => { runtimeReady = true; },
+};
+await loadScript(base + 'libopenmpt.js');
+```
+
+Setting `window.Module` instead causes `onRuntimeInitialized` to never fire,
+`runtimeReady` stays `false`, the 200-attempt / 20-second poll times out, and the
+engine fails on all three fallback sources — the exact symptom seen on iPhone 12 mini.
+
+This bug was introduced because older Emscripten modules use `window.Module` as the
+config object; libopenmpt.js predates that convention and uses `window.libopenmpt`.

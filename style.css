@@ -238,7 +238,8 @@ body.mode-modland {
   min-height: var(--toolbar-ctl-h);
   line-height: 1.1;
 }
-#refine-folder-btn::after, #refine-artist-btn::after, #refine-format-btn::after, #refine-range-btn::after {
+#refine-folder-btn::after, #refine-artist-btn::after, #refine-format-btn::after, #refine-range-btn::after,
+#share-btn::after {
   content: '▾'; font-size: 11px; margin-left: 5px; opacity: 0.8; vertical-align: 1px;
 }
 #refine-folder-btn.active, #refine-artist-btn.active, #refine-range-btn.active,

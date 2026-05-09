@@ -144,6 +144,19 @@ export function updateMlButtons() {
 // ── modland search ────────────────────────────────────
 // AbortController for async search — each call cancels any in-flight search.
 let _searchController = null;
+let _searchTimer = 0;
+
+/** Cancel the debounced-search timer, if any (e.g. when switching modes). */
+export function cancelScheduledSearch() {
+  clearTimeout(_searchTimer);
+  _searchTimer = 0;
+}
+
+/** Schedule doModlandSearch after `delay` ms, cancelling any existing timer. */
+export function scheduleSearch(delay = 150) {
+  clearTimeout(_searchTimer);
+  _searchTimer = setTimeout(doModlandSearch, delay);
+}
 
 export function abortModlandSearch() {
   if (_searchController) {

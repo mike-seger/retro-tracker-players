@@ -226,8 +226,11 @@ async function initV2() {
 
       let runtimeReady = false;
 
-      // Pre-configure emscripten Module so it locates .mem file correctly.
-      window.Module = {
+      // libopenmpt.js starts with: var Module = typeof libopenmpt !== 'undefined' ? libopenmpt : {};
+      // It reads from window.libopenmpt, NOT window.Module.  Setting window.Module is ignored
+      // because the script's `var Module = ...` at global scope overwrites it.
+      // We must pre-configure window.libopenmpt so locateFile and onRuntimeInitialized are preserved.
+      window.libopenmpt = {
         locateFile: (path) => base + path,
         onAbort: (reason) => console.error('[mod] emscripten abort:', reason),
         printErr: (...args) => console.error('[mod] libopenmpt:', ...args),

@@ -8,7 +8,7 @@ import { buildPlaylist, syncPlayingTrackByUrl } from '../playlists/playlist.js';
 import { applyFilter, updateRefineVisibility } from '../filters/filter.js';
 import { populateFolderPanel, populateLocalArtistPanel,
          populateLocalFormatDropdown, localPlaceholder, modlandPlaceholder } from '../filters/refine.js';
-import { doModlandSearch, updateMlButtons, showScratchpad } from '../browse/modland.js';
+import { doModlandSearch, abortModlandSearch, cancelScheduledSearch as cancelScheduledModlandSearch, updateMlButtons, showScratchpad } from '../browse/modland.js';
 import { persistContext } from './persistence.js';
 import { restoreSelection, updateSelCount } from '../playlists/selection.js';
 import * as remoteSearch from '../browse/remote-search.js';
@@ -68,8 +68,9 @@ export function saveModlandContext() {
 export function restoreModlandContext() {
   if (!S._modlandCtx) return;
   elFilter.value = S._modlandCtx.filter;
-  if (S._modlandCtx.currentIdx >= 0) S.currentIdx = S._modlandCtx.currentIdx;
-  if (S._modlandCtx.focusedIdx >= 0) S.focusedIdx = S._modlandCtx.focusedIdx;
+  // Do NOT restore currentIdx/focusedIdx here — buildPlaylist() is about to
+  // render S.modlandFiles (not search results), so any saved index would be
+  // stale and out of range. doModlandSearch() re-anchors via syncPlayingTrackByUrl.
   if (S._modlandCtx.range > 0) S._currentRange = S._modlandCtx.range;
 }
 
@@ -186,6 +187,11 @@ export function switchMode(mode, { skipSearch = false } = {}) {
   buildPlaylist();
   restoreSelection();
   if (mode === 'modland' && !skipSearch) {
+    // Cancel any debounced search timer that may have been set by the input
+    // handler before the mode switch, then abort any in-flight search so this
+    // fresh mode-switch search always wins cleanly.
+    cancelScheduledModlandSearch();
+    abortModlandSearch();
     doModlandSearch();
   }
 

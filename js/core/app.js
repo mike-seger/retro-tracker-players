@@ -12,7 +12,7 @@ import { applyFilter, updateRefineVisibility } from '../filters/filter.js';
 import { populateFolderPanel, populateLocalArtistPanel, populateLocalFormatDropdown,
          modlandPlaceholder, localPlaceholder } from '../filters/refine.js';
 import { restoreSelection, updateSelCount } from '../playlists/selection.js';
-import { loadModlandTracks, doModlandSearch, abortModlandSearch, doRandomBrowse, showScratchpad } from '../browse/modland.js';
+import { loadModlandTracks, doModlandSearch, abortModlandSearch, scheduleSearch as scheduleModlandSearch, cancelScheduledSearch as cancelScheduledModlandSearch, doRandomBrowse, showScratchpad } from '../browse/modland.js';
 import { switchMode, restorePersistedContext } from './mode.js';
 import { loadDeepLinkedTrack, applyDeepLinkFilters } from '../browse/deeplink.js';
 import { showResumePrompt, showDeleteConfirm } from '../ui/prompts.js';
@@ -268,7 +268,6 @@ document.addEventListener('click', (e) => {
 
 window.addEventListener('resize', positionSearchModePanel);
 
-let _searchTimer = 0;
 elFilter.addEventListener('input', () => {
   if (S.searchMode === 'modland') {
     // Typing exits scratchpad view and returns to normal Modland search mode.
@@ -278,12 +277,12 @@ elFilter.addEventListener('input', () => {
       elSearchMode.dataset.value = 'modland';
     }
     abortModlandSearch();
-    clearTimeout(_searchTimer);
+    cancelScheduledModlandSearch();
     if (elFilter.value.trim().length < 2) {
       // Too short to search — show the scratchpad immediately, no debounce.
       doModlandSearch();
     } else {
-      _searchTimer = setTimeout(doModlandSearch, 150);
+      scheduleModlandSearch(150);
     }
   } else {
     populateLocalArtistPanel();
