@@ -54,7 +54,7 @@ function render() {
   maxLabel.textContent = 'Maximum List Items';
   const maxHint = document.createElement('div');
   maxHint.className = 'settings-hint';
-  maxHint.textContent = 'Maximum items shown in playlist/result lists. Range: 5-5000. Default: 200.';
+  maxHint.textContent = 'Maximum items shown in playlist/result lists. Range: 5-5000. Default: 500.';
   maxLabelWrap.append(maxLabel, maxHint);
   const maxInput = document.createElement('input');
   maxInput.className = 'settings-input';

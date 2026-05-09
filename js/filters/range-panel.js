@@ -9,7 +9,7 @@ export function setRangeChangeHandler(fn) { _onRangeChange = fn; }
 
 export function getRangeSkip() { return S._currentRange; }
 
-export function buildRangePanel(total, pageSize = 200) {
+export function buildRangePanel(total, pageSize = 500) {
   const panel = elRefineRangePanel;
   panel.innerHTML = '';
 

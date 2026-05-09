@@ -6,7 +6,7 @@ const SETTINGS_KEY = 'app-settings-v1';
 export const ALL_FORMAT_GROUPS = Object.freeze(['AHX', 'IT', 'MINI', 'MOD', 'S3M', 'SID', 'SPC', 'VGZ', 'XM']);
 
 export const DEFAULT_SETTINGS = Object.freeze({
-  maxListItems: 200,
+  maxListItems: 500,
   autoplayAudio: false,
   disabledFormats: [],
 });
