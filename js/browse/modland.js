@@ -8,6 +8,7 @@ import { loadAndPlay } from '../core/player.js';
 import { activeFiles, updateTrackPos, buildPlaylist, syncPlayingTrackByUrl } from '../playlists/playlist.js';
 import { restoreSelection, updateSelCount } from '../playlists/selection.js';
 import { getRangeSkip, buildRangePanel } from '../filters/range-panel.js';
+import { persistContext } from '../core/persistence.js';
 
 // ── searching overlay ─────────────────────────────────
 const _searchingLabel = document.querySelector('.searching-label');
@@ -179,6 +180,7 @@ export function showScratchpad() {
   buildPlaylist();
   restoreSelection();
   elFilterCnt.textContent = '';
+  persistContext();
 }
 
 export async function doModlandSearch() {
@@ -338,6 +340,7 @@ export async function doModlandSearch() {
   syncPlayingTrackByUrl('doModlandSearch');
   updateTrackPos();
   updateMlButtons();
+  persistContext();
 }
 
 // ── random browse ─────────────────────────────────────
@@ -434,6 +437,7 @@ export function doRandomBrowse(skip) {
   syncPlayingTrackByUrl('doRandomBrowse');
   updateTrackPos();
   updateMlButtons();
+  persistContext();
 }
 
 // ── r-add dropdown ────────────────────────────────────

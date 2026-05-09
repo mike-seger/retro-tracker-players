@@ -47,6 +47,7 @@ export const S = {
   _lastFilteredTotal:   0,
   _inSearchResults:    false,
   _randomBrowsing:     false,
+  _pendingAutoResume:  null,  // deferred auto-resume after doModlandSearch anchors the track
   _viewingScratchpad:  false, // transient: true while scratchpad source is selected
 };
 

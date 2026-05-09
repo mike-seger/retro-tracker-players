@@ -354,6 +354,12 @@ export function syncPlayingTrackByUrl(reason = 'unknown') {
   setFocus(idx);
   scrollIntoViewSmart(li, true);
   log(`${reason}: synced to idx ${idx + 1}`);
+  // Fire deferred auto-resume set during startup (modland search hadn't completed yet).
+  if (S._pendingAutoResume) {
+    const resume = S._pendingAutoResume;
+    S._pendingAutoResume = null;
+    resume();
+  }
   return idx;
 }
 

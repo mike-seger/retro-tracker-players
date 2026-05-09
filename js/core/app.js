@@ -481,45 +481,49 @@ elFilterClr.addEventListener('click', () => {
         const savedPlayerId = saved.playerId === 'gme'
           ? (savedExt === 'spc' ? 'spc' : (savedExt === 'vgm' || savedExt === 'vgz' ? 'vgm' : 'gme'))
           : saved.playerId;
-        if (saved.mode === 'modland') {
-          switchMode('modland');
-          S.currentIdx = S.modlandFiles.findIndex(
-            f => f.playerId === savedPlayerId && f.name === saved.name
-          );
-        } else {
+
+        // Restore the playing URL so syncPlayingTrackByUrl (called at the end of
+        // doModlandSearch / applyFilter) can re-anchor the track highlight.
+        if (saved.url) S._playingUrl = saved.url;
+
+        if (S.searchMode !== 'modland') {
+          // Local mode: find synchronously in the merged file list.
           S.currentIdx = S.mergedFiles.findIndex(
             f => f.playerId === savedPlayerId && f.name === saved.name
           );
+          if (S.currentIdx >= 0) { highlightCurrent(); setFocus(S.currentIdx); }
+        } else if (S._viewingScratchpad) {
+          // Scratchpad: modlandFiles list is already built — find synchronously by URL.
+          S.currentIdx = saved.url
+            ? S.modlandFiles.findIndex(f => f.url === saved.url)
+            : S.modlandFiles.findIndex(f => f.playerId === savedPlayerId && f.name === saved.name);
+          if (S.currentIdx >= 0) { highlightCurrent(); setFocus(S.currentIdx); }
         }
-        if (S.currentIdx >= 0) {
-          highlightCurrent();
-          setFocus(S.currentIdx);
-          if (saved.wasPlaying) {
-            const files = activeFiles();
-            const entry = files[S.currentIdx];
-            const label = entry
-              ? (safeDecodeURIComponent(entry.name).split('/').pop() || entry.name)
-              : String(S.currentIdx + 1);
-            const resumePos = (typeof saved.playPos === 'number' && saved.playPos > 0) ? saved.playPos : 0;
-            const doResume = () =>
-              loadAndPlay(S.currentIdx).then(() => {
-                if (resumePos > 0 && S.activeEngine && S.engines[S.activeEngine]) {
-                  S.engines[S.activeEngine].seekTo(resumePos);
-                }
-              });
-            // iOS Safari requires AudioContext.resume() to be called inside a
-            // user gesture — auto-resuming silently at startup will always fail.
-            // So on iOS we always show the prompt (no auto-resume option).
-            // iOS and Android both require AudioContext.resume() inside a user gesture.
-            // On desktop there is no such restriction: honour the auto-resume flag
-            // directly, or show the prompt with the checkbox so the user can set it.
-            const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
-              (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
-            if (!isMobile && isAutoplayAudioEnabled()) {
+        // For modland search results: doModlandSearch() (triggered by restorePersistedContext)
+        // calls syncPlayingTrackByUrl at the end and sets S.currentIdx from S._playingUrl.
+
+        if (saved.wasPlaying) {
+          const label = safeDecodeURIComponent(saved.name || '').split('/').pop() || saved.name || 'track';
+          const resumePos = (typeof saved.playPos === 'number' && saved.playPos > 0) ? saved.playPos : 0;
+          const doResume = () => {
+            if (S.currentIdx < 0) return;
+            loadAndPlay(S.currentIdx).then(() => {
+              if (resumePos > 0 && S.activeEngine && S.engines[S.activeEngine]) {
+                S.engines[S.activeEngine].seekTo(resumePos);
+              }
+            });
+          };
+          const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+            (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
+          if (!isMobile && isAutoplayAudioEnabled()) {
+            if (S.currentIdx >= 0) {
               doResume();
             } else {
-              showResumePrompt(label, doResume, /* showAutoOption */ !isMobile);
+              // Modland search hasn't completed yet — fire once syncPlayingTrackByUrl anchors it.
+              S._pendingAutoResume = doResume;
             }
+          } else {
+            showResumePrompt(label, doResume, /* showAutoOption */ !isMobile);
           }
         }
       }

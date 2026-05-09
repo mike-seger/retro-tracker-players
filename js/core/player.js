@@ -79,7 +79,7 @@ export async function loadAndPlay(idx) {
   S.loaded = true;
   S._playingUrl = entry.url || trackUrl(entry);
   localStorage.setItem('current-track', JSON.stringify({
-    playerId: entry.playerId, name: entry.name, mode: S.searchMode, wasPlaying: true,
+    playerId: entry.playerId, name: entry.name, url: S._playingUrl, mode: S.searchMode, wasPlaying: true,
   }));
 
   const url = trackUrl(entry);

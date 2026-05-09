@@ -5,12 +5,13 @@ export function persistContext() {
   if (!S._appReady) return;
   try {
     localStorage.setItem('app-context', JSON.stringify({
-      mode:    S.searchMode,
+      mode:    S._viewingScratchpad ? 'scratchpad' : S.searchMode,
       filter:  elFilter.value,
       folders: [...S.selectedFolders],
       playlists: [...S.selectedPlaylists],
       artists: [...S.selectedArtists],
       formats: [...S.selectedFormats],
+      range:   S._currentRange,
     }));
   } catch (_) {}
 }

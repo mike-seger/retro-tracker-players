@@ -3,7 +3,7 @@
 <!-- AUTO:DOC_META:START -->
 | Version | Updated |
 |:--|:--|
-| 0.9.9-17 | 2026-05-09 14:59 |
+| 0.9.9-18 | 2026-05-09 15:05 |
 <!-- AUTO:DOC_META:END -->
 
 A browser-based player for classic tracker module formats (MOD, XM, S3M, IT, AHX, SID) with local file lists and Modland search.

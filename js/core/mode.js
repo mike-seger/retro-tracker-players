@@ -8,7 +8,7 @@ import { buildPlaylist, syncPlayingTrackByUrl } from '../playlists/playlist.js';
 import { applyFilter, updateRefineVisibility } from '../filters/filter.js';
 import { populateFolderPanel, populateLocalArtistPanel,
          populateLocalFormatDropdown, localPlaceholder, modlandPlaceholder } from '../filters/refine.js';
-import { doModlandSearch, updateMlButtons } from '../browse/modland.js';
+import { doModlandSearch, updateMlButtons, showScratchpad } from '../browse/modland.js';
 import { persistContext } from './persistence.js';
 import { restoreSelection, updateSelCount } from '../playlists/selection.js';
 import * as remoteSearch from '../browse/remote-search.js';
@@ -78,34 +78,55 @@ export function restorePersistedContext() {
   try {
     const saved = JSON.parse(localStorage.getItem('app-context'));
     if (!saved) return;
-    if (saved.mode && saved.mode !== S.searchMode) {
-      switchMode(saved.mode);
+
+    const isScratchpad = saved.mode === 'scratchpad';
+    const targetMode   = isScratchpad ? 'modland' : (saved.mode || S.searchMode);
+    const savedRange   = saved.range || 0;
+
+    // Pre-populate the target-mode context so switchMode → restoreXxxContext
+    // restores S._currentRange before the first search/filter fires.
+    if (targetMode === 'modland') {
+      S._modlandCtx = { filter: isScratchpad ? '' : (saved.filter || ''), range: savedRange };
     }
-    if (saved.filter) elFilter.value = saved.filter;
-    if (Array.isArray(saved.folders) && S.searchMode === 'local') {
-      S.selectedFolders = new Set(saved.folders.filter(f => S._allFolderOptions.has(f)));
-      updateFolderBtn();
-      syncFolderCheckboxes();
+
+    if (targetMode !== S.searchMode) {
+      switchMode(targetMode, { skipSearch: true });
+    } else if (savedRange > 0) {
+      // Already in the target mode — apply range directly.
+      S._currentRange = savedRange;
     }
-    if (Array.isArray(saved.playlists) && S.searchMode === 'local') {
-      S.selectedPlaylists = new Set(saved.playlists.filter(id => S._allPlaylistOptions.has(id)));
-      updateFolderBtn();
-      syncFolderCheckboxes();
-    }
-    if (Array.isArray(saved.artists) && S.searchMode === 'local') {
-      S.selectedArtists = new Set(saved.artists.filter(a => S._allArtistOptions.has(a)));
-      updateArtistBtn();
-      syncArtistCheckboxes();
-    }
-    if (Array.isArray(saved.formats) && S.searchMode === 'local') {
-      S.selectedFormats = new Set(saved.formats.filter(f => S._allFormatOptions.has(f)));
-      updateFormatBtn();
-      syncFormatCheckboxes();
-    }
-    // Apply filter (local mode) or trigger index search (modland mode).
-    applyFilter();
-    if (S.searchMode === 'modland') {
-      doModlandSearch();
+
+    if (targetMode === 'local') {
+      if (saved.filter) elFilter.value = saved.filter;
+      if (Array.isArray(saved.folders)) {
+        S.selectedFolders = new Set(saved.folders.filter(f => S._allFolderOptions.has(f)));
+        updateFolderBtn();
+        syncFolderCheckboxes();
+      }
+      if (Array.isArray(saved.playlists)) {
+        S.selectedPlaylists = new Set(saved.playlists.filter(id => S._allPlaylistOptions.has(id)));
+        updateFolderBtn();
+        syncFolderCheckboxes();
+      }
+      if (Array.isArray(saved.artists)) {
+        S.selectedArtists = new Set(saved.artists.filter(a => S._allArtistOptions.has(a)));
+        updateArtistBtn();
+        syncArtistCheckboxes();
+      }
+      if (Array.isArray(saved.formats)) {
+        S.selectedFormats = new Set(saved.formats.filter(f => S._allFormatOptions.has(f)));
+        updateFormatBtn();
+        syncFormatCheckboxes();
+      }
+      applyFilter();
+    } else {
+      // Modland or scratchpad: range was pre-seeded into S._modlandCtx and
+      // restored by switchMode → restoreModlandContext. Trigger the display.
+      if (isScratchpad) {
+        showScratchpad();
+      } else {
+        doModlandSearch();
+      }
     }
   } catch (_) {}
 }
